@@ -348,7 +348,7 @@ img {
 .theme-toggle {
     width: 45px;
     height: 45px;
-    border-radius: 50%;
+    border-radius: 32px;
     border: 1px solid var(--border-glow);
     background: var(--bg-surface);
     color: var(--accent-primary);
@@ -358,6 +358,17 @@ img {
     cursor: pointer;
     transition: var(--transition);
     font-size: 1.25rem;
+}
+
+.modal-content {
+    background: var(--bg-surface);
+    color: var(--text-primary);
+    max-width: 500px;
+    width: calc(100% - 4rem);
+    margin: 2rem;
+    border-radius: 32px;
+    padding: 4rem;
+    position: relative;
 }
 
 .theme-toggle:hover {
@@ -572,7 +583,7 @@ img {
 }
 
 .rounded-shadow {
-    border-radius: 16px;
+    border-radius: 32px;
     box-shadow: var(--card-shadow);
     position: absolute;
 }
@@ -609,6 +620,7 @@ img {
     display: flex;
     flex-direction: column;
     align-items: center;
+    border-radius: 32px;
 }
 
 .step-number {
@@ -681,7 +693,7 @@ img {
     padding: 2.5rem 1rem;
     background: rgba(255, 255, 255, 0.1);
     border: 1px solid rgba(255, 255, 255, 0.2);
-    border-radius: 16px;
+    border-radius: 32px;
     backdrop-filter: blur(10px);
     transition: var(--transition);
 }
@@ -744,6 +756,7 @@ img {
     visibility: hidden;
     transition: all 0.5s ease-in-out;
     transform: translateX(50px);
+    border-radius: 32px;
 }
 
 .review-slide.active {
@@ -880,7 +893,7 @@ img {
 
 .action-card {
     flex: 1;
-    border-radius: 12px;
+    border-radius: 32px;
     padding: 2rem 1.5rem;
     text-align: center;
     background: var(--white);
