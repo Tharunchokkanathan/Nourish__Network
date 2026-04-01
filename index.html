@@ -35,6 +35,9 @@
             </a>
             <!-- Links moved to bottom-nav for 'elite' feel -->
             <div class="nav-buttons">
+                <button id="theme-toggle" class="theme-toggle" aria-label="Toggle Theme">
+                    <i class="fa-solid fa-moon"></i>
+                </button>
                 <a href="#join" class="btn btn-outline">Log In</a>
                 <a href="#join" class="btn btn-primary">Join Now</a>
             </div>
@@ -59,6 +62,57 @@
             </div>
         </div>
     </header>
+
+    <!-- Available Items Spotlight (Pinterest Inspiration) -->
+    <section id="available" class="marketplace section">
+        <div class="container" style="max-width: 1300px;">
+            <div class="section-header animate-on-scroll">
+                <span class="badge" style="background: var(--accent-secondary); color: white;">Live Marketplace</span>
+                <h2>Available <span style="color: var(--accent-primary);">Overstock</span></h2>
+            </div>
+            <div class="items-grid">
+                <div class="item-card glass-card hover-lift animate-on-scroll fade-up">
+                    <div class="card-image" style="background: url('https://images.unsplash.com/photo-1540324155974-7523202daa3f?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80') center/cover;">
+                        <span class="status available">Freshly Picked</span>
+                    </div>
+                    <div class="card-info">
+                        <h3>Organically Grown Basket</h3>
+                        <p>Seasonal vegetables perfect for a community pantry.</p>
+                        <div class="card-footer">
+                            <span class="tag">5kg</span>
+                            <a href="#join" class="btn btn-primary btn-sm">Claim It</a>
+                        </div>
+                    </div>
+                </div>
+                <div class="item-card glass-card hover-lift animate-on-scroll fade-up delay-100">
+                    <div class="card-image" style="background: url('https://images.unsplash.com/photo-1594708767771-a7502209ff51?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80') center/cover;">
+                        <span class="status pending">Donated</span>
+                    </div>
+                    <div class="card-info">
+                        <h3>Artisan Bakery Batch</h3>
+                        <p>Fresh whole-grain sourdough and sweet pastries.</p>
+                        <div class="card-footer">
+                            <span class="tag">12 Items</span>
+                            <a href="#join" class="btn btn-primary btn-sm">Claim It</a>
+                        </div>
+                    </div>
+                </div>
+                <div class="item-card glass-card hover-lift animate-on-scroll fade-up delay-200">
+                    <div class="card-image" style="background: url('https://images.unsplash.com/photo-1547592166-23ac45744acd?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80') center/cover;">
+                        <span class="status available">Hot Meal</span>
+                    </div>
+                    <div class="card-info">
+                        <h3>Vegetarian Pulse Soup</h3>
+                        <p>Nutritious and warm lentil curry suitable for all ages.</p>
+                        <div class="card-footer">
+                            <span class="tag">20 Servings</span>
+                            <a href="#join" class="btn btn-primary btn-sm">Claim It</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
 
     <!-- About Section -->
     <section id="about" class="about section">

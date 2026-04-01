@@ -2,27 +2,35 @@
    VARIABLES & SETUP
    ========================================= */
 :root {
-    /* Color Palette (Glow-Bento - Dark Mode Default) */
-    --midnight-bg: #0a1410; /* Deep Charcoal Green */
-    --midnight-surface: #12211b; /* Card Background */
-    --emerald-glow: #10b981; /* Primary Emerald */
-    --emerald-muted: rgba(16, 185, 129, 0.2);
-    --terracotta: #e67e22; /* Warm Harvest Orange */
-    --lavender-fade: #a78bfa; /* Blueberry Inspiration */
-    --white-soft: #fcfaf2;
-    --text-rich: #ffffff;
-    --text-muted: #94a3b8;
+    /* Color Palette - Default (Dark) */
+    --bg-main: #0a1410;
+    --bg-surface: #12211b;
+    --accent-primary: #10b981;
+    --accent-secondary: #e67e22;
+    --text-primary: #fcfaf2;
+    --text-secondary: #94a3b8;
     --border-glow: rgba(16, 185, 129, 0.15);
-
-    /* Typography */
-    --font-heading: 'Playfair Display', serif;
-    --font-body: 'Outfit', sans-serif;
-
-    /* Effects */
     --glass-bg: rgba(18, 33, 27, 0.7);
     --glass-border: 1px solid rgba(255, 255, 255, 0.1);
     --glass-shadow: 0 12px 60px -10px rgba(0, 0, 0, 0.5);
+
+    /* Typography & Effects */
+    --font-heading: 'Playfair Display', serif;
+    --font-body: 'Outfit', sans-serif;
     --transition: all 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+[data-theme='light'] {
+    --bg-main: #fdfcf0; /* Warm Sand */
+    --bg-surface: #ffffff;
+    --accent-primary: #059669;
+    --accent-secondary: #f59e0b;
+    --text-primary: #111827;
+    --text-secondary: #4b5563;
+    --border-glow: rgba(6, 78, 59, 0.08);
+    --glass-bg: rgba(253, 252, 240, 0.7);
+    --glass-border: 1px solid rgba(0, 0, 0, 0.05);
+    --glass-shadow: 0 12px 40px -10px rgba(6, 78, 59, 0.08);
 }
 
 * {
@@ -37,10 +45,11 @@ html {
 
 body {
     font-family: var(--font-body);
-    color: var(--white-soft);
-    background-color: var(--midnight-bg);
+    color: var(--text-primary);
+    background-color: var(--bg-main);
     line-height: 1.6;
     overflow-x: hidden;
+    transition: background-color 0.6s ease, color 0.6s ease;
 }
 
 /* Background Texture & Glow (Inspiration-driven) */
@@ -51,8 +60,8 @@ body {
     width: 100%;
     height: 100%;
     z-index: -1;
-    background: radial-gradient(circle at 80% 20%, rgba(16, 185, 129, 0.05), transparent 40%),
-                radial-gradient(circle at 20% 80%, rgba(167, 139, 250, 0.05), transparent 40%);
+    background: radial-gradient(circle at 80% 20%, rgba(16, 185, 129, 0.1), transparent 40%),
+                radial-gradient(circle at 20% 80%, rgba(167, 139, 250, 0.1), transparent 40%);
     pointer-events: none;
 }
 
@@ -279,9 +288,9 @@ img {
 
 .navbar.scrolled {
     padding: 1rem 0;
-    background: rgba(253, 252, 240, 0.8);
-    backdrop-filter: blur(20px);
-    border-bottom: 1px solid rgba(6, 78, 59, 0.05);
+    background: var(--glass-bg);
+    backdrop-filter: blur(30px);
+    border-bottom: 1px solid var(--border-glow);
 }
 
 .nav-container {
@@ -336,18 +345,106 @@ img {
     gap: 1rem;
 }
 
-.mobile-menu-btn {
-    display: none;
-    background: none;
-    border: none;
-    font-size: 1.5rem;
-    color: var(--text-main);
+.theme-toggle {
+    width: 45px;
+    height: 45px;
+    border-radius: 50%;
+    border: 1px solid var(--border-glow);
+    background: var(--bg-surface);
+    color: var(--accent-primary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
     cursor: pointer;
+    transition: var(--transition);
+    font-size: 1.25rem;
+}
+
+.theme-toggle:hover {
+    transform: scale(1.1);
+    box-shadow: 0 0 20px var(--border-glow);
 }
 
 /* =========================================
    HERO SECTION
    ========================================= */
+/* =========================================
+   MARKETPLACE (PINTEREST INSPIRED)
+   ========================================= */
+.items-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 3rem;
+    margin-top: 2rem;
+}
+
+.item-card {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    padding: 0; /* Override glass-card padding */
+}
+
+.card-image {
+    height: 250px;
+    width: 100%;
+    position: relative;
+    border-radius: 32px;
+    overflow: hidden;
+    transition: var(--transition);
+}
+
+.item-card:hover .card-image {
+    transform: scale(0.98);
+}
+
+.status {
+    position: absolute;
+    top: 1.5rem;
+    left: 1.5rem;
+    padding: 0.5rem 1.2rem;
+    border-radius: 30px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    backdrop-filter: blur(10px);
+}
+
+.status.available { background: rgba(16, 185, 129, 0.9); color: white; }
+.status.pending { background: rgba(230, 126, 34, 0.9); color: white; }
+
+.card-info {
+    padding: 2.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.card-info h3 {
+    font-size: 1.5rem;
+    margin: 0;
+}
+
+.card-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 1.5rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--border-glow);
+}
+
+.tag {
+    font-weight: 700;
+    color: var(--accent-primary);
+    font-size: 0.9rem;
+}
+
+.btn-sm {
+    padding: 0.6rem 1.2rem;
+    font-size: 0.85rem;
+}
 /* =========================================
    HERO SECTION (MINIMALIST ELITE)
    ========================================= */
