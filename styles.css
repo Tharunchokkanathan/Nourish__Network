@@ -1343,7 +1343,7 @@ img {
     font-size: 0.875rem;
     font-weight: 600;
     margin-bottom: 0.5rem;
-    color: var(--text-main);
+    color: var(--text-primary);
 }
 
 .input-with-icon {
@@ -1359,6 +1359,19 @@ img {
     font-size: 1.1rem;
     pointer-events: none;
     transition: var(--transition);
+}
+
+.input-with-icon .form-control {
+    padding-left: 2.75rem;
+    background: var(--bg-main);
+    color: var(--text-primary);
+    border: 2px solid var(--border-glow);
+}
+
+.input-with-icon .form-control:focus {
+    background: var(--bg-surface);
+    border-color: var(--accent-primary);
+    box-shadow: 0 0 15px var(--border-glow);
 }
 
 .contact-form .form-control {
@@ -1386,7 +1399,7 @@ img {
 
 .input-with-icon .form-control:focus+i,
 .input-with-icon:focus-within i {
-    color: var(--primary-green);
+    color: var(--accent-primary);
 }
 
 .forgot-link {
