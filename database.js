@@ -26,6 +26,21 @@ const db = new sqlite3.Database(dbPath, (err) => {
             message TEXT,
             date TEXT
         )`);
+
+        // Create Food Surplus Tables
+        db.run(`CREATE TABLE IF NOT EXISTS food_listings (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            vendorId INTEGER,
+            vendorName TEXT,
+            description TEXT,
+            quantity TEXT,
+            pickupTime TEXT,
+            status TEXT DEFAULT 'available',
+            claimedBy INTEGER NULL,
+            datePosted TEXT,
+            FOREIGN KEY (vendorId) REFERENCES users (id),
+            FOREIGN KEY (claimedBy) REFERENCES users (id)
+        )`);
     }
 });
 

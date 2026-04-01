@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Nourish Network</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
+    <style>
+        .dashboard-container {
+            padding-top: 100px;
+            min-height: 100vh;
+            background: #f8fafc;
+        }
+
+        .dashboard-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+
+        .user-welcome h1 {
+            font-size: 1.8rem;
+            color: #1e293b;
+        }
+
+        .user-welcome span {
+            color: #64748b;
+        }
+
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: 350px 1fr;
+            gap: 30px;
+        }
+
+        @media (max-width: 992px) {
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .card-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .card-header i {
+            color: var(--primary-color);
+            font-size: 1.2rem;
+        }
+
+        .form-control {
+            margin-bottom: 15px;
+        }
+
+        .listings-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
+        }
+
+        .food-card {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+            transition: transform 0.2s;
+            border: 1px solid #e2e8f0;
+        }
+
+        .food-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .food-card .vendor-name {
+            font-weight: 700;
+            color: var(--primary-color);
+            margin-bottom: 5px;
+            display: block;
+        }
+
+        .food-card .food-desc {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+
+        .food-card .food-meta {
+            font-size: 0.9rem;
+            color: #64748b;
+            margin-bottom: 15px;
+        }
+
+        .food-card .food-meta div {
+            margin-bottom: 5px;
+        }
+
+        .status-badge {
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .status-available {
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        .status-claimed {
+            background: #f1f5f9;
+            color: #475569;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: #64748b;
+        }
+
+        .empty-state i {
+            font-size: 3rem;
+            margin-bottom: 20px;
+            opacity: 0.3;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Navbar -->
+    <nav class="navbar scrolled">
+        <div class="container nav-container">
+            <a href="index.html" class="logo">
+                <i class="fa-solid fa-leaf"></i>
+                <span>Nourish Network</span>
+            </a>
+            <div class="nav-buttons">
+                <button id="logoutBtn" class="btn btn-outline">Log Out</button>
+            </div>
+        </div>
+    </nav>
+
+    <div class="dashboard-container">
+        <div class="container">
+            <div class="dashboard-header animate-on-scroll fade-up">
+                <div class="user-welcome">
+                    <h1>Welcome, <span id="userName">User</span></h1>
+                    <span id="userTypeBadge" class="badge">Account Type</span>
+                </div>
+            </div>
+
+            <div class="dashboard-grid">
+                <!-- Sidebar: Actions / Profile -->
+                <aside class="dashboard-sidebar">
+                    <!-- Restaurant/Vendor Action: Post Food -->
+                    <div id="vendorActionBox" class="glass-card animate-on-scroll slide-right" style="display: none;">
+                        <div class="card-header">
+                            <i class="fa-solid fa-cloud-arrow-up"></i>
+                            <h3>Post Surplus Food</h3>
+                        </div>
+                        <form id="postFoodForm">
+                            <div class="form-group">
+                                <label for="foodDesc">What's the food?</label>
+                                <input type="text" id="foodDesc" class="form-control" placeholder="e.g. 10 Trays of Biryani" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="foodQty">Quantity (approx)</label>
+                                <input type="text" id="foodQty" class="form-control" placeholder="e.g. 15 kg / 50 servings" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="pickupTime">Pickup By Time</label>
+                                <input type="text" id="pickupTime" class="form-control" placeholder="e.g. Today by 9:00 PM" required>
+                            </div>
+                            <button type="submit" class="btn btn-primary w-100">Post Listing <i class="fa-solid fa-paper-plane"></i></button>
+                        </form>
+                    </div>
+
+                    <!-- NGO Info Box -->
+                    <div id="ngoActionBox" class="glass-card animate-on-scroll slide-right" style="display: none;">
+                        <div class="card-header">
+                            <i class="fa-solid fa-circle-info"></i>
+                            <h3>Find Food</h3>
+                        </div>
+                        <p>Browse available food listings from restaurants nearby. Click "Claim" to reserve a listing for your organization.</p>
+                        <ul class="feature-list" style="margin-top: 15px;">
+                            <li><i class="fa-solid fa-check"></i> Quality Verified</li>
+                            <li><i class="fa-solid fa-check"></i> Free of cost</li>
+                            <li><i class="fa-solid fa-check"></i> Immediate pickup</li>
+                        </ul>
+                    </div>
+                </aside>
+
+                <!-- Main Content: Listings -->
+                <main class="dashboard-main">
+                    <div class="glass-card animate-on-scroll fade-up delay-200" style="min-height: 500px;">
+                        <div class="card-header">
+                            <i class="fa-solid fa-list-ul"></i>
+                            <h3 id="feedTitle">Available Surplus Food</h3>
+                        </div>
+                        <div id="listingsLoader" class="empty-state">
+                            <i class="fa-solid fa-circle-notch fa-spin"></i>
+                            <p>Fetching latest listings...</p>
+                        </div>
+                        <div id="listingsFeed" class="listings-container">
+                            <!-- Cards will be injected here -->
+                        </div>
+                    </div>
+                </main>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Container -->
+    <div id="toastContainer" class="toast-container"></div>
+
+    <script src="dashboard.js"></script>
+</body>
+
+</html>

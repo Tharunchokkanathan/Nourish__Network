@@ -273,6 +273,26 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    // Check if user is already logged in
+    const checkLoginStatus = () => {
+        const user = JSON.parse(localStorage.getItem('nourishUser'));
+        if (user) {
+            const navButtons = document.querySelector('.nav-buttons');
+            if (navButtons) {
+                navButtons.innerHTML = `<a href="dashboard.html" class="btn btn-outline"><i class="fa-solid fa-user"></i> Dashboard</a>`;
+            }
+            // Also update any "Join Now" or "Donate Food" buttons on the landing page
+            const heroActions = document.querySelectorAll('.hero-action a, .action-card button');
+            heroActions.forEach(btn => {
+                btn.onclick = (e) => {
+                    e.preventDefault();
+                    window.location.href = 'dashboard.html';
+                };
+            });
+        }
+    };
+    checkLoginStatus();
+
     // 1. Login Form Submit
     loginForm.addEventListener('submit', async (e) => {
         e.preventDefault();
@@ -295,12 +315,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (response.ok) {
                 showToast(`Welcome back, ${data.user.name || email}!`);
-                closeAuthModal();
-                loginForm.reset();
-
-                // Update Nav UI to show logged in state
-                const navButtons = document.querySelector('.nav-buttons');
-                navButtons.innerHTML = `<a href="#" class="btn btn-outline"><i class="fa-solid fa-user"></i> Dashboard</a>`;
+                
+                // Save user to localStorage
+                localStorage.setItem('nourishUser', JSON.stringify(data.user));
+                
+                setTimeout(() => {
+                    window.location.href = 'dashboard.html';
+                }, 1000);
             } else {
                 showToast(data.error || "Login failed", "error");
             }

@@ -88,6 +88,67 @@ app.post('/api/contact', (req, res) => {
     });
 });
 
+// 4. Create Food Listing Endpoint
+app.post('/api/listings', (req, res) => {
+    const { vendorId, vendorName, description, quantity, pickupTime } = req.body;
+
+    if (!vendorId || !description || !quantity) {
+        return res.status(400).json({ error: "Please provide all required food details." });
+    }
+
+    const datePosted = new Date().toISOString();
+    const sql = `INSERT INTO food_listings (vendorId, vendorName, description, quantity, pickupTime, datePosted) VALUES (?, ?, ?, ?, ?, ?)`;
+    const params = [vendorId, vendorName, description, quantity, pickupTime, datePosted];
+
+    db.run(sql, params, function (err) {
+        if (err) {
+            return res.status(500).json({ error: err.message });
+        }
+        res.status(201).json({ message: "Food listing posted successfully!", id: this.lastID });
+    });
+});
+
+// 5. Get Listings Endpoint
+app.get('/api/listings', (req, res) => {
+    const { vendorId } = req.query;
+    let sql = `SELECT * FROM food_listings WHERE status = 'available' ORDER BY datePosted DESC`;
+    let params = [];
+
+    // If a vendorId is provided, show all their listings (including claimed ones)
+    if (vendorId) {
+        sql = `SELECT * FROM food_listings WHERE vendorId = ? ORDER BY datePosted DESC`;
+        params = [vendorId];
+    }
+
+    db.all(sql, params, (err, rows) => {
+        if (err) {
+            return res.status(500).json({ error: err.message });
+        }
+        res.status(200).json(rows);
+    });
+});
+
+// 6. Claim Food Endpoint
+app.post('/api/listings/claim', (req, res) => {
+    const { listingId, ngoId } = req.body;
+
+    if (!listingId || !ngoId) {
+        return res.status(400).json({ error: "Missing listing or NGO information." });
+    }
+
+    const sql = `UPDATE food_listings SET status = 'claimed', claimedBy = ? WHERE id = ? AND status = 'available'`;
+
+    db.run(sql, [ngoId, listingId], function (err) {
+        if (err) {
+            return res.status(500).json({ error: err.message });
+        }
+        if (this.changes === 0) {
+            return res.status(400).json({ error: "Listing not found or already claimed." });
+        }
+        res.status(200).json({ message: "Food successfully claimed!" });
+    });
+});
+
 // Start the Server
 app.listen(PORT, () => {
     console.log(`Server is running on http://localhost:${PORT}`);
