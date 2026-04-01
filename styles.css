@@ -304,14 +304,27 @@ img {
     width: 100%;
     z-index: 1000;
     padding: 2rem 0;
-    transition: var(--transition);
+    background: transparent;
+    border-bottom: 1px solid transparent;
+    /* Only transition paint-cheap properties — NOT backdrop-filter (causes flicker) */
+    transition: padding 0.45s cubic-bezier(0.16, 1, 0.3, 1),
+                background-color 0.45s cubic-bezier(0.16, 1, 0.3, 1),
+                border-color 0.45s cubic-bezier(0.16, 1, 0.3, 1),
+                box-shadow 0.45s cubic-bezier(0.16, 1, 0.3, 1);
+    will-change: padding, background;
+}
+
+/* Always-on glass blur — keep it consistent so it never needs to animate */
+.navbar.glass {
+    backdrop-filter: blur(24px) saturate(160%);
+    -webkit-backdrop-filter: blur(24px) saturate(160%);
 }
 
 .navbar.scrolled {
-    padding: 1rem 0;
+    padding: 0.85rem 0;
     background: var(--glass-bg);
-    backdrop-filter: blur(30px);
     border-bottom: 1px solid var(--border-glow);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
 }
 
 .nav-container {
