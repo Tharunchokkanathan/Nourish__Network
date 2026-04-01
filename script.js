@@ -298,8 +298,14 @@ document.addEventListener('DOMContentLoaded', () => {
     loginForm.addEventListener('submit', async (e) => {
         e.preventDefault();
 
-        const email = document.getElementById('loginEmail').value;
-        const password = document.getElementById('loginPassword').value;
+        const email = document.getElementById('loginEmail').value.trim();
+        const password = document.getElementById('loginPassword').value.trim();
+
+        if (!email || !password) {
+            showToast("Please enter both email and password.", "error");
+            return;
+        }
+
         const submitBtn = loginForm.querySelector('button[type="submit"]');
         const originalText = submitBtn.innerHTML;
 
@@ -338,9 +344,14 @@ document.addEventListener('DOMContentLoaded', () => {
         e.preventDefault();
 
         const accountType = document.querySelector('input[name="accountType"]:checked').value;
-        const organizationName = document.getElementById('regName').value;
-        const email = document.getElementById('regEmail').value;
-        const password = document.getElementById('regPassword').value;
+        const organizationName = document.getElementById('regName').value.trim();
+        const email = document.getElementById('regEmail').value.trim();
+        const password = document.getElementById('regPassword').value.trim();
+
+        if (!organizationName || !email || !password) {
+            showToast("Please fill in all required fields, including a password.", "error");
+            return;
+        }
 
         const submitBtn = registerForm.querySelector('button[type="submit"]');
         const originalText = submitBtn.innerHTML;
@@ -438,5 +449,43 @@ document.addEventListener('DOMContentLoaded', () => {
     }, scrollSpyOptions);
 
     sections.forEach(section => scrollSpyObserver.observe(section));
+
+    // =========================================
+    // THEME TOGGLE LOGIC (Elite Midnight/Zen)
+    // =========================================
+    const themeToggle = document.getElementById('theme-toggle');
+    const htmlElement = document.documentElement;
+
+    if (themeToggle) {
+        const themeIcon = themeToggle.querySelector('i');
+
+        // Check for saved theme or default to dark
+        const savedTheme = localStorage.getItem('nourishTheme') || 'dark';
+        htmlElement.setAttribute('data-theme', savedTheme);
+        updateThemeIcon(savedTheme, themeIcon);
+
+        themeToggle.addEventListener('click', () => {
+            const currentTheme = htmlElement.getAttribute('data-theme');
+            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+            
+            htmlElement.setAttribute('data-theme', newTheme);
+            localStorage.setItem('nourishTheme', newTheme);
+            updateThemeIcon(newTheme, themeIcon);
+            
+            // Visual feedback
+            showToast(`Switched to ${newTheme.charAt(0).toUpperCase() + newTheme.slice(1)} Mode`, 'info');
+        });
+    }
+
+    function updateThemeIcon(theme, icon) {
+        if (!icon) return;
+        if (theme === 'dark') {
+            icon.classList.remove('fa-moon');
+            icon.classList.add('fa-sun');
+        } else {
+            icon.classList.remove('fa-sun');
+            icon.classList.add('fa-moon');
+        }
+    }
 
 });
