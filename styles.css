@@ -2,26 +2,27 @@
    VARIABLES & SETUP
    ========================================= */
 :root {
-    /* Color Palette (Emerald-Zen) */
-    --emerald-900: #064e3b;
-    --emerald-600: #059669;
-    --emerald-500: #10b981;
-    --gold-500: #f59e0b;
-    --bg-main: #fdfcf0; /* Warm Sand */
-    --white: #ffffff;
-    --text-rich: #111827;
-    --text-muted: #4b5563;
-    --border-soft: rgba(6, 78, 59, 0.08);
+    /* Color Palette (Glow-Bento - Dark Mode Default) */
+    --midnight-bg: #0a1410; /* Deep Charcoal Green */
+    --midnight-surface: #12211b; /* Card Background */
+    --emerald-glow: #10b981; /* Primary Emerald */
+    --emerald-muted: rgba(16, 185, 129, 0.2);
+    --terracotta: #e67e22; /* Warm Harvest Orange */
+    --lavender-fade: #a78bfa; /* Blueberry Inspiration */
+    --white-soft: #fcfaf2;
+    --text-rich: #ffffff;
+    --text-muted: #94a3b8;
+    --border-glow: rgba(16, 185, 129, 0.15);
 
     /* Typography */
     --font-heading: 'Playfair Display', serif;
     --font-body: 'Outfit', sans-serif;
 
     /* Effects */
-    --glass-bg: rgba(253, 252, 240, 0.6);
-    --glass-border: 1px solid rgba(255, 255, 255, 0.4);
-    --glass-shadow: 0 12px 40px -10px rgba(6, 78, 59, 0.08);
-    --transition: all 0.5s cubic-bezier(0.19, 1, 0.22, 1);
+    --glass-bg: rgba(18, 33, 27, 0.7);
+    --glass-border: 1px solid rgba(255, 255, 255, 0.1);
+    --glass-shadow: 0 12px 60px -10px rgba(0, 0, 0, 0.5);
+    --transition: all 0.6s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 * {
@@ -36,10 +37,36 @@ html {
 
 body {
     font-family: var(--font-body);
-    color: var(--text-rich);
-    background-color: var(--bg-main);
+    color: var(--white-soft);
+    background-color: var(--midnight-bg);
     line-height: 1.6;
     overflow-x: hidden;
+}
+
+/* Background Texture & Glow (Inspiration-driven) */
+.bg-glow-layer {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: -1;
+    background: radial-gradient(circle at 80% 20%, rgba(16, 185, 129, 0.05), transparent 40%),
+                radial-gradient(circle at 20% 80%, rgba(167, 139, 250, 0.05), transparent 40%);
+    pointer-events: none;
+}
+
+.halftone-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: -1;
+    opacity: 0.15;
+    background-image: radial-gradient(rgba(255,255,255,0.05) 1px, transparent 1px);
+    background-size: 20px 20px;
+    pointer-events: none;
 }
 
 /* Typography */
@@ -53,12 +80,13 @@ h6 {
     font-weight: 700;
     line-height: 1.1;
     margin-bottom: 1.5rem;
-    color: var(--emerald-900);
+    color: var(--white-soft);
 }
 
 h1 {
-    font-size: clamp(3rem, 8vw, 5rem);
-    letter-spacing: -0.02em;
+    font-size: clamp(3.5rem, 9vw, 6rem);
+    letter-spacing: -0.03em;
+    font-weight: 800;
 }
 
 h2 {
@@ -136,19 +164,25 @@ img {
 /* Glassmorphism Classes */
 .glass {
     background: var(--glass-bg);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
     border: var(--glass-border);
+    box-shadow: 0 0 40px rgba(16, 185, 129, 0.05);
+}
+.glass-card {
+    background: var(--midnight-surface);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid var(--border-glow);
+    box-shadow: var(--glass-shadow);
+    border-radius: 32px;
+    padding: 3.5rem;
+    transition: var(--transition);
 }
 
-.glass-card {
-    background: rgba(255, 255, 255, 0.85);
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
-    border: 1px solid rgba(255, 255, 255, 0.6);
-    box-shadow: var(--glass-shadow);
-    border-radius: 16px;
-    padding: 2rem;
+.glass-card:hover {
+    border-color: rgba(16, 185, 129, 0.3);
+    box-shadow: 0 20px 80px rgba(0, 0, 0, 0.6);
 }
 
 .hover-lift {
@@ -319,9 +353,9 @@ img {
    ========================================= */
 .hero {
     position: relative;
-    padding: 15rem 0 10rem;
+    padding: 18rem 0 12rem;
     overflow: hidden;
-    background: var(--bg-main);
+    background: transparent;
 }
 
 .hero-container {
@@ -329,6 +363,8 @@ img {
     grid-template-columns: 1.2fr 0.8fr;
     gap: 4rem;
     align-items: center;
+    position: relative;
+    z-index: 2;
 }
 
 .hero-main {
@@ -397,8 +433,16 @@ img {
    ABOUT SECTION
    ========================================= */
 .section-header {
-    max-width: 600px;
-    margin: 0 auto 4rem;
+    max-width: 700px;
+    margin: 0 auto 5rem;
+}
+
+.section-header h2 {
+    font-size: clamp(2.5rem, 6vw, 4rem);
+    background: linear-gradient(to right, #ffffff, var(--emerald-glow));
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
 }
 
 .about-grid {
@@ -1421,13 +1465,13 @@ img {
 
 .bottom-nav-container {
     display: flex;
-    background: rgba(255, 255, 255, 0.8);
-    backdrop-filter: blur(15px);
-    border: 1px solid rgba(255, 255, 255, 0.3);
+    background: var(--midnight-surface);
+    backdrop-filter: blur(20px);
+    border: 1px solid var(--border-glow);
     padding: 0.75rem 1.5rem;
     border-radius: 100px;
     gap: 1.5rem;
-    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
 }
 
 .nav-item {
@@ -1435,7 +1479,7 @@ img {
     flex-direction: column;
     align-items: center;
     gap: 4px;
-    color: var(--text-main);
+    color: var(--text-muted);
     text-decoration: none;
     font-size: 0.7rem;
     font-weight: 600;
@@ -1444,13 +1488,6 @@ img {
 
 .nav-item i {
     font-size: 1.2rem;
-    color: var(--primary-green);
-    transition: var(--transition);
-}
-
-.nav-item:hover {
-    color: var(--primary-green);
-    transform: translateY(-4px);
 }
 
 .nav-item:hover i {
