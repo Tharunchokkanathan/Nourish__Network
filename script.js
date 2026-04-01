@@ -410,4 +410,33 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    // =========================================
+    // SCROLL-SPY (FOR BOTTOM DOCK)
+    // =========================================
+    const bottomNavItems = document.querySelectorAll('.bottom-nav .nav-item');
+    const sections = document.querySelectorAll('section, header');
+
+    const scrollSpyOptions = {
+        rootMargin: '-10% 0px -80% 0px',
+        threshold: 0
+    };
+
+    const scrollSpyObserver = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                const id = entry.target.getAttribute('id');
+                if (!id) return;
+                
+                bottomNavItems.forEach(item => {
+                    item.classList.remove('active');
+                    if (item.getAttribute('href') === `#${id}`) {
+                        item.classList.add('active');
+                    }
+                });
+            }
+        });
+    }, scrollSpyOptions);
+
+    sections.forEach(section => scrollSpyObserver.observe(section));
+
 });
