@@ -161,18 +161,19 @@ document.addEventListener('DOMContentLoaded', () => {
     const modalTitle = document.getElementById('modalTitle');
     const modalSubtitle = document.getElementById('modalSubtitle');
 
-    // Open Modal from Nav Buttons
-    const navButtons = document.querySelectorAll('.nav-buttons a[href="#join"]');
-    navButtons.forEach(btn => {
+    // Open Modal from ALL "Join" / "Donate" buttons
+    const joinButtons = document.querySelectorAll('a[href="#join"]');
+    joinButtons.forEach(btn => {
         btn.addEventListener('click', (e) => {
             e.preventDefault();
             authModal.classList.add('active');
 
-            // If they clicked "Join Now" instead of Log In, switch to Register view
-            if (btn.classList.contains('btn-primary')) {
-                showRegisterForm();
-            } else {
+            // If the button text contains "Log In", show Login. Otherwise show Register.
+            const btnText = btn.innerText.toLowerCase();
+            if (btnText.includes('log in')) {
                 showLoginForm();
+            } else {
+                showRegisterForm();
             }
         });
     });
