@@ -33,8 +33,26 @@
                 <i class="fa-solid fa-leaf"></i>
                 <span>Nourish Network</span>
             </a>
-            <!-- Links moved to bottom-nav for 'elite' feel -->
+            
+            <!-- Portal Switcher (Pill Toggle) -->
+            <div class="portal-switcher-wrap">
+                <div class="portal-switcher">
+                    <button class="portal-btn active" id="sw-seller" data-portal="seller">
+                        <i class="fa-solid fa-shop"></i> <span>Seller</span>
+                    </button>
+                    <button class="portal-btn" id="sw-buyer" data-portal="buyer">
+                        <i class="fa-solid fa-hands-holding-child"></i> <span>Buyer</span>
+                    </button>
+                </div>
+            </div>
+
             <div class="nav-buttons">
+                <!-- Harvest Basket (Cart) -->
+                <button id="cart-toggle" class="cart-btn" aria-label="View Harvest Basket">
+                    <i class="fa-solid fa-basket-shopping"></i>
+                    <span class="cart-count">0</span>
+                </button>
+
                 <button id="theme-toggle" class="theme-toggle" aria-label="Toggle Theme">
                     <i class="fa-solid fa-moon"></i>
                 </button>
@@ -44,6 +62,23 @@
             <button class="mobile-menu-btn"><i class="fa-solid fa-bars"></i></button>
         </div>
     </nav>
+
+    <!-- Sticky Search Strip -->
+    <div id="search-strip" class="search-strip-wrap glass">
+        <div class="container search-strip-container">
+            <div class="search-input-wrap">
+                <i class="fa-solid fa-magnifying-glass"></i>
+                <input type="text" id="global-search" placeholder="Search surplus food near you...">
+            </div>
+            <div class="near-me-wrap">
+                <span>📍 Near Me</span>
+                <label class="switch">
+                    <input type="checkbox" id="near-me-toggle">
+                    <span class="slider round"></span>
+                </label>
+            </div>
+        </div>
+    </div>
 
     <!-- Glow-Bento Elite Hero -->
     <header id="home" class="hero">
@@ -162,7 +197,6 @@
                     <p>Restaurants or hotels list high-quality surplus food on our platform with details on quantity and
                         packaging.</p>
                 </div>
-                <!-- Connector arrow would ideally go here -->
                 <div class="step-card glass-card hover-lift animate-on-scroll fade-up delay-200">
                     <div class="step-number">02</div>
                     <div class="step-icon"><i class="fa-solid fa-shield-halved"></i></div>
@@ -228,7 +262,6 @@
             </div>
             <div class="review-slider-wrapper animate-on-scroll fade-up delay-200">
                 <div class="review-slider" id="reviewSlider">
-                    <!-- Review 1 -->
                     <div class="review-slide glass-card">
                         <div class="stars">
                             <i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i
@@ -246,7 +279,6 @@
                             </div>
                         </div>
                     </div>
-                    <!-- Review 2 -->
                     <div class="review-slide glass-card">
                         <div class="stars">
                             <i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i
@@ -263,7 +295,6 @@
                             </div>
                         </div>
                     </div>
-                    <!-- Review 3 -->
                     <div class="review-slide glass-card">
                         <div class="stars">
                             <i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i
@@ -289,6 +320,11 @@
             </div>
         </div>
     </section>
+
+    <!-- Portal Ecosystem (Seller & Buyer Root) -->
+    <div id="nn-portals-root" class="portals-container" style="display: none;">
+        <!-- Toggled dynamically via Switcher -->
+    </div>
 
     <!-- Join Section -->
     <section id="join" class="join section">
@@ -432,6 +468,27 @@
         </div>
     </footer>
 
+    <!-- Harvest Basket (Cart) Drawer -->
+    <div id="cart-drawer" class="cart-drawer">
+        <div class="cart-drawer-overlay"></div>
+        <div class="cart-drawer-content glass">
+            <div class="cart-header">
+                <h2>Your Harvest Basket 🌾</h2>
+                <button id="close-cart" class="close-btn"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div id="cart-items-list" class="cart-items-list">
+                <!-- Cart items added here -->
+                <div class="empty-cart-msg">Your basket is empty. 🌱</div>
+            </div>
+            <div class="cart-summary">
+                <div class="summary-row"><span>Subtotal</span> <span id="cart-subtotal">₹0</span></div>
+                <div class="summary-row"><span>Delivery Fee</span> <span id="cart-delivery">Free</span></div>
+                <div class="summary-row total"><span>Total Cost</span> <span id="cart-total">₹0</span></div>
+                <button id="confirm-claim" class="btn btn-primary w-100 btn-glow">Confirm & Claim <i class="fa-solid fa-bolt"></i></button>
+            </div>
+        </div>
+    </div>
+
     <!-- Login/Registration Modal Overlay -->
     <div id="authModal" class="modal-overlay">
         <div class="modal-content glass-card">
@@ -441,7 +498,6 @@
                 <div class="modal-logo">
                     <i class="fa-solid fa-leaf"></i> Nourish Network
                 </div>
-                <!-- Auth Toggle inside Modal Header -->
                 <div class="auth-toggle">
                     <button class="toggle-btn active" id="toggleLogin">Log In</button>
                     <button class="toggle-btn" id="toggleRegister">Register</button>
