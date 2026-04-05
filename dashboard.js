@@ -35,6 +35,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // 3. API Integration
     const API_BASE = '/api';
+    const token = localStorage.getItem('nourishToken');
+    const authHeaders = {
+        'Content-Type': 'application/json',
+        ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+    };
 
     // Helper: Show Toasts (copy from script.js logic if needed, or implement simple alert)
     function showToast(message, type = 'success') {
@@ -57,7 +62,9 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             // If vendor, we want their specific listings. If NGO, we want all available.
             const queryParam = (userData.type === 'restaurant' || userData.type === 'vendor') ? `?vendorId=${userData.id}` : '';
-            const response = await fetch(`${API_BASE}/listings${queryParam}`);
+            const response = await fetch(`${API_BASE}/listings${queryParam}`, {
+                headers: authHeaders
+            });
             const listings = await response.json();
 
             loader.style.display = 'none';
@@ -135,7 +142,7 @@ document.addEventListener('DOMContentLoaded', () => {
             try {
                 const response = await fetch(`${API_BASE}/listings`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: authHeaders,
                     body: JSON.stringify(payload)
                 });
 
@@ -162,7 +169,7 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             const response = await fetch(`${API_BASE}/listings/claim`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: authHeaders,
                 body: JSON.stringify({ listingId, ngoId: userData.id })
             });
 
