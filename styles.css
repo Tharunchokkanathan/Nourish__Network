@@ -1244,12 +1244,15 @@ img {
 .modal-content {
     width: 90%;
     max-width: 450px;
-    background: rgba(255, 255, 255, 0.95);
+    background: var(--bg-surface);
+    color: var(--text-primary);
     position: relative;
     transform: translateY(30px) scale(0.95);
     transition: transform 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
-    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+    box-shadow: var(--glass-shadow);
     padding: 2.5rem;
+    border-radius: 32px;
+    border: 1px solid var(--border-glow);
 }
 
 .modal-overlay.active .modal-content {

@@ -294,6 +294,25 @@ document.addEventListener('DOMContentLoaded', () => {
     };
     checkLoginStatus();
 
+    // --- Demo Login Fillers ---
+    const btnDemoSeller = document.getElementById('btn-demo-seller');
+    const btnDemoBuyer = document.getElementById('btn-demo-buyer');
+
+    if (btnDemoSeller) {
+        btnDemoSeller.addEventListener('click', () => {
+            document.getElementById('loginEmail').value = 'seller@demo.com';
+            document.getElementById('loginPassword').value = 'demo123';
+        });
+    }
+
+    if (btnDemoBuyer) {
+        btnDemoBuyer.addEventListener('click', () => {
+            document.getElementById('loginEmail').value = 'buyer@demo.com';
+            document.getElementById('loginPassword').value = 'demo123';
+        });
+    }
+    // -------------------------
+
     // 1. Login Form Submit
     loginForm.addEventListener('submit', async (e) => {
         e.preventDefault();

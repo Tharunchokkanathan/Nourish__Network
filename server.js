@@ -116,6 +116,25 @@ app.post('/api/login', (req, res) => {
         return res.status(400).json({ error: 'Please provide email and password.' });
     }
 
+    // --- DEMO LOGIN BYPASS ---
+    if (email === 'seller@demo.com' && password === 'demo123') {
+        const user = { id: 998, email: 'seller@demo.com', accountType: 'restaurant', organizationName: 'Demo Restaurant' };
+        return res.status(200).json({
+            message: 'Demo login successful!',
+            token: makeToken(user),
+            user: { id: user.id, email: user.email, name: user.organizationName, type: user.accountType }
+        });
+    }
+    if (email === 'buyer@demo.com' && password === 'demo123') {
+        const user = { id: 999, email: 'buyer@demo.com', accountType: 'ngo', organizationName: 'Demo NGO' };
+        return res.status(200).json({
+            message: 'Demo login successful!',
+            token: makeToken(user),
+            user: { id: user.id, email: user.email, name: user.organizationName, type: user.accountType }
+        });
+    }
+    // -------------------------
+
     db.get(`SELECT * FROM users WHERE email = ?`, [email], async (err, user) => {
         if (err)   return res.status(500).json({ error: err.message });
         if (!user) return res.status(401).json({ error: 'Invalid email or password.' });
