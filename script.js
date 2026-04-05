@@ -323,8 +323,9 @@ document.addEventListener('DOMContentLoaded', () => {
             if (response.ok) {
                 showToast(`Welcome back, ${data.user.name || email}!`);
                 
-                // Save user to localStorage
+                // Save user and JWT token to localStorage
                 localStorage.setItem('nourishUser', JSON.stringify(data.user));
+                if (data.token) localStorage.setItem('nourishToken', data.token);
                 
                 setTimeout(() => {
                     window.location.href = 'dashboard.html';
@@ -368,10 +369,15 @@ document.addEventListener('DOMContentLoaded', () => {
             const data = await response.json();
 
             if (response.ok) {
-                showToast("Account created successfully! Please log in.");
-                loginForm.reset();
-                registerForm.reset();
-                showLoginForm(); // Switch to login view
+                showToast("Account created! Logging you in...");
+                
+                // Server auto-logs in on register — save user + token
+                if (data.user) localStorage.setItem('nourishUser', JSON.stringify(data.user));
+                if (data.token) localStorage.setItem('nourishToken', data.token);
+
+                setTimeout(() => {
+                    window.location.href = 'dashboard.html';
+                }, 1000);
             } else {
                 showToast(data.error || "Registration failed", "error");
             }
