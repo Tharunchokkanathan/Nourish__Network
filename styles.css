@@ -52,6 +52,13 @@ body {
     transition: background-color 0.6s ease, color 0.6s ease;
 }
 
+/* Fix for mobile dock overlap */
+@media (max-width: 768px) {
+    body {
+        padding-bottom: 100px;
+    }
+}
+
 /* Background Texture & Glow (Inspiration-driven) */
 .bg-glow-layer {
     position: fixed;
@@ -3439,3 +3446,86 @@ select.form-control option {
     }
 }
 
+
+/* =========================================
+   COMPREHENSIVE MOBILE OPTIMIZATION
+   ========================================= */
+@media (max-width: 480px) {
+    /* Toasts - Centered and full-width for mobile */
+    .toast-container {
+        left: 50% !important;
+        transform: translateX(-50%) !important;
+        width: calc(100% - 2rem) !important;
+        bottom: 110px !important; /* Positions it above the Elite Dock */
+    }
+    .toast {
+        min-width: 100% !important;
+        transform: translateY(20px) !important;
+        padding: 1.25rem !important;
+        border-radius: 16px !important;
+        flex-direction: column;
+        align-items: flex-start;
+        text-align: left;
+    }
+    .toast.show {
+        transform: translateY(0) !important;
+    }
+
+    /* Hero Section - Balanced Typography */
+    .hero-title {
+        font-size: 2.2rem !important;
+        line-height: 1.2 !important;
+    }
+    .hero-subtitle {
+        font-size: 1rem !important;
+        margin-bottom: 2rem !important;
+    }
+    .hero {
+        padding: 8rem 0 3rem !important;
+    }
+
+    /* Grids & Spacing - Full width stacking */
+    .items-grid, 
+    .the-exchange-grid, 
+    .steps-grid, 
+    .impact-stats, 
+    .footer-grid,
+    .seller-dashboard-grid,
+    .about-grid,
+    .impact-grid {
+        grid-template-columns: 1fr !important;
+        gap: 1.5rem !important;
+    }
+
+    /* Listing Cards - Mobile sizing */
+    .nn-card-img-wrap {
+        height: 160px !important;
+    }
+    .nn-card-title {
+        font-size: 1rem !important;
+    }
+
+    /* Modal - Adjusted for small screens */
+    .modal-content {
+        padding: 1.5rem !important;
+        margin: 1rem !important;
+        width: calc(100% - 2rem) !important;
+        max-height: 90vh;
+        overflow-y: auto;
+    }
+
+    /* Elite Dock (Bottom Nav) - Refined for small screens */
+    .nav-item span {
+        font-size: 0.65rem !important;
+        display: block !important; /* Force labels on mobile */
+    }
+    .bottom-nav-container {
+        gap: 0.4rem !important;
+        padding: 0.5rem 0.5rem !important;
+        justify-content: space-around !important;
+    }
+    .nav-item {
+        padding: 0.4rem !important;
+        min-width: 60px;
+    }
+}
