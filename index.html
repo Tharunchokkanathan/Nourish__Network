@@ -4,9 +4,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Nourish Network - Connecting Surplus Food</title>
+    <title>Nourish Network - Connecting Fresh Food to Communities</title>
     <meta name="description"
-        content="Nourish Network connects restaurants and hotels with NGOs to redistribute leftover food and reduce food waste.">
+        content="Nourish Network connects restaurants and hotels with NGOs to share freshly prepared food and build nourishing communities.">
 
     <!-- Google Fonts: Playfair Display & Outfit -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -37,7 +37,11 @@
             <!-- Portal Switcher (Pill Toggle) -->
             <div class="portal-switcher-wrap">
                 <div class="portal-switcher">
-                    <button class="portal-btn active" id="sw-seller" data-portal="seller">
+                    <div id="portal-indicator" class="portal-active-indicator"></div>
+                    <button class="portal-btn active" id="sw-home" data-portal="home">
+                        <i class="fa-solid fa-house"></i> <span>Home</span>
+                    </button>
+                    <button class="portal-btn" id="sw-seller" data-portal="seller">
                         <i class="fa-solid fa-shop"></i> <span>Seller</span>
                     </button>
                     <button class="portal-btn" id="sw-buyer" data-portal="buyer">
@@ -47,8 +51,8 @@
             </div>
 
             <div class="nav-buttons">
-                <!-- Harvest Basket (Cart) -->
-                <button id="cart-toggle" class="cart-btn" aria-label="View Harvest Basket">
+                <!-- CART -->
+                <button id="cart-toggle" class="cart-btn" aria-label="View CART">
                     <i class="fa-solid fa-basket-shopping"></i>
                     <span class="cart-count">0</span>
                 </button>
@@ -56,19 +60,18 @@
                 <button id="theme-toggle" class="theme-toggle" aria-label="Toggle Theme">
                     <i class="fa-solid fa-moon"></i>
                 </button>
-                <a href="#join" class="btn btn-outline">Log In</a>
-                <a href="#join" class="btn btn-primary">Join Now</a>
             </div>
-            <button class="mobile-menu-btn"><i class="fa-solid fa-bars"></i></button>
         </div>
     </nav>
 
+    <!-- Main Page Content Wrapper -->
+    <div id="home-portal" style="display: block;">
     <!-- Glow-Bento Elite Hero -->
     <header id="home" class="hero">
         <div class="container hero-container" style="max-width: 1300px;">
             <div class="hero-main animate-reveal">
                 <span class="badge" style="background: var(--emerald-muted); color: var(--emerald-glow); border: 1px solid var(--border-glow);">Sustainable Impact</span>
-                <h1 class="hero-title">Connecting<br>Surplus Food to<br><span style="color: var(--emerald-glow); font-style: italic;">Those Who Need It.</span></h1>
+                <h1 class="hero-title">Connecting<br>Fresh Food to<br><span style="color: var(--emerald-glow); font-style: italic;">Those Who Need It.</span></h1>
                 <p class="hero-subtitle" style="font-size: 1.25rem; opacity: 0.9; margin-bottom: 3.5rem; color: var(--text-muted);">A premium, technical approach to solving global hunger through hospitality excellence and modern efficiency.</p>
                 <div class="hero-action">
                     <a href="#join" class="btn btn-primary btn-large" style="background: var(--emerald-glow); box-shadow: 0 0 30px var(--emerald-muted);">Donate Food</a>
@@ -76,78 +79,14 @@
                 </div>
             </div>
             <div class="hero-grid animate-reveal">
-                <div class="bento-hero-img" style="background: url('https://images.unsplash.com/photo-1593113514676-5914fa6b10eb?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80') center/cover; border-radius: 32px; border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 20px 80px rgba(0,0,0,0.5);"></div>
+                <div class="bento-hero-img" style="background: url('assets/hero-goal-v2.png') center/cover; border-radius: 32px; border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 20px 80px rgba(0,0,0,0.5);"></div>
             </div>
         </div>
     </header>
 
-    <!-- Sticky Search Strip (Moved Down) -->
-    <div id="search-strip" class="search-strip-wrap glass">
-        <div class="container search-strip-container">
-            <div class="search-input-wrap">
-                <i class="fa-solid fa-magnifying-glass"></i>
-                <input type="text" id="global-search" placeholder="Search surplus food near you...">
-            </div>
-            <div class="near-me-wrap">
-                <span>📍 Near Me</span>
-                <label class="switch">
-                    <input type="checkbox" id="near-me-toggle">
-                    <span class="slider round"></span>
-                </label>
-            </div>
-        </div>
-    </div>
 
-    <!-- Available Items Spotlight (Pinterest Inspiration) -->
-    <section id="available" class="marketplace section">
-        <div class="container" style="max-width: 1300px;">
-            <div class="section-header animate-on-scroll">
-                <span class="badge" style="background: var(--accent-secondary); color: white;">Live Marketplace</span>
-                <h2>Available <span style="color: var(--accent-primary);">Overstock</span></h2>
-            </div>
-            <div class="items-grid">
-                <div class="item-card glass-card hover-lift animate-on-scroll fade-up">
-                    <div class="card-image" style="background: url('https://images.unsplash.com/photo-1540324155974-7523202daa3f?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80') center/cover;">
-                        <span class="status available">Freshly Picked</span>
-                    </div>
-                    <div class="card-info">
-                        <h3>Organically Grown Basket</h3>
-                        <p>Seasonal vegetables perfect for a community pantry.</p>
-                        <div class="card-footer">
-                            <span class="tag">5kg</span>
-                            <a href="#join" class="btn btn-primary btn-sm">Claim It</a>
-                        </div>
-                    </div>
-                </div>
-                <div class="item-card glass-card hover-lift animate-on-scroll fade-up delay-100">
-                    <div class="card-image" style="background: url('https://images.unsplash.com/photo-1594708767771-a7502209ff51?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80') center/cover;">
-                        <span class="status pending">Donated</span>
-                    </div>
-                    <div class="card-info">
-                        <h3>Artisan Bakery Batch</h3>
-                        <p>Fresh whole-grain sourdough and sweet pastries.</p>
-                        <div class="card-footer">
-                            <span class="tag">12 Items</span>
-                            <a href="#join" class="btn btn-primary btn-sm">Claim It</a>
-                        </div>
-                    </div>
-                </div>
-                <div class="item-card glass-card hover-lift animate-on-scroll fade-up delay-200">
-                    <div class="card-image" style="background: url('https://images.unsplash.com/photo-1547592166-23ac45744acd?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80') center/cover;">
-                        <span class="status available">Hot Meal</span>
-                    </div>
-                    <div class="card-info">
-                        <h3>Vegetarian Pulse Soup</h3>
-                        <p>Nutritious and warm lentil curry suitable for all ages.</p>
-                        <div class="card-footer">
-                            <span class="tag">20 Servings</span>
-                            <a href="#join" class="btn btn-primary btn-sm">Claim It</a>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
+
+
 
     <!-- About Section -->
     <section id="about" class="about section">
@@ -157,25 +96,34 @@
                 <p>Bridging the gap between excess and access.</p>
             </div>
             <div class="about-grid">
-                <div class="about-text animate-on-scroll slide-right">
-                    <h3>Reducing food waste while nourishing communities.</h3>
-                    <p>Every day, tons of perfectly good food from restaurants, hotels, and events go to waste while
-                        millions face hunger. <strong>Nourish Network</strong> was built to solve this dual problem
+                <div class="about-content animate-on-scroll slide-right">
+                    <h2 class="animate-reveal"><span class="premium-title">Bridging good food</span> with communities that need it most.</h2>
+                    <p>Every day, beautifully prepared meals from restaurants, hotels, and events remain unclaimed while
+                        millions face hunger. <strong>Nourish Network</strong> was built to bridge this gap
                         through an efficient, transparent tech platform.</p>
-                    <p>We empower businesses to easily donate their surplus food, and we ensure it reaches vetted NGOs,
+                    <p>We empower businesses to easily share their ready-to-go food, and we ensure it reaches vetted NGOs,
                         orphanages, and old-age homes safely and quickly.</p>
                     <ul class="feature-list">
-                        <li><i class="fa-solid fa-circle-check"></i> Verified network of recipients and donors.</li>
-                        <li><i class="fa-solid fa-circle-check"></i> Real-time tracking and logistics support.</li>
-                        <li><i class="fa-solid fa-circle-check"></i> Strict quality and safety guidelines.</li>
+                        <li class="animate-on-scroll fade-up delay-100">
+                            <i class="fa-solid fa-shield-halved"></i> 
+                            Verified network of recipients and donors.
+                        </li>
+                        <li class="animate-on-scroll fade-up delay-200">
+                            <i class="fa-solid fa-location-arrow"></i> 
+                            Real-time tracking and logistics support.
+                        </li>
+                        <li class="animate-on-scroll fade-up delay-300">
+                            <i class="fa-solid fa-clipboard-check"></i> 
+                            Strict quality and safety guidelines.
+                        </li>
                     </ul>
                 </div>
                 <div class="about-visuals animate-on-scroll slide-left delay-200">
                     <div class="image-grid">
-                        <img src="https://images.unsplash.com/photo-1488521787991-ed7bbaae773c?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80"
-                            alt="Community support" class="img-1 rounded-shadow">
-                        <img src="https://images.unsplash.com/photo-1594708767771-a7502209ff51?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80"
-                            alt="Fresh food delivery" class="img-2 rounded-shadow">
+                        <img src="assets/mission-v2.png"
+                            alt="Our Mission" class="img-1 rounded-shadow">
+                        <img src="assets/tech-food.png"
+                            alt="Technical Impact" class="img-2 rounded-shadow">
                     </div>
                 </div>
             </div>
@@ -193,8 +141,8 @@
                 <div class="step-card glass-card hover-lift animate-on-scroll fade-up delay-100">
                     <div class="step-number">01</div>
                     <div class="step-icon"><i class="fa-solid fa-bell-concierge"></i></div>
-                    <h3>Upload Surplus</h3>
-                    <p>Restaurants or hotels list high-quality surplus food on our platform with details on quantity and
+                    <h3>Share Fresh Food</h3>
+                    <p>Restaurants or hotels list their freshly prepared, ready-to-go food on our platform with details on quantity and
                         packaging.</p>
                 </div>
                 <div class="step-card glass-card hover-lift animate-on-scroll fade-up delay-200">
@@ -237,7 +185,7 @@
                     <div class="stat-icon"><i class="fa-solid fa-trash-can-arrow-up"></i></div>
                     <div class="stat-number" data-target="45000">0</div>
                     <div class="stat-suffix">kg</div>
-                    <div class="stat-label">Food Waste Reduced</div>
+                    <div class="stat-label">Meals Shared with Communities</div>
                 </div>
                 <div class="stat-box animate-on-scroll zoom-in delay-300">
                     <div class="stat-icon"><i class="fa-solid fa-store"></i></div>
@@ -268,7 +216,7 @@
                                 class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i
                                 class="fa-solid fa-star"></i>
                         </div>
-                        <p class="review-text">"Nourish Network has completely changed how we handle surplus. We used to
+                        <p class="review-text">"Nourish Network has completely changed how we give back. We used to
                             throw away kilos of premium food a day; now it feeds kids at the local orphanage within
                             hours."</p>
                         <div class="reviewer">
@@ -301,7 +249,7 @@
                                 class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i
                                 class="fa-solid fa-star-half-stroke"></i>
                         </div>
-                        <p class="review-text">"The interface is so easy to use. I can upload our leftover catering food
+                        <p class="review-text">"The interface is so easy to use. I can share our freshly prepared catering food
                             in 2 minutes, and a volunteer comes to pick it up. Everyone in hospitality should join."</p>
                         <div class="reviewer">
                             <div class="avatar"><img src="https://i.pravatar.cc/100?img=33" alt="Avatar"></div>
@@ -321,100 +269,57 @@
         </div>
     </section>
 
-    <!-- Portal Ecosystem (Seller & Buyer Root) -->
-    <div id="nn-portals-root" class="portals-container" style="display: none;">
-        <!-- Toggled dynamically via Switcher -->
-    </div>
-
-    <!-- Join Section -->
-    <section id="join" class="join section">
-        <div class="container">
-            <div class="join-banner glass-card animate-on-scroll fade-up">
-                <div class="join-content">
-                    <h2>Ready to Make a Difference?</h2>
-                    <p>Whether you have food to give or mouths to feed, there's a place for you in our network.</p>
-                </div>
-                <div class="join-actions" style="display: flex; gap: 3rem; justify-content: center; flex-wrap: wrap; width: 100%;">
-                    <div class="action-card glass hover-lift">
-                        <i class="fa-solid fa-shop"></i>
-                        <h3>For Businesses</h3>
-                        <p>Have surplus food?</p>
-                        <a href="#join" class="btn btn-primary w-100">Register as Restaurant</a>
-                    </div>
-                    <div class="action-card glass hover-lift">
-                        <i class="fa-solid fa-hands-holding-child"></i>
-                        <h3>For Organizations</h3>
-                        <p>Need food support?</p>
-                        <a href="#join" class="btn btn-secondary w-100">Register as NGO</a>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- Contact Section -->
-    <section id="contact" class="contact section bg-light">
+    <!-- Community / Comments Section -->
+    <section id="community" class="premium-community-section section">
+        <div class="community-glow-bg"></div>
         <div class="container">
             <div class="contact-grid">
                 <div class="contact-info animate-on-scroll slide-right">
-                    <h2>Get in Touch</h2>
-                    <p>Have questions about how it works or want to partner on a larger scale? Reach out to our team.
-                    </p>
+                    <h2 class="premium-title" style="font-size: 4rem; margin: 1rem 0;">COMMUNITY<br>HUB</h2>
+                    <p style="font-size: 1.1rem; color: var(--text-secondary); margin-bottom: 3rem;">Sharing real impact, one meal at a time. Join the conversation and see how Nourish Network is connecting hearts through hospitality.</p>
+                    
                     <div class="contact-details">
-                        <div class="detail-item">
-                            <div class="icon-wrap"><i class="fa-solid fa-location-dot"></i></div>
-                            <div>
-                                <h4>Visit Us</h4>
-                                <p>123 Green Avenue, Innovation Hub, City 40001</p>
-                            </div>
+                        <div class="hub-info-card animate-on-scroll fade-up" style="margin-bottom: 1.5rem;">
+                            <div class="pulse-icon"><i class="fa-solid fa-heart"></i></div>
+                            <h4>Share the Love</h4>
+                            <p>Post your experience directly from your dashboard to be featured here.</p>
                         </div>
-                        <div class="detail-item">
-                            <div class="icon-wrap"><i class="fa-solid fa-envelope"></i></div>
-                            <div>
-                                <h4>Email Us</h4>
-                                <p>hello@nourishnetwork.org</p>
-                            </div>
-                        </div>
-                        <div class="detail-item">
-                            <div class="icon-wrap"><i class="fa-solid fa-phone"></i></div>
-                            <div>
-                                <h4>Call Us</h4>
-                                <p>+1 (800) 123-4567</p>
-                            </div>
+                        <div class="hub-info-card animate-on-scroll fade-up delay-200">
+                            <div class="pulse-icon" style="background: var(--accent-secondary); box-shadow: 0 0 20px rgba(230, 126, 34, 0.4);"><i class="fa-solid fa-comments"></i></div>
+                            <h4>Global Pulse</h4>
+                            <p>Connecting donors and recipients in real-time across the network.</p>
                         </div>
                     </div>
                 </div>
-                <div class="contact-form-wrapper glass-card animate-on-scroll slide-left delay-200">
-                    <form id="contactForm" class="contact-form">
-                        <div class="form-group">
-                            <label for="name">Name</label>
-                            <input type="text" id="name" class="form-control" placeholder="John Doe" required>
+
+                <div class="contact-form-wrap animate-on-scroll slide-left delay-200">
+                    <div class="comment-wall-container">
+                        <div class="comment-wall-premium" id="comment-list">
+                            <!-- Premium animated comments injected here -->
                         </div>
+                    </div>
+                    
+                    <form id="comment-form" class="nn-form glass-card" style="margin-top: 2rem; border-radius: 24px;">
                         <div class="form-group">
-                            <label for="email">Email</label>
-                            <input type="email" id="email" class="form-control" placeholder="john@example.com" required>
+                            <label style="font-weight: 600; letter-spacing: 1px; color: var(--accent-primary);">ADD YOUR VOICE</label>
+                            <textarea id="comment-text" class="form-control" rows="3" placeholder="Share a thought with the community..." required style="background: rgba(255,255,255,0.02); border-radius: 16px;"></textarea>
                         </div>
-                        <div class="form-group">
-                            <label for="subject">Subject</label>
-                            <select id="subject" class="form-control">
-                                <option>General Inquiry</option>
-                                <option>Donation Partnership</option>
-                                <option>NGO Registration Help</option>
-                                <option>Press & Media</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label for="message">Message</label>
-                            <textarea id="message" class="form-control" rows="4" placeholder="How can we help you?"
-                                required></textarea>
-                        </div>
-                        <button type="submit" class="btn btn-primary w-100">Send Message <i
-                                class="fa-solid fa-paper-plane"></i></button>
+                        <button type="submit" class="btn btn-primary w-100 btn-glow" style="border-radius: 16px; height: 55px; font-weight: 700;">Broadcast Thought <i class="fa-solid fa-paper-plane"></i></button>
                     </form>
                 </div>
             </div>
         </div>
     </section>
+    </div> <!-- End home-portal -->
+
+    <!-- Portal Ecosystem (Seller & Buyer Root) -->
+    <div id="nn-portals-root" class="portals-container" style="display: none;">
+        <!-- Toggled dynamically via Switcher -->
+    </div>
+
+
+
+
 
     <!-- Footer -->
     <footer class="footer">
@@ -425,7 +330,7 @@
                         <i class="fa-solid fa-leaf"></i>
                         <span>Nourish Network</span>
                     </a>
-                    <p>Redistributing surplus food to create a world where nothing goes to waste and no one goes hungry.
+                    <p>Sharing good food to build a world where every meal finds a home and every person is nourished.
                     </p>
                     <div class="social-links">
                         <a href="#" class="social-icon"><i class="fa-brands fa-facebook-f"></i></a>
@@ -473,18 +378,18 @@
         <div class="cart-drawer-overlay"></div>
         <div class="cart-drawer-content glass">
             <div class="cart-header">
-                <h2>Your Harvest Basket 🌾</h2>
+                <h2>CART</h2>
                 <button id="close-cart" class="close-btn"><i class="fa-solid fa-xmark"></i></button>
             </div>
             <div id="cart-items-list" class="cart-items-list">
                 <!-- Cart items added here -->
-                <div class="empty-cart-msg">Your basket is empty. 🌱</div>
+                <div class="empty-cart-msg">Your cart is empty.</div>
             </div>
             <div class="cart-summary">
                 <div class="summary-row"><span>Subtotal</span> <span id="cart-subtotal">₹0</span></div>
                 <div class="summary-row"><span>Delivery Fee</span> <span id="cart-delivery">Free</span></div>
                 <div class="summary-row total"><span>Total Cost</span> <span id="cart-total">₹0</span></div>
-                <button id="confirm-claim" class="btn btn-primary w-100 btn-glow">Confirm & Claim <i class="fa-solid fa-bolt"></i></button>
+                <button id="confirm-claim" class="btn btn-primary w-100 btn-glow">PROCEED AND PAY <i class="fa-solid fa-bolt"></i></button>
             </div>
         </div>
     </div>
@@ -591,27 +496,53 @@
                 <i class="fa-solid fa-house"></i>
                 <span>Home</span>
             </a>
-            <a href="#about" class="nav-item">
+            
+            <!-- Buyer specific items -->
+            <a href="#" class="nav-item buyer-only" id="cart-toggle-dock" style="display: none;">
+                <i class="fa-solid fa-basket-shopping"></i>
+                <span>Cart</span>
+                <span class="cart-count">0</span>
+            </a>
+
+            <!-- Seller specific items -->
+            <a href="#" class="nav-item seller-only" id="add-listing-dock" style="display: none;">
+                <i class="fa-solid fa-circle-plus"></i>
+                <span>Add</span>
+            </a>
+
+            <!-- Landing page specific items -->
+            <a href="#about" class="nav-item landing-only">
                 <i class="fa-solid fa-circle-question"></i>
                 <span>About</span>
             </a>
-            <a href="#how-it-works" class="nav-item">
+            <a href="#how-it-works" class="nav-item landing-only">
                 <i class="fa-solid fa-gears"></i>
                 <span>Process</span>
             </a>
-            <a href="#impact" class="nav-item">
+            <a href="#impact" class="nav-item landing-only">
                 <i class="fa-solid fa-chart-line"></i>
                 <span>Impact</span>
             </a>
-            <a href="#contact" class="nav-item">
-                <i class="fa-solid fa-envelope"></i>
-                <span>Contact</span>
+            
+            <a href="#community" class="nav-item landing-only">
+                <i class="fa-solid fa-comments"></i>
+                <span>Comments</span>
             </a>
         </div>
     </nav>
 
+    <!-- SVG Gooey Filter for Liquid Animation -->
+    <svg style="visibility: hidden; position: absolute;" width="0" height="0" xmlns="http://www.w3.org/2000/svg" version="1.1">
+        <defs>
+            <filter id="nn-gooey">
+                <feGaussianBlur in="SourceGraphic" stdDeviation="10" result="blur" />
+                <feColorMatrix in="blur" mode="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 19 -9" result="goo" />
+                <feComposite in="SourceGraphic" in2="goo" operator="atop" />
+            </filter>
+        </defs>
+    </svg>
+
     <!-- Custom Script -->
     <script src="script.js"></script>
 </body>
-
 </html>
