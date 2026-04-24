@@ -21,10 +21,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (userData.type === 'restaurant' || userData.type === 'vendor') {
         vendorActionBox.style.display = 'block';
-        feedTitle.innerText = "My Surplus Postings";
+        feedTitle.innerText = "My Food Listings";
     } else {
         ngoActionBox.style.display = 'block';
-        feedTitle.innerText = "Available Surplus Food";
+        feedTitle.innerText = "Available Community Meals";
     }
 
     // 2. Logout Logic
@@ -55,69 +55,90 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // 4. Fetch & Render Listings
+    // 4. Fetch & Render Listings
     async function fetchListings() {
         const listingsFeed = document.getElementById('listingsFeed');
         const loader = document.getElementById('listingsLoader');
         
+        let listings = [];
         try {
             // If vendor, we want their specific listings. If NGO, we want all available.
             const queryParam = (userData.type === 'restaurant' || userData.type === 'vendor') ? `?vendorId=${userData.id}` : '';
             const response = await fetch(`${API_BASE}/listings${queryParam}`, {
                 headers: authHeaders
             });
-            const listings = await response.json();
+            
+            if (response.ok) {
+                listings = await response.json();
+            } else {
+                throw new Error("API fail");
+            }
+        } catch (error) {
+            console.warn("Backend API unavailable, using demo data.");
+            // Mock Data Fallback
+            if (userData.type === 'restaurant' || userData.type === 'vendor') {
+                listings = [
+                    { id: 1001, vendorName: "Mathsya Mess (Demo)", description: "20 Plates of Vegetable Biryani", quantity: "20 Plates", pickupTime: "Before 10 PM", status: "available" },
+                    { id: 1002, vendorName: "Mathsya Mess (Demo)", description: "10 KG Artisan Bread", quantity: "10 KG", pickupTime: "Anytime", status: "claimed" }
+                ];
+            } else {
+                listings = [
+                    { id: 1001, vendorName: "Mathsya Mess (Demo)", description: "20 Plates of Vegetable Biryani", quantity: "20 Plates", pickupTime: "Before 10 PM", status: "available" },
+                    { id: 1003, vendorName: "Annapoorna Catering", description: "50 Servings of Lentil Soup", quantity: "50 Servings", pickupTime: "Before 9 PM", status: "available" },
+                    { id: 1004, vendorName: "Green Leaf Salads", description: "15 Fresh Garden Salads", quantity: "15 Salads", pickupTime: "ASAP", status: "available" }
+                ];
+            }
+        }
 
-            loader.style.display = 'none';
-            listingsFeed.innerHTML = '';
+        loader.style.display = 'none';
+        listingsFeed.innerHTML = '';
 
-            if (listings.length === 0) {
-                listingsFeed.innerHTML = `
-                    <div class="empty-state w-100" style="grid-column: 1 / -1;">
-                        <i class="fa-solid fa-box-open"></i>
-                        <p>No listings found yet.</p>
-                    </div>
-                `;
-                return;
+        if (listings.length === 0) {
+            listingsFeed.innerHTML = `
+                <div class="empty-state w-100" style="grid-column: 1 / -1;">
+                    <i class="fa-solid fa-box-open"></i>
+                    <p>No listings found yet.</p>
+                </div>
+            `;
+            return;
+        }
+
+        listings.forEach(item => {
+            const card = document.createElement('div');
+            card.className = 'food-card animate-on-scroll fade-up';
+            
+            const isClaimed = item.status === 'claimed';
+            const statusHtml = `<span class="status-badge ${isClaimed ? 'status-claimed' : 'status-available'}">${item.status}</span>`;
+            
+            // Only show Claim button for NGOs on available items
+            let actionBtn = '';
+            if (userData.type === 'ngo' && !isClaimed) {
+                actionBtn = `<button class="btn btn-primary w-100 btn-claim" data-id="${item.id}">Claim Food <i class="fa-solid fa-hand-holding-heart"></i></button>`;
             }
 
-            listings.forEach(item => {
-                const card = document.createElement('div');
-                card.className = 'food-card animate-on-scroll fade-up';
-                
-                const isClaimed = item.status === 'claimed';
-                const statusHtml = `<span class="status-badge ${isClaimed ? 'status-claimed' : 'status-available'}">${item.status}</span>`;
-                
-                // Only show Claim button for NGOs on available items
-                let actionBtn = '';
-                if (userData.type === 'ngo' && !isClaimed) {
-                    actionBtn = `<button class="btn btn-primary w-100 btn-claim" data-id="${item.id}">Claim Food <i class="fa-solid fa-hand-holding-heart"></i></button>`;
-                }
+            card.innerHTML = `
+                <div class="d-flex justify-between" style="margin-bottom: 10px;">
+                    <span class="vendor-name">${item.vendorName}</span>
+                    ${statusHtml}
+                </div>
+                <h4 class="food-desc">${item.description}</h4>
+                <div class="food-meta">
+                    <div><i class="fa-solid fa-weight-hanging"></i> Quantity: ${item.quantity}</div>
+                    <div><i class="fa-solid fa-clock"></i> Pickup: ${item.pickupTime}</div>
+                </div>
+                ${actionBtn}
+            `;
+            
+            listingsFeed.appendChild(card);
+        });
 
-                card.innerHTML = `
-                    <div class="d-flex justify-between" style="margin-bottom: 10px;">
-                        <span class="vendor-name">${item.vendorName}</span>
-                        ${statusHtml}
-                    </div>
-                    <h4 class="food-desc">${item.description}</h4>
-                    <div class="food-meta">
-                        <div><i class="fa-solid fa-weight-hanging"></i> Quantity: ${item.quantity}</div>
-                        <div><i class="fa-solid fa-clock"></i> Pickup: ${item.pickupTime}</div>
-                    </div>
-                    ${actionBtn}
-                `;
-                
-                listingsFeed.appendChild(card);
+        // Add Event Listeners to Claim buttons
+        document.querySelectorAll('.btn-claim').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const id = e.target.closest('.btn-claim').dataset.id;
+                claimFood(id);
             });
-
-            // Add Event Listeners to Claim buttons
-            document.querySelectorAll('.btn-claim').forEach(btn => {
-                btn.addEventListener('click', (e) => claimFood(e.target.dataset.id));
-            });
-
-        } catch (error) {
-            console.error("Error fetching listings:", error);
-            loader.innerHTML = '<p style="color: red;">Failed to load listings.</p>';
-        }
+        });
     }
 
     // 5. Post New Surplus (Vendor Only)
@@ -147,7 +168,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
 
                 if (response.ok) {
-                    showToast("Food surplus posted correctly!");
+                    showToast("Food listing shared successfully!");
                     postForm.reset();
                     fetchListings(); // Refresh feed
                 } else {
@@ -165,6 +186,22 @@ document.addEventListener('DOMContentLoaded', () => {
     // 6. Claim Food (NGO Only)
     async function claimFood(listingId) {
         if (!confirm("Are you sure you want to claim this food? Please ensure you can pick it up by the specified time.")) return;
+
+        // Demo Mode Bypass
+        if (localStorage.getItem('nourishToken')?.startsWith('demo-token')) {
+            showToast("Food claimed successfully! (Demo Mode)");
+            setTimeout(() => {
+                // Mock refresh: find the item and change its status in the DOM or re-render
+                const card = document.querySelector(`[data-id="${listingId}"]`).closest('.food-card');
+                if (card) {
+                    const badge = card.querySelector('.status-badge');
+                    badge.innerText = 'claimed';
+                    badge.className = 'status-badge status-claimed';
+                    card.querySelector('.btn-claim')?.remove();
+                }
+            }, 500);
+            return;
+        }
 
         try {
             const response = await fetch(`${API_BASE}/listings/claim`, {

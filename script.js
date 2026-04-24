@@ -1,5 +1,57 @@
 document.addEventListener('DOMContentLoaded', () => {
-    // 1. Scroll Animations Setup using Intersection Observer
+    // 1. Initial State & Mock Data
+    const state = {
+        activePortal: 'home', 
+        cart: [],
+        listings: [
+            { 
+                id: 1, vendorId: 101, vendorName: "Saravana Bhavan", category: "Cooked", 
+                name: "Mini Tiffin Combo", description: "Classic Tamil Nadu mini tiffin including idli, vada, pongal, sweet, and coffee.", price: 60, qty: 25, unit: "Plate",
+                expiry: new Date(Date.now() + 2 * 3600000).toISOString(), img: "https://images.unsplash.com/photo-1589301760014-d929f39ce9b1?w=400", status: "available"
+            },
+            { 
+                id: 2, vendorId: 102, vendorName: "Murugan Idli Shop", category: "Cooked", 
+                name: "Malli Poo Idli & Chutney", description: "Soft fluffy idlis served with 4 types of signature chutneys and sambar.", price: 40, qty: 40, unit: "Plate",
+                expiry: new Date(Date.now() + 4 * 3600000).toISOString(), img: "https://images.unsplash.com/photo-1626777552726-4a6b54c97e46?w=400", status: "available"
+            },
+            { 
+                id: 3, vendorId: 103, vendorName: "A2B (Adyar Ananda Bhavan)", category: "Desserts", 
+                name: "Assorted Sweets Box", description: "Freshly made ghee sweets prepared today.", price: 150, qty: 10, unit: "Pack",
+                expiry: new Date(Date.now() + 48 * 3600000).toISOString(), img: "https://images.unsplash.com/photo-1605197136001-09689456ce43?w=400", status: "available"
+            }
+        ],
+        communityComments: [
+            {
+                name: "Chef Marco",
+                org: "Grand Hotel",
+                text: "Nourish Network has completely changed how we give back. We used to throw away kilos of premium food a day; now it feeds kids at the local orphanage within hours.",
+                stars: 5,
+                img: "https://i.pravatar.cc/100?img=1"
+            },
+            {
+                name: "Sarah Jenkins",
+                org: "Hope Shelter NGO",
+                text: "As a small shelter, getting consistent, nutritious food was a daily struggle. This platform gives us dignity and reliability. We are immensely grateful.",
+                stars: 5,
+                img: "https://i.pravatar.cc/100?img=5"
+            },
+            {
+                name: "David Lee",
+                org: "Event Catering Co.",
+                text: "The interface is so easy to use. I can share our freshly prepared catering food in 2 minutes, and a volunteer comes to pick it up. Everyone in hospitality should join.",
+                stars: 5,
+                img: "https://i.pravatar.cc/100?img=33"
+            }
+        ],
+        vendors: [
+            { id: 101, name: "Mathsya Mess", cat: "South Indian", rating: 4.8, dist: "1.2 km" },
+            { id: 102, name: "Annapoorna Catering", cat: "Bakery & Sweets", rating: 4.5, dist: "0.8 km" },
+            { id: 103, name: "Green Leaf Salads", cat: "Healthy", rating: 4.9, dist: "2.5 km" }
+        ],
+        stats: { listed: 450, fulfilled: 320, revenue: 12500, co2: 85 }
+    };
+
+    // 2. Scroll Animations Setup using Intersection Observer
     const animateElements = document.querySelectorAll('.animate-on-scroll');
 
     const observerOptions = {
@@ -74,44 +126,70 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // 4. Review Slider Implementation
-    const slides = document.querySelectorAll('.review-slide');
-    const dotsContainer = document.getElementById('sliderDots');
-    const prevBtn = document.getElementById('prevBtn');
-    const nextBtn = document.getElementById('nextBtn');
+    // 4. Dynamic Review Slider Implementation
+    let sliderInterval = null;
 
-    if (slides.length > 0) {
-        let currentSlide = 0;
+    function renderReviewsSlider() {
+        const slider = document.getElementById('reviewSlider');
+        const dotsContainer = document.getElementById('sliderDots');
+        if (!slider || !dotsContainer) return;
 
-        // Create dots
-        slides.forEach((_, idx) => {
+        // Stop current interval
+        if (sliderInterval) clearInterval(sliderInterval);
+
+        // Clear existing
+        slider.innerHTML = '';
+        dotsContainer.innerHTML = '';
+
+        if (state.communityComments.length === 0) return;
+
+        state.communityComments.forEach((comment, idx) => {
+            let starsMarkup = '';
+            for (let i = 0; i < 5; i++) {
+                starsMarkup += `<i class="${i < Math.floor(comment.stars) ? 'fa-solid' : 'fa-regular'} fa-star"></i>`;
+            }
+
+            const slide = document.createElement('div');
+            slide.className = `review-slide glass-card ${idx === 0 ? 'active' : ''}`;
+            slide.innerHTML = `
+                <div class="stars">${starsMarkup}</div>
+                <p class="review-text">"${comment.text}"</p>
+                <div class="reviewer">
+                    <div class="avatar"><img src="${comment.img || 'https://i.pravatar.cc/100?img=' + (idx + 10)}" alt="Avatar"></div>
+                    <div class="info">
+                        <strong>${comment.name}</strong>
+                        <span>${comment.org}</span>
+                    </div>
+                </div>
+            `;
+            slider.appendChild(slide);
+
             const dot = document.createElement('div');
-            dot.classList.add('dot');
-            if (idx === 0) dot.classList.add('active');
+            dot.className = `dot ${idx === 0 ? 'active' : ''}`;
             dot.addEventListener('click', () => goToSlide(idx));
             dotsContainer.appendChild(dot);
         });
 
-        const dots = document.querySelectorAll('.dot');
-
-        // Initialize first slide
-        slides[0].classList.add('active');
+        let currentSlide = 0;
+        const slides = slider.querySelectorAll('.review-slide');
+        const dots = dotsContainer.querySelectorAll('.dot');
 
         function updateSlides() {
+            if (slides.length === 0) return;
             slides.forEach((slide, idx) => {
-                slide.classList.remove('active');
-                dots[idx].classList.remove('active');
+                slide.classList.toggle('active', idx === currentSlide);
+                if (dots[idx]) dots[idx].classList.toggle('active', idx === currentSlide);
             });
-            slides[currentSlide].classList.add('active');
-            dots[currentSlide].classList.add('active');
         }
 
         function nextSlide() {
+            if (slides.length <= 1) return;
             currentSlide = (currentSlide + 1) % slides.length;
             updateSlides();
         }
 
         function prevSlide() {
+            if (slides.length <= 1) return;
             currentSlide = (currentSlide - 1 + slides.length) % slides.length;
             updateSlides();
         }
@@ -121,12 +199,16 @@ document.addEventListener('DOMContentLoaded', () => {
             updateSlides();
         }
 
-        nextBtn.addEventListener('click', nextSlide);
-        prevBtn.addEventListener('click', prevSlide);
-
-        // Optional Auto-play
-        setInterval(nextSlide, 5000);
+        const prevBtn = document.getElementById('prevBtn');
+        const nextBtn = document.getElementById('nextBtn');
+        if (prevBtn) prevBtn.onclick = prevSlide;
+        if (nextBtn) nextBtn.onclick = nextSlide;
+        
+        if (slides.length > 1) {
+            sliderInterval = setInterval(nextSlide, 5000);
+        }
     }
+    renderReviewsSlider();
 
     // 5. Smooth Scrolling for Internal Links (excluding modal triggers)
     document.querySelectorAll('a[href^="#"]').forEach(anchor => {
@@ -300,15 +382,35 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (btnDemoSeller) {
         btnDemoSeller.addEventListener('click', () => {
-            document.getElementById('loginEmail').value = 'seller@demo.com';
-            document.getElementById('loginPassword').value = 'demo123';
+            const demoUser = {
+                id: 'demo-seller-123',
+                name: 'Mathsya Mess (Demo)',
+                email: 'seller@demo.com',
+                type: 'vendor'
+            };
+            localStorage.setItem('nourishUser', JSON.stringify(demoUser));
+            localStorage.setItem('nourishToken', 'demo-token-seller');
+            showToast("Logging in as Demo Seller...");
+            setTimeout(() => {
+                window.location.href = 'dashboard.html';
+            }, 1000);
         });
     }
 
     if (btnDemoBuyer) {
         btnDemoBuyer.addEventListener('click', () => {
-            document.getElementById('loginEmail').value = 'buyer@demo.com';
-            document.getElementById('loginPassword').value = 'demo123';
+            const demoUser = {
+                id: 'demo-buyer-456',
+                name: 'Hope Shelter (Demo)',
+                email: 'buyer@demo.com',
+                type: 'ngo'
+            };
+            localStorage.setItem('nourishUser', JSON.stringify(demoUser));
+            localStorage.setItem('nourishToken', 'demo-token-buyer');
+            showToast("Logging in as Demo NGO...");
+            setTimeout(() => {
+                window.location.href = 'dashboard.html';
+            }, 1000);
         });
     }
     // -------------------------
@@ -329,6 +431,31 @@ document.addEventListener('DOMContentLoaded', () => {
         const originalText = submitBtn.innerHTML;
 
         setLoading(submitBtn, true, originalText);
+
+        // Check for Demo Accounts
+        if (email === 'seller@demo.com' || email === 'buyer@demo.com') {
+            const isSeller = email === 'seller@demo.com';
+            const demoUser = isSeller ? {
+                id: 'demo-seller-123',
+                name: 'Mathsya Mess (Demo)',
+                email: 'seller@demo.com',
+                type: 'vendor'
+            } : {
+                id: 'demo-buyer-456',
+                name: 'Hope Shelter (Demo)',
+                email: 'buyer@demo.com',
+                type: 'ngo'
+            };
+
+            localStorage.setItem('nourishUser', JSON.stringify(demoUser));
+            localStorage.setItem('nourishToken', isSeller ? 'demo-token-seller' : 'demo-token-buyer');
+            
+            showToast(`Welcome back, ${demoUser.name}!`);
+            setTimeout(() => {
+                window.location.href = 'dashboard.html';
+            }, 1000);
+            return;
+        }
 
         try {
             const response = await fetch(`${API_BASE}/login`, {
@@ -512,42 +639,13 @@ document.addEventListener('DOMContentLoaded', () => {
             icon.classList.add('fa-moon');
         }
     }
-    // =========================================
     // NN-PORTAL ECOSYSTEM LOGIC (CORE)
     // =========================================
 
-    // 1. Initial State & Mock Data
-    const state = {
-        activePortal: 'seller', // default
-        cart: [],
-        listings: [
-            { 
-                id: 1, vendorId: 101, vendorName: "Mathsya Mess", category: "Cooked", 
-                name: "Vegetable Biryani", price: 40, qty: 15, unit: "Plate",
-                expiry: new Date(Date.now() + 3 * 3600000), condition: "Fresh",
-                allergens: ["Spicy"], storage: "Keep in thermal containers", 
-                status: "available", pickup: true, radius: 0, 
-                img: "https://images.unsplash.com/photo-1563379091339-03b21bc4a4f8?w=400"
-            },
-            { 
-                id: 2, vendorId: 102, vendorName: "Annapoorna Catering", category: "Bakery", 
-                name: "Assorted Bread Box", price: 25, qty: 8, unit: "Pack",
-                expiry: new Date(Date.now() + 24 * 3600000), condition: "Day-Old",
-                allergens: ["Gluten"], storage: "Cool dry place", 
-                status: "available", pickup: true, radius: 0,
-                img: "https://images.unsplash.com/photo-1509440159596-0249088772ff?w=400"
-            }
-        ],
-        vendors: [
-            { id: 101, name: "Mathsya Mess", cat: "South Indian", rating: 4.8, dist: "1.2 km" },
-            { id: 102, name: "Annapoorna Catering", cat: "Bakery & Sweets", rating: 4.5, dist: "0.8 km" },
-            { id: 103, name: "Green Leaf Salads", cat: "Healthy", rating: 4.9, dist: "2.5 km" }
-        ],
-        stats: { listed: 450, fulfilled: 320, revenue: 12500, co2: 85 }
-    };
-
     // 2. Selectors
     const portalsRoot = document.getElementById('nn-portals-root');
+    const homePortal = document.getElementById('home-portal');
+    const swHome = document.getElementById('sw-home');
     const swSeller = document.getElementById('sw-seller');
     const swBuyer = document.getElementById('sw-buyer');
     const cartToggle = document.getElementById('cart-toggle');
@@ -558,77 +656,156 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // 3. Portal Switcher Logic
     function initSwitcher() {
-        [swSeller, swBuyer].forEach(btn => {
+        updateLiquidIndicator();
+        [swHome, swSeller, swBuyer].forEach(btn => {
+            if(!btn) return;
             btn.addEventListener('click', () => {
                 const portal = btn.dataset.portal;
                 state.activePortal = portal;
                 
                 // UI Toggle
+                swHome.classList.toggle('active', portal === 'home');
                 swSeller.classList.toggle('active', portal === 'seller');
                 swBuyer.classList.toggle('active', portal === 'buyer');
                 
+                updateLiquidIndicator();
                 renderPortal();
-                showToast(`Switched to ${portal === 'seller' ? 'Seller' : 'Buyer'} Portal`, 'info');
+                if (portal !== 'home') showToast(`Switched to ${portal === 'seller' ? 'Seller' : 'Buyer'} Portal`, 'info');
             });
         });
+
+        // Handle window resize to keep indicator in sync
+        window.addEventListener('resize', updateLiquidIndicator);
+
+        // Start Expiry Countdown Loop
+        setInterval(updateAllCountdowns, 1000);
+    }
+
+    function updateAllCountdowns() {
+        const timerElements = document.querySelectorAll('.nn-expiry-timer');
+        timerElements.forEach(el => {
+            const expiry = el.dataset.expiry;
+            const itemId = el.dataset.id;
+            if (!expiry) return;
+
+            const now = new Date().getTime();
+            const distance = new Date(expiry).getTime() - now;
+
+            if (distance < 0) {
+                el.innerHTML = "00:00:00";
+                el.className = "nn-expiry-timer timer-expired";
+                const card = el.closest('.nn-food-card');
+                if (card && !card.classList.contains('is-expired')) {
+                    card.classList.add('is-expired');
+                    const btn = card.querySelector('.btn-primary');
+                    if (btn) {
+                        btn.disabled = true;
+                        btn.innerText = "EXPIRED";
+                    }
+                }
+                return;
+            }
+
+            const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+            const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+            const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+
+            const timeStr = 
+                String(hours).padStart(2, '0') + ":" + 
+                String(minutes).padStart(2, '0') + ":" + 
+                String(seconds).padStart(2, '0');
+
+            el.innerHTML = timeStr;
+
+            // Update Colors & Animations
+            if (distance > 2 * 3600000) { // > 2 hours
+                el.className = "nn-expiry-timer timer-safe";
+            } else if (distance > 30 * 60000) { // 30m - 2h
+                el.className = "nn-expiry-timer timer-warning";
+            } else { // < 30m
+                el.className = "nn-expiry-timer timer-urgent";
+            }
+        });
+    }
+
+    function updateLiquidIndicator() {
+        const indicator = document.getElementById('portal-indicator');
+        const activeBtn = document.querySelector('.portal-btn.active');
+        if (!indicator || !activeBtn) return;
+
+        indicator.style.width = `${activeBtn.offsetWidth}px`;
+        indicator.style.transform = `translateX(${activeBtn.offsetLeft - 4}px)`;
     }
 
     // 4. Rendering Engine
     function renderPortal() {
-        portalsRoot.style.display = 'block';
-        if (state.activePortal === 'seller') {
-            renderSellerPortal();
+        syncDock();
+        if (state.activePortal === 'home') {
+            if (homePortal) homePortal.style.display = 'block';
+            if (portalsRoot) portalsRoot.style.display = 'none';
         } else {
-            renderBuyerPortal();
+            if (homePortal) homePortal.style.display = 'none';
+            if (portalsRoot) {
+                portalsRoot.style.display = 'block';
+                portalsRoot.classList.remove('portal-reveal');
+                void portalsRoot.offsetWidth; // Trigger reflow
+                portalsRoot.classList.add('portal-reveal');
+            }
+            if (state.activePortal === 'seller') {
+                renderSellerPortal();
+            } else if (state.activePortal === 'buyer') {
+                renderBuyerPortal();
+            }
+        }
+    }
+
+    function syncDock() {
+        const landingItems = document.querySelectorAll('.landing-only');
+        const buyerItems = document.querySelectorAll('.buyer-only');
+        const sellerItems = document.querySelectorAll('.seller-only');
+        
+        if (state.activePortal === 'buyer') {
+            landingItems.forEach(el => el.style.display = 'none');
+            buyerItems.forEach(el => el.style.display = 'flex');
+            sellerItems.forEach(el => el.style.display = 'none');
+        } else if (state.activePortal === 'seller') {
+            landingItems.forEach(el => el.style.display = 'none');
+            buyerItems.forEach(el => el.style.display = 'none');
+            sellerItems.forEach(el => el.style.display = 'flex');
+        } else {
+            landingItems.forEach(el => el.style.display = 'flex');
+            buyerItems.forEach(el => el.style.display = 'none');
+            sellerItems.forEach(el => el.style.display = 'none');
         }
     }
 
     function renderSellerPortal() {
         portalsRoot.innerHTML = `
-            <div class="seller-portal-layout animate-reveal">
-                <aside class="portal-sidebar glass">
-                    <div class="sidebar-nav">
-                        <a href="#" class="nav-link active"><i class="fa-solid fa-chart-pie"></i> Dashboard</a>
-                        <a href="#" class="nav-link"><i class="fa-solid fa-plus-circle"></i> Add Food Listing</a>
-                        <a href="#" class="nav-link"><i class="fa-solid fa-boxes-stacked"></i> My Listed Foods</a>
-                        <a href="#" class="nav-link"><i class="fa-solid fa-truck-ramp-box"></i> Donation Tracker</a>
-                        <a href="#" class="nav-link"><i class="fa-solid fa-gears"></i> Settings</a>
+            <div class="portal-wrapper" style="padding-top: 120px; min-height: 100vh;">
+
+                <div class="container" style="max-width: 1300px; margin: 0 auto; padding: 2.5rem 2rem 5rem;">
+
+                    <h1 class="seller-page-title"><span class="premium-title">SELLER'S DASHBOARD</span></h1>
+
+                    <!-- Zone B: My Listed Foods -->
+                    <div class="seller-listings-header">
+                        <h2>LISTINGS</h2>
+                        <span class="listings-count-badge">${state.listings.length} items</span>
                     </div>
-                    <div class="user-profile-mini">
-                        <img src="https://i.pravatar.cc/100?img=12" alt="Seller">
-                        <div><strong>Mathsya Mess</strong><br><small>Premium Vendor</small></div>
-                    </div>
-                </aside>
-                
-                <main class="portal-main-content">
-                    <!-- Zone D: Stats -->
-                    <div class="stats-bar animate-on-scroll fade-up">
-                        <div class="stat-card glass">
-                            <span class="stat-val">${state.stats.listed}kg</span>
-                            <small>Total Listed</small>
-                        </div>
-                        <div class="stat-card glass">
-                            <span class="stat-val">${state.stats.fulfilled}</span>
-                            <small>Orders Fulfilled</small>
-                        </div>
-                        <div class="stat-card glass">
-                            <span class="stat-val">₹${state.stats.revenue}</span>
-                            <small>Revenue Earned</small>
-                        </div>
-                        <div class="stat-card glass">
-                            <span class="stat-val">${state.stats.co2}kg</span>
-                            <small>CO₂ Saved</small>
-                        </div>
+                    <div class="items-grid" id="my-listings-container" style="margin-bottom: 4rem;">
+                        <!-- Listings will render here -->
                     </div>
 
-                    <h2 class="portal-section-title" style="margin-top: 4rem;">Post Surplus Food</h2>
-                    
                     <!-- Zone A: Add Food Panel -->
-                    <div class="glass-card add-food-card animate-on-scroll fade-up">
+                    <div class="seller-form-card" id="add-listing-section">
+                        <div class="seller-form-header">
+                            <h3>NEW LISTING</h3>
+                        </div>
                         <form id="add-food-form" class="add-food-grid">
+                            <input type="hidden" id="p-id" value="">
                             <div class="form-group">
                                 <label>Food Name</label>
-                                <input type="text" id="p-name" class="form-control" placeholder="e.g. Tomato Pasta" required>
+                                <input type="text" id="p-name" class="form-control" placeholder="e.g. Idli & Sambar" required>
                             </div>
                             <div class="form-group">
                                 <label>Category</label>
@@ -638,145 +815,186 @@ document.addEventListener('DOMContentLoaded', () => {
                                 </select>
                             </div>
                             <div class="form-group">
-                                <label>Price (₹)</label>
-                                <input type="number" id="p-price" class="form-control" value="20">
+                                <label>Quantity (Portions)</label>
+                                <input type="number" id="p-qty" class="form-control" value="10" min="1" required>
                             </div>
                             <div class="form-group">
-                                <label>Qty / Unit</label>
-                                <div style="display:flex; gap: 5px;">
-                                    <input type="number" id="p-qty" class="form-control" style="width: 60px;" value="10">
-                                    <select id="p-unit" class="form-control">
-                                        <option>Plate</option><option>Kg</option><option>Pack</option>
-                                    </select>
-                                </div>
+                                <label>Price per Portion (₹)</label>
+                                <input type="number" id="p-price" class="form-control" value="20" min="0" required>
                             </div>
                             <div class="form-group">
                                 <label>Expiry Date & Time</label>
                                 <input type="datetime-local" id="p-expiry" class="form-control" required>
                             </div>
-                            <div class="form-group">
-                                <label>Condition</label>
-                                <select id="p-cond" class="form-control">
-                                    <option>Fresh</option><option>Day-Old</option><option>Frozen</option>
-                                </select>
-                            </div>
                             <div class="form-group full-width">
-                                <label>Allergen Info (Multi-select)</label>
-                                <div class="allergen-chips" style="display:flex; gap:10px; flex-wrap:wrap;">
-                                    <label><input type="checkbox" value="Nuts"> Nuts</label>
-                                    <label><input type="checkbox" value="Dairy"> Dairy</label>
-                                    <label><input type="checkbox" value="Gluten"> Gluten</label>
-                                    <label><input type="checkbox" value="Vegan"> Vegan</label>
-                                </div>
+                                <label>Short Description</label>
+                                <textarea id="p-desc" class="form-control" rows="2" placeholder="Describe the food freshness, ingredients, etc..."></textarea>
                             </div>
-                            <div class="form-group full-width">
-                                <div class="drag-drop-zone">
-                                    <i class="fa-solid fa-cloud-arrow-up"></i>
-                                    <p>Click or drag image to upload food photo</p>
-                                </div>
+
+                            <div class="full-width" style="display:flex; gap: 10px;">
+                                <button type="submit" id="submit-btn" class="nn-publish-btn"><i class="fa-solid fa-leaf"></i> Publish Listing</button>
+                                <button type="button" id="cancel-edit-btn" class="nn-cancel-btn" style="display:none;"><i class="fa-solid fa-xmark"></i> Cancel Edit</button>
                             </div>
-                            <button type="submit" class="btn btn-primary full-width" style="background: var(--accent-secondary); color: white;">🌱 Publish Listing</button>
                         </form>
                     </div>
 
-                    <!-- Zone B: My Listed Foods -->
-                    <h2 class="portal-section-title">My Listed Foods</h2>
-                    <div class="my-listings-grid" id="my-listings-container">
-                        <!-- Listings will render here -->
+                    <!-- Community Feedback -->
+                    <div class="seller-form-card" style="margin-top: 4rem;">
+                        <div class="seller-form-header">
+                            <h3>SHARE A THOUGHT</h3>
+                        </div>
+                        <form id="portal-comment-form" class="nn-form">
+                            <div class="form-group">
+                                <label>Your Experience</label>
+                                <textarea id="portal-comment-text" class="form-control" rows="2" placeholder="How was your experience today?" required></textarea>
+                            </div>
+                            <button type="submit" class="nn-publish-btn" style="width: 100%;">Share with Community <i class="fa-solid fa-paper-plane"></i></button>
+                        </form>
                     </div>
-                </main>
+
+                </div>
             </div>
         `;
         renderSellerListings();
         attachSellerListeners();
+        attachPortalCommentListeners();
     }
 
     function renderSellerListings() {
         const container = document.getElementById('my-listings-container');
         if (!container) return;
         
-        container.innerHTML = state.listings.filter(l => l.vendorId === 101).map(item => `
-            <div class="listing-expandable-card glass hover-lift" data-id="${item.id}">
-                <div class="listing-header">
-                    <div>
-                        <span class="badge" style="background: var(--accent-primary); margin-bottom: 5px;">${item.category}</span>
-                        <h3>${item.name}</h3>
-                        <p>₹${item.price} • ${item.qty} ${item.unit} left</p>
+        container.innerHTML = state.listings.map((item, idx) => `
+            <div class="nn-food-card stagger-item ${item.qty <= 0 ? 'is-sold-out' : ''} ${new Date(item.expiry) < new Date() ? 'is-expired' : ''}" data-id="${item.id}" style="animation-delay: ${idx * 0.05}s">
+                <div class="nn-card-img-wrap">
+                    <img src="${item.img}" alt="${item.name}" loading="lazy">
+                    <div class="nn-card-img-overlay"></div>
+                    <div class="nn-card-badges">
+                        <span class="nn-badge nn-badge-cat">${item.category}</span>
+                        <span class="nn-badge nn-badge-qty ${item.qty <= 0 ? 'nn-badge-sold' : ''}"><i class="fa-solid fa-utensils"></i> ${item.qty <= 0 ? 'Sold Out' : item.qty + ' left'}</span>
                     </div>
-                    <div style="text-align: right;">
-                        <span class="countdown" style="font-weight: 700; color: var(--accent-secondary);">Expiring in 2h 40m</span><br>
-                        <button class="btn btn-sm btn-outline edit-btn" style="padding: 4px 8px;"><i class="fa-solid fa-edit"></i></button>
-                        <button class="btn btn-sm btn-outline delete-btn" style="padding: 4px 8px;"><i class="fa-solid fa-trash"></i></button>
+                    <div class="nn-card-vendor"><i class="fa-solid fa-store"></i> ${item.vendorName}</div>
+                </div>
+                <div class="nn-expiry-container">
+                    <span class="nn-expiry-label">Expires in:</span>
+                    <div class="nn-expiry-timer" data-expiry="${item.expiry}" data-id="${item.id}">--:--:--</div>
+                </div>
+                <div class="nn-card-body">
+                    <h3 class="nn-card-title">${item.name}</h3>
+                    <p class="nn-card-desc">${item.description || 'No description provided.'}</p>
+                    <div class="nn-card-meta">
+                        <div class="nn-card-price">₹${item.price}<span>/portion</span></div>
+                        <div class="nn-card-expiry"><i class="fa-regular fa-clock"></i> ${new Date(item.expiry).toLocaleDateString('en-IN', {day:'numeric', month:'short', hour:'2-digit', minute:'2-digit'})}</div>
                     </div>
+                </div>
+                <div class="nn-card-footer">
+                    <button class="nn-action-btn nn-edit-btn edit-btn" data-id="${item.id}"><i class="fa-solid fa-pen-to-square"></i> Edit</button>
+                    <button class="nn-action-btn nn-delete-btn delete-btn" data-id="${item.id}"><i class="fa-solid fa-trash-can"></i> Delete</button>
                 </div>
             </div>
         `).join('');
+
+        document.querySelectorAll('.edit-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const id = btn.dataset.id;
+                const item = state.listings.find(l => l.id == id);
+                if (item) {
+                    document.getElementById('p-id').value = item.id;
+                    document.getElementById('p-name').value = item.name;
+                    document.getElementById('p-cat').value = item.category;
+                    document.getElementById('p-qty').value = item.qty;
+                    document.getElementById('p-price').value = item.price;
+                    document.getElementById('p-desc').value = item.description || '';
+                    if (item.expiry) {
+                        try {
+                            const d = new Date(item.expiry);
+                            document.getElementById('p-expiry').value = d.toISOString().slice(0, 16);
+                        } catch(e) {}
+                    }
+                    document.getElementById('submit-btn').innerHTML = '💾 Save Changes';
+                    document.getElementById('cancel-edit-btn').style.display = 'block';
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                }
+            });
+        });
+
+        document.querySelectorAll('.delete-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const id = btn.dataset.id;
+                state.listings = state.listings.filter(l => l.id != id);
+                renderSellerListings();
+            });
+        });
     }
 
     function renderBuyerPortal() {
         portalsRoot.innerHTML = `
-            <div class="buyer-portal-layout animate-reveal">
-                <div class="category-strip">
-                    <button class="category-pill active">All</button>
-                    <button class="category-pill">Cooked Meals</button>
-                    <button class="category-pill">Packaged</button>
-                    <button class="category-pill">Produce</button>
-                    <button class="category-pill">Bakery</button>
-                    <button class="category-pill">Expiring Soon</button>
-                </div>
+            <div class="buyer-portal-layout animate-reveal" style="padding-top: 120px;">
+                <div class="container" style="max-width: 1300px; margin: 0 auto;">
+                    <h1 class="seller-page-title"><span class="premium-title">BUYER'S DASHBOARD</span></h1>
+                    <p style="margin-bottom: 3rem; color: var(--text-muted); font-size: 1.1rem;">Fresh, freshly prepared meals from local restaurants — ready for you to claim.</p>
 
-                <div class="vendor-row">
-                    ${state.vendors.map(v => `
-                        <div class="vendor-card-mini glass hover-lift">
-                            <strong>${v.name}</strong>
-                            <p style="font-size: 0.8rem; opacity: 0.7;">${v.cat} • ${v.dist}</p>
-                            <span style="color: #f1c40f;">★ ${v.rating}</span>
+                    <div class="items-grid" id="exchange-grid">
+                        <!-- Cards will render here -->
+                    </div>
+
+                    <!-- Community Feedback -->
+                    <div class="seller-form-card" style="margin-top: 4rem;">
+                        <div class="seller-form-header">
+                            <h3>SHARE A THOUGHT</h3>
                         </div>
-                    `).join('')}
-                </div>
-
-                <div class="section-header" style="margin-top: 3rem;">
-                    <h2>The Exchange</h2>
-                    <p>Surplus food, ready to give — claim before it's gone.</p>
-                </div>
-
-                <div class="the-exchange-grid" id="exchange-grid">
-                    <!-- Cards will render here -->
+                        <form id="portal-comment-form" class="nn-form">
+                            <div class="form-group">
+                                <label>Your Experience</label>
+                                <textarea id="portal-comment-text" class="form-control" rows="2" placeholder="How was your experience today?" required></textarea>
+                            </div>
+                            <button type="submit" class="nn-publish-btn" style="width: 100%;">Share with Community <i class="fa-solid fa-paper-plane"></i></button>
+                        </form>
+                    </div>
                 </div>
             </div>
         `;
         renderExchangeGrid();
+        attachPortalCommentListeners();
     }
 
     function renderExchangeGrid() {
         const grid = document.getElementById('exchange-grid');
         if (!grid) return;
 
-        grid.innerHTML = state.listings.map(item => `
-            <div class="food-card-swiggy glass-card ${item.status === 'sold' ? 'sold-out' : ''}" data-id="${item.id}">
-                <div class="card-img-wrap">
-                    <img src="${item.img}" alt="${item.name}">
-                    <div class="sold-out-overlay">✗ Sold Out</div>
+        grid.innerHTML = state.listings.map((item, idx) => `
+            <div class="nn-food-card stagger-item ${item.qty <= 0 ? 'is-sold-out' : ''} ${new Date(item.expiry) < new Date() ? 'is-expired' : ''}" data-id="${item.id}" style="animation-delay: ${idx * 0.05}s">
+                ${item.qty <= 0 ? '<div class="nn-sold-out-badge"><i class="fa-solid fa-ban"></i> Sold Out</div>' : ''}
+                <div class="nn-card-img-wrap">
+                    <img src="${item.img}" alt="${item.name}" loading="lazy">
+                    <div class="nn-card-img-overlay"></div>
+                    <div class="nn-card-badges">
+                        <span class="nn-badge nn-badge-cat">${item.category}</span>
+                        <span class="nn-badge nn-badge-qty ${item.qty <= 5 && item.qty > 0 ? 'nn-badge-low' : ''}"><i class="fa-solid fa-utensils"></i> ${item.qty} left</span>
+                    </div>
+                    <div class="nn-card-vendor"><i class="fa-solid fa-store"></i> ${item.vendorName}</div>
                 </div>
-                <div class="card-body-swiggy">
-                    <div style="display:flex; justify-content:space-between; align-items:start; margin-bottom: 10px;">
-                        <div>
-                            <span class="badge" style="background: rgba(16, 185, 129, 0.2); color: var(--accent-primary); font-size: 0.7rem;">${item.category}</span>
-                            <h3 style="margin: 5px 0 0; font-size: 1.25rem;">${item.name}</h3>
-                        </div>
-                        <span class="card-price">₹${item.price}</span>
+                <div class="nn-expiry-container">
+                    <span class="nn-expiry-label">Expires in:</span>
+                    <div class="nn-expiry-timer" data-expiry="${item.expiry}" data-id="${item.id}">--:--:--</div>
+                </div>
+                <div class="nn-card-body">
+                    <h3 class="nn-card-title">${item.name}</h3>
+                    <p class="nn-card-desc">${item.description || ''}</p>
+                    <div class="nn-card-meta">
+                        <div class="nn-card-price">₹${item.price}<span>/portion</span></div>
+                        <div class="nn-card-expiry"><i class="fa-regular fa-clock"></i> ${new Date(item.expiry).toLocaleDateString('en-IN', {day:'numeric', month:'short', hour:'2-digit', minute:'2-digit'})}</div>
                     </div>
-                    <p style="font-size: 0.85rem; opacity: 0.8; margin-bottom: 15px;">By ${item.vendorName}</p>
-                    
-                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 15px;">
-                        <span style="font-size: 0.8rem; color: #e67e22; font-weight:700;"><i class="fa-solid fa-clock"></i> 2h 40m left</span>
-                        <div class="stepper-wrap">
-                            <button class="stepper-btn minus">-</button>
-                            <span>1</span>
-                            <button class="stepper-btn plus">+</button>
-                        </div>
+                </div>
+                <div class="nn-card-footer nn-card-footer-buyer">
+                    <div class="nn-stepper">
+                        <button class="nn-step-btn stepper-btn minus" data-id="${item.id}"><i class="fa-solid fa-minus"></i></button>
+                        <span class="nn-step-val stepper-val" id="stepper-${item.id}">1</span>
+                        <button class="nn-step-btn stepper-btn plus" data-id="${item.id}"><i class="fa-solid fa-plus"></i></button>
                     </div>
-                    <button class="add-to-basket-btn btn-glow add-btn" data-id="${item.id}">🛒 Add to Basket</button>
+                    <button class="nn-add-btn add-btn" data-id="${item.id}" ${item.qty <= 0 ? 'disabled' : ''}>
+                        <i class="fa-solid fa-cart-plus"></i> Add to Basket
+                    </button>
                 </div>
             </div>
         `).join('');
@@ -786,20 +1004,46 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // 5. Cart & Basket Logic
     function attachBuyerListeners() {
+        document.querySelectorAll('.stepper-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const id = btn.dataset.id;
+                const span = document.getElementById(`stepper-${id}`);
+                let val = parseInt(span.innerText);
+                const item = state.listings.find(l => l.id == id);
+                if (btn.classList.contains('plus')) {
+                    if (val < item.qty) val++;
+                } else {
+                    if (val > 1) val--;
+                }
+                span.innerText = val;
+            });
+        });
+
         document.querySelectorAll('.add-btn').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 const id = btn.dataset.id;
                 const item = state.listings.find(l => l.id == id);
-                if (item) {
-                    addToCart(item, e);
+                const qtyToAdd = parseInt(document.getElementById(`stepper-${id}`).innerText);
+                
+                if (item && item.qty >= qtyToAdd) {
+                    addToCart(item, qtyToAdd, e);
                 }
             });
         });
     }
 
-    function addToCart(item, e) {
-        state.cart.push(item);
+    function addToCart(item, qtyToAdd, e) {
+        item.qty -= qtyToAdd; // reduce live portions
+        
+        const existingCartItem = state.cart.find(c => c.item.id === item.id);
+        if (existingCartItem) {
+            existingCartItem.qty += qtyToAdd;
+        } else {
+            state.cart.push({ item: item, qty: qtyToAdd });
+        }
+        
         updateCartBadge();
+        renderExchangeGrid();
         
         // Fly Animation
         const rect = e.target.getBoundingClientRect();
@@ -819,13 +1063,14 @@ document.addEventListener('DOMContentLoaded', () => {
             easing: 'cubic-bezier(0.165, 0.84, 0.44, 1)'
         }).onfinish = () => flyItem.remove();
 
-        showToast(`${item.name} added to your basket!`, 'success');
+        showToast(`${qtyToAdd} portions of ${item.name} added to your basket!`, 'success');
         renderCartItems();
     }
 
     function updateCartBadge() {
         const counts = document.querySelectorAll('.cart-count');
-        counts.forEach(c => c.innerText = state.cart.length);
+        const totalItems = state.cart.reduce((sum, c) => sum + c.qty, 0);
+        counts.forEach(c => c.innerText = totalItems);
     }
 
     function renderCartItems() {
@@ -838,24 +1083,72 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        list.innerHTML = state.cart.map((item, idx) => `
+        list.innerHTML = state.cart.map((cartItem, idx) => `
             <div class="cart-item-row" style="display:flex; justify-content:space-between; margin-bottom: 1.5rem; padding-bottom: 1rem; border-bottom: 1px solid var(--border-glow);">
                 <div>
-                    <strong>${item.name}</strong><br>
-                    <small>${item.vendorName}</small>
+                    <strong>${cartItem.item.name}</strong><br>
+                    <small>${cartItem.item.vendorName}</small><br>
+                    <div class="stepper-wrap" style="display:flex; align-items:center; gap: 10px; margin-top: 5px;">
+                        <button class="cart-minus btn-outline btn-sm" data-idx="${idx}" style="padding: 2px 8px; color: var(--text-color); border-color: var(--border-glow);"><i class="fa-solid fa-minus"></i></button>
+                        <span style="font-weight: bold;">${cartItem.qty}</span>
+                        <button class="cart-plus btn-outline btn-sm" data-idx="${idx}" style="padding: 2px 8px; color: var(--text-color); border-color: var(--border-glow);"><i class="fa-solid fa-plus"></i></button>
+                    </div>
                 </div>
-                <div style="text-align: right;">
-                    <strong>₹${item.price}</strong><br>
-                    <button class="remove-item" data-idx="${idx}" style="background:none; border:none; color:#e74c3c; cursor:pointer;">Remove</button>
+                <div style="text-align: right; display: flex; flex-direction: column; justify-content: space-between;">
+                    <strong>₹${cartItem.item.price * cartItem.qty}</strong>
+                    <button class="remove-item" data-idx="${idx}" style="background:none; border:none; color:#e74c3c; cursor:pointer; margin-top: 5px;"><i class="fa-solid fa-trash"></i> Remove</button>
                 </div>
             </div>
         `).join('');
 
-        document.querySelectorAll('.remove-item').forEach(btn => {
+        document.querySelectorAll('.cart-minus').forEach(btn => {
             btn.addEventListener('click', () => {
-                state.cart.splice(btn.dataset.idx, 1);
+                const idx = btn.dataset.idx;
+                const cartItem = state.cart[idx];
+                if (cartItem.qty > 1) {
+                    cartItem.qty--;
+                    const originalListing = state.listings.find(l => l.id === cartItem.item.id);
+                    if (originalListing) originalListing.qty++;
+                } else {
+                    const removedCartItem = state.cart.splice(idx, 1)[0];
+                    const originalListing = state.listings.find(l => l.id === removedCartItem.item.id);
+                    if (originalListing) originalListing.qty += removedCartItem.qty;
+                }
                 renderCartItems();
                 updateCartBadge();
+                renderExchangeGrid();
+            });
+        });
+
+        document.querySelectorAll('.cart-plus').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const idx = btn.dataset.idx;
+                const cartItem = state.cart[idx];
+                const originalListing = state.listings.find(l => l.id === cartItem.item.id);
+                if (originalListing && originalListing.qty > 0) {
+                    cartItem.qty++;
+                    originalListing.qty--;
+                    renderCartItems();
+                    updateCartBadge();
+                    renderExchangeGrid();
+                } else {
+                    showToast("No more portions available!", "error");
+                }
+            });
+        });
+
+        document.querySelectorAll('.remove-item').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const idx = btn.dataset.idx;
+                const removedCartItem = state.cart.splice(idx, 1)[0];
+                const originalListing = state.listings.find(l => l.id === removedCartItem.item.id);
+                if (originalListing) {
+                    originalListing.qty += removedCartItem.qty;
+                }
+                
+                renderCartItems();
+                updateCartBadge();
+                renderExchangeGrid();
             });
         });
 
@@ -863,7 +1156,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function updateCartTotals() {
-        const subtotal = state.cart.reduce((sum, item) => sum + item.price, 0);
+        const subtotal = state.cart.reduce((sum, c) => sum + (c.item.price * c.qty), 0);
         document.getElementById('cart-subtotal').innerText = `₹${subtotal}`;
         document.getElementById('cart-total').innerText = `₹${subtotal}`;
     }
@@ -871,34 +1164,188 @@ document.addEventListener('DOMContentLoaded', () => {
     // 6. Form Handling (Seller)
     function attachSellerListeners() {
         const form = document.getElementById('add-food-form');
+        const cancelBtn = document.getElementById('cancel-edit-btn');
+        
+        if (cancelBtn) {
+            cancelBtn.addEventListener('click', () => {
+                form.reset();
+                document.getElementById('p-id').value = '';
+                document.getElementById('submit-btn').innerHTML = '<i class="fa-solid fa-leaf"></i> Publish Listing';
+                cancelBtn.style.display = 'none';
+            });
+        }
+
         if (form) {
             form.addEventListener('submit', (e) => {
                 e.preventDefault();
-                const newItem = {
-                    id: Date.now(),
-                    vendorId: 101,
-                    vendorName: "Mathsya Mess",
-                    name: document.getElementById('p-name').value,
-                    category: document.getElementById('p-cat').value,
-                    price: parseInt(document.getElementById('p-price').value),
-                    qty: parseInt(document.getElementById('p-qty').value),
-                    unit: document.getElementById('p-unit').value,
-                    expiry: new Date(document.getElementById('p-expiry').value),
-                    condition: document.getElementById('p-cond').value,
-                    img: "https://images.unsplash.com/photo-1493770348161-369560ae357d?w=400",
-                    status: "available"
-                };
+                const pId = document.getElementById('p-id').value;
+                const name = document.getElementById('p-name').value;
+                const category = document.getElementById('p-cat').value;
+                const qty = document.getElementById('p-qty').value;
+                const price = document.getElementById('p-price').value;
+                const description = document.getElementById('p-desc').value;
+                const expiry = document.getElementById('p-expiry').value;
+
+                if (pId) {
+                    // Edit
+                    const idx = state.listings.findIndex(l => l.id == pId);
+                    if (idx !== -1) {
+                        state.listings[idx] = { 
+                            ...state.listings[idx], 
+                            name, category, qty: parseInt(qty), price: parseFloat(price), description, 
+                            expiry: new Date(expiry).toISOString() 
+                        };
+                        showToast("Listing updated! 🌱", "success");
+                    }
+                } else {
+                    // New
+                    const newItem = {
+                        id: Date.now(),
+                        vendorId: 101,
+                        vendorName: "Mathsya Mess",
+                        name, category, qty: parseInt(qty), price: parseFloat(price), description,
+                        expiry: new Date(expiry).toISOString(),
+                        img: "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=600",
+                        status: "available"
+                    };
+                    state.listings.unshift(newItem);
+                    showToast("Listing published successfully! 🌱", "success");
+                }
                 
-                state.listings.unshift(newItem);
-                showToast("Listing published to The Exchange! 🌱");
-                renderSellerPortal();
+                form.reset();
+                document.getElementById('p-id').value = '';
+                document.getElementById('submit-btn').innerHTML = '<i class="fa-solid fa-leaf"></i> Publish Listing';
+                if(cancelBtn) cancelBtn.style.display = 'none';
+                
+                renderSellerListings();
             });
         }
     }
 
+
+
+
     // 7. Initialize Everything
     initSwitcher();
-    cartToggle.addEventListener('click', () => cartDrawer.classList.add('active'));
+    
+    const openCart = () => cartDrawer.classList.add('active');
+    
+    cartToggle.addEventListener('click', openCart);
+    const cartToggleDock = document.getElementById('cart-toggle-dock');
+    if (cartToggleDock) {
+        cartToggleDock.addEventListener('click', (e) => {
+            e.preventDefault();
+            openCart();
+        });
+    }
+    
+    // Community Hub / Comments Logic
+    function renderCommunityWall() {
+        const wall = document.getElementById('comment-list');
+        if (!wall) return;
+        
+        // We only show the latest 10 comments in the wall
+        wall.innerHTML = state.communityComments.slice().reverse().map((c, idx) => `
+            <div class="comment-bubble" style="animation-delay: ${idx * 0.1}s;">
+                <strong style="color: ${c.org.includes('Seller') || c.org.includes('Hotel') ? 'var(--accent-secondary)' : 'var(--accent-primary)'};">
+                    ${c.name} <span style="font-weight: 400; opacity: 0.6; font-size: 0.8rem;">• ${c.org}</span>
+                </strong>
+                <p>"${c.text}"</p>
+            </div>
+        `).join('');
+    }
+
+    // Portal Specific Comments
+    function renderPortalComments() {
+        const wall = document.getElementById('portal-comments-list');
+        if (!wall) return;
+        
+        wall.innerHTML = state.communityComments.slice().reverse().map(c => `
+            <div class="comment-item" style="border-bottom: 1px solid var(--border-glow); padding-bottom: 1rem; margin-bottom: 1rem;">
+                <strong style="color: ${c.org.includes('Seller') || c.org.includes('Hotel') ? 'var(--accent-secondary)' : 'var(--accent-primary)'};">${c.name} (${c.org})</strong>
+                <p style="font-size: 0.9rem; margin-top: 0.5rem; color: var(--text-muted);">${c.text}</p>
+            </div>
+        `).join('');
+    }
+
+    function attachPortalCommentListeners() {
+        const form = document.getElementById('portal-comment-form');
+        const input = document.getElementById('portal-comment-text');
+        if (!form || !input) return;
+
+        form.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const text = input.value.trim();
+            if (!text) return;
+
+            const isSeller = state.activePortal === 'seller';
+            const role = isSeller ? 'Premium Vendor' : 'Community Partner';
+            const orgName = isSeller ? 'Seller Dashboard' : 'NGO / Recipient';
+            
+            state.communityComments.push({
+                name: role,
+                org: orgName,
+                text: text,
+                stars: 5,
+                img: `https://i.pravatar.cc/100?img=${Math.floor(Math.random() * 70)}`
+            });
+
+            renderCommunityWall();
+            renderReviewsSlider();
+            
+            input.value = '';
+            showToast("Your thoughts have been shared with the community!", "success");
+        });
+    }
+
+    const commentForm = document.getElementById('comment-form');
+    const commentText = document.getElementById('comment-text');
+
+    if (commentForm) {
+        commentForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const text = commentText.value.trim();
+            if (!text) return;
+
+            const isSeller = state.activePortal === 'seller';
+            const role = isSeller ? 'Premium Vendor' : 'Community Partner';
+            const orgName = isSeller ? 'Seller Dashboard' : 'NGO / Recipient';
+            
+            // Add to state
+            state.communityComments.push({
+                name: role,
+                org: orgName,
+                text: text,
+                stars: 5,
+                img: `https://i.pravatar.cc/100?img=${Math.floor(Math.random() * 70)}`
+            });
+
+            // Re-render both parts
+            renderCommunityWall();
+            renderReviewsSlider();
+            
+            commentText.value = '';
+            showToast("Your thoughts have been shared with the community!", "success");
+        });
+    }
+    
+    // Initial render for the wall if it exists
+    renderCommunityWall();
+
+    const addListingDock = document.getElementById('add-listing-dock');
+    if (addListingDock) {
+        addListingDock.addEventListener('click', (e) => {
+            e.preventDefault();
+            const section = document.getElementById('add-listing-section');
+            if (section) {
+                window.scrollTo({
+                    top: section.offsetTop - 100,
+                    behavior: 'smooth'
+                });
+            }
+        });
+    }
+    
     closeCart.addEventListener('click', () => cartDrawer.classList.remove('active'));
     document.querySelector('.cart-drawer-overlay').addEventListener('click', () => cartDrawer.classList.remove('active'));
 
@@ -907,14 +1354,12 @@ document.addEventListener('DOMContentLoaded', () => {
             showToast("Basket is empty!", "error");
             return;
         }
-        showToast("Your basket is confirmed! 🌱 Thank you for reducing waste.", "success");
+        showToast("Order confirmed! 🌱 Thank you for being part of the Nourish Network.", "success");
         state.cart = [];
         updateCartBadge();
         renderCartItems();
         cartDrawer.classList.remove('active');
         
-        // Mock: Update listings status
-        state.listings.forEach(l => l.status = 'sold');
         if (state.activePortal === 'buyer') renderExchangeGrid();
     });
 
