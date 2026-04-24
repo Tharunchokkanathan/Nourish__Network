@@ -308,6 +308,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // =========================================
     const toastContainer = document.getElementById('toastContainer');
 
+
     function showToast(message, type = 'success') {
         const toast = document.createElement('div');
         toast.className = `toast toast-${type}`;
@@ -1365,5 +1366,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Default start
     renderPortal();
+
+
 
 });
