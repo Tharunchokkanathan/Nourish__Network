@@ -1744,18 +1744,25 @@ img {
     z-index: 2000;
     max-width: fit-content;
     opacity: 1 !important;
+    /* No background here — keep it invisible, just a container */
+    background: none !important;
+    border: none !important;
+    box-shadow: none !important;
 }
-
 
 .bottom-nav-container {
     display: flex;
-    background: var(--midnight-surface);
-    backdrop-filter: blur(20px);
-    border: 1px solid var(--border-glow);
-    padding: 0.75rem 1.5rem;
+    align-items: center;
+    /* Premium Glassmorphism — only on the pill */
+    background: rgba(10, 20, 15, 0.65);
+    backdrop-filter: blur(24px) saturate(180%);
+    -webkit-backdrop-filter: blur(24px) saturate(180%);
+    border: 1px solid rgba(16, 185, 129, 0.18);
+    padding: 0.75rem 1.8rem;
     border-radius: 100px;
-    gap: 1.5rem;
-    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
+    gap: 1.8rem;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5),
+                inset 0 1px 0 rgba(255, 255, 255, 0.06);
 }
 
 .nav-item {
@@ -1763,11 +1770,18 @@ img {
     flex-direction: column;
     align-items: center;
     gap: 4px;
-    color: var(--text-muted);
+    color: rgba(255,255,255,0.45);
     text-decoration: none;
     font-size: 0.7rem;
     font-weight: 600;
-    transition: var(--transition);
+    transition: all 0.25s ease;
+    padding: 4px 6px;
+    border-radius: 12px;
+}
+
+.nav-item:hover {
+    color: rgba(255,255,255,0.85);
+    background: rgba(255,255,255,0.06);
 }
 
 .nav-item i {
@@ -1775,7 +1789,7 @@ img {
 }
 
 .nav-item:hover i {
-    transform: scale(1.1);
+    transform: translateY(-2px) scale(1.1);
 }
 
 .nav-item.active {
@@ -1795,7 +1809,7 @@ img {
     100% { transform: translate(-50%, 0); opacity: 1; }
 }
 
-/* Hide mobile-specific top elements when dock is present */
+/* Mobile */
 @media (max-width: 768px) {
     .navbar .nav-links {
         display: none !important;
@@ -1803,11 +1817,11 @@ img {
     
     .bottom-nav-container {
         gap: 1rem;
-        padding: 0.6rem 1rem;
+        padding: 0.6rem 1.2rem;
     }
 
     .nav-item span {
-        display: none; /* Icons only on small screens */
+        display: none;
     }
 }
 
