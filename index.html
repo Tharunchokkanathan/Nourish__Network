@@ -414,109 +414,121 @@
 
     <!-- Login/Registration Modal Overlay -->
     <div id="authModal" class="modal-overlay">
-        <div class="modal-content glass-card">
-            <button class="modal-close" id="closeModal"><i class="fa-solid fa-xmark"></i></button>
+        <div class="modal-content glass-card premium-auth-layout">
+            <button class="modal-close" id="closeModal" style="z-index: 10;"><i class="fa-solid fa-xmark"></i></button>
 
-            <div class="modal-header">
-                <div class="modal-logo">
-                    <i class="fa-solid fa-leaf"></i> Nourish Network
+            <!-- LEFT SIDE: DEMO ACCOUNTS (The "Demo" Tab) -->
+            <div class="auth-column demo-column">
+                <div class="demo-dashboard">
+                    <div class="modal-logo" style="margin-bottom: 2rem; justify-content: center; display: flex; font-size: 1.8rem; font-weight: 800; color: var(--accent-primary); gap: 0.8rem;">
+                        <i class="fa-solid fa-leaf"></i> Nourish Network
+                    </div>
+                    <p class="demo-label">ELITE QUICK ACCESS</p>
+                    <div class="demo-grid">
+                        <div class="demo-card" id="btn-demo-seller">
+                            <div class="demo-icon"><i class="fa-solid fa-shop"></i></div>
+                            <div class="demo-info">
+                                <strong>Seller Account</strong>
+                                <span>Elite Catering (Demo)</span>
+                            </div>
+                            <i class="fa-solid fa-chevron-right"></i>
+                        </div>
+                        <div class="demo-card" id="btn-demo-buyer">
+                            <div class="demo-icon"><i class="fa-solid fa-hands-holding-child"></i></div>
+                            <div class="demo-info">
+                                <strong>Buyer Account</strong>
+                                <span>Global Outreach (Demo)</span>
+                            </div>
+                            <i class="fa-solid fa-chevron-right"></i>
+                        </div>
+                    </div>
+                    <div style="margin-top: 3rem; text-align: center; color: var(--text-muted); font-size: 0.85rem; line-height: 1.5;">
+                        <p>Experience the elite dashboard instantly.<br>No registration required for demo access.</p>
+                    </div>
                 </div>
+            </div>
+
+            <!-- RIGHT SIDE: CREDENTIALS (The "Credentials" Tab) -->
+            <div class="auth-column forms-column">
                 <div class="auth-toggle">
                     <button class="toggle-btn active" id="toggleLogin">Log In</button>
                     <button class="toggle-btn" id="toggleRegister">Register</button>
                 </div>
-            </div> <!-- End modal-header -->
-            <!-- Premium Demo Dashboard -->
-            <div id="demo-access-dashboard" class="demo-dashboard">
-                <p class="demo-label">ELITE QUICK ACCESS</p>
-                <div class="demo-grid">
-                    <div class="demo-card" id="btn-demo-seller">
-                        <div class="demo-icon"><i class="fa-solid fa-shop"></i></div>
-                        <div class="demo-info">
-                            <strong>Seller Account</strong>
-                            <span>Elite Catering (Demo)</span>
-                        </div>
-                        <i class="fa-solid fa-chevron-right"></i>
+
+                <div id="auth-forms-container">
+                    <div class="modal-header-text" style="margin-bottom: 2.5rem;">
+                        <h2 id="modalTitle">Welcome Back</h2>
+                        <p id="modalSubtitle" style="color: var(--text-muted); font-size: 1rem;">Log in to continue your impact.</p>
                     </div>
-                    <div class="demo-card" id="btn-demo-buyer">
-                        <div class="demo-icon"><i class="fa-solid fa-hands-holding-child"></i></div>
-                        <div class="demo-info">
-                            <strong>Buyer Account</strong>
-                            <span>Global Outreach (Demo)</span>
+
+                    <!-- Login Form -->
+                    <form id="loginForm" class="auth-form active">
+                        <div class="form-group">
+                            <label for="loginEmail">Email Address</label>
+                            <div class="input-with-icon">
+                                <i class="fa-regular fa-envelope"></i>
+                                <input type="email" id="loginEmail" class="form-control" placeholder="serverdemo@gmail.com" required>
+                            </div>
                         </div>
-                        <i class="fa-solid fa-chevron-right"></i>
-                    </div>
+                        <div class="form-group">
+                            <label for="loginPassword">Password</label>
+                            <div class="input-with-icon">
+                                <i class="fa-solid fa-lock"></i>
+                                <input type="password" id="loginPassword" class="form-control" placeholder="••••••••" required>
+                            </div>
+                            <a href="#" class="forgot-link">Forgot password?</a>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary w-100 btn-glow">Log In <i
+                                class="fa-solid fa-arrow-right-to-bracket"></i></button>
+                    </form>
+
+                    <!-- Registration Form -->
+                    <form id="registerForm" class="auth-form">
+                        <div class="form-group">
+                            <label>Account Type</label>
+                            <div class="account-type-selector">
+                                <label class="radio-card">
+                                    <input type="radio" name="accountType" value="restaurant" checked>
+                                    <span class="rc-content">
+                                        <i class="fa-solid fa-shop"></i> Vendor
+                                    </span>
+                                </label>
+                                <label class="radio-card">
+                                    <input type="radio" name="accountType" value="ngo">
+                                    <span class="rc-content">
+                                        <i class="fa-solid fa-hands-holding-child"></i> NGO / Shelter
+                                    </span>
+                                </label>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="regName">Organization Name</label>
+                            <div class="input-with-icon">
+                                <i class="fa-regular fa-building"></i>
+                                <input type="text" id="regName" class="form-control" placeholder="Your Organization" required>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="regEmail">Email Address</label>
+                            <div class="input-with-icon">
+                                <i class="fa-regular fa-envelope"></i>
+                                <input type="email" id="regEmail" class="form-control" placeholder="you@domain.com" required>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="regPassword">Password</label>
+                            <div class="input-with-icon">
+                                <i class="fa-solid fa-lock"></i>
+                                <input type="password" id="regPassword" class="form-control" placeholder="Create a password"
+                                    required>
+                            </div>
+                        </div>
+                        <button type="submit" class="btn btn-primary w-100 btn-glow">Create Account <i
+                                class="fa-solid fa-user-plus"></i></button>
+                    </form>
                 </div>
-                <div class="divider"><span>OR USE CREDENTIALS</span></div>
             </div>
-
-            <!-- Login Form -->
-            <form id="loginForm" class="auth-form active">
-                <div class="form-group">
-                    <label for="loginEmail">Email Address</label>
-                    <div class="input-with-icon">
-                        <i class="fa-regular fa-envelope"></i>
-                        <input type="email" id="loginEmail" class="form-control" placeholder="serverdemo@gmail.com" required>
-                    </div>
-                </div>
-                <div class="form-group">
-                    <label for="loginPassword">Password</label>
-                    <div class="input-with-icon">
-                        <i class="fa-solid fa-lock"></i>
-                        <input type="password" id="loginPassword" class="form-control" placeholder="••••••••" required>
-                    </div>
-                    <a href="#" class="forgot-link">Forgot password?</a>
-                </div>
-
-                <button type="submit" class="btn btn-primary w-100 btn-glow">Log In <i
-                        class="fa-solid fa-arrow-right-to-bracket"></i></button>
-            </form>
-
-
-            <!-- Registration Form -->
-            <form id="registerForm" class="auth-form">
-                <div class="form-group">
-                    <label>Account Type</label>
-                    <div class="account-type-selector">
-                        <label class="radio-card">
-                            <input type="radio" name="accountType" value="restaurant" checked>
-                            <span class="rc-content">
-                                <i class="fa-solid fa-shop"></i> Vendor
-                            </span>
-                        </label>
-                        <label class="radio-card">
-                            <input type="radio" name="accountType" value="ngo">
-                            <span class="rc-content">
-                                <i class="fa-solid fa-hands-holding-child"></i> NGO / Shelter
-                            </span>
-                        </label>
-                    </div>
-                </div>
-                <div class="form-group">
-                    <label for="regName">Organization Name</label>
-                    <div class="input-with-icon">
-                        <i class="fa-regular fa-building"></i>
-                        <input type="text" id="regName" class="form-control" placeholder="Your Organization" required>
-                    </div>
-                </div>
-                <div class="form-group">
-                    <label for="regEmail">Email Address</label>
-                    <div class="input-with-icon">
-                        <i class="fa-regular fa-envelope"></i>
-                        <input type="email" id="regEmail" class="form-control" placeholder="you@domain.com" required>
-                    </div>
-                </div>
-                <div class="form-group">
-                    <label for="regPassword">Password</label>
-                    <div class="input-with-icon">
-                        <i class="fa-solid fa-lock"></i>
-                        <input type="password" id="regPassword" class="form-control" placeholder="Create a password"
-                            required>
-                    </div>
-                </div>
-                <button type="submit" class="btn btn-primary w-100 btn-glow">Create Account <i
-                        class="fa-solid fa-user-plus"></i></button>
-            </form>
         </div>
     </div>
 

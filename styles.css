@@ -3651,3 +3651,107 @@ select.form-control option {
 .divider span {
     padding: 0 10px;
 }
+
+/* PREMIUM AUTH MODAL REDESIGN */
+.premium-auth-layout {
+    max-width: 950px !important;
+    padding: 0 !important;
+    display: flex;
+    overflow: hidden;
+    min-height: 650px;
+    border-radius: 40px !important;
+    border: 1px solid var(--border-glow) !important;
+    background: var(--bg-surface) !important;
+}
+
+.auth-column {
+    flex: 1;
+    padding: 4rem;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    transition: var(--transition);
+}
+
+.demo-column {
+    background: linear-gradient(165deg, rgba(16, 185, 129, 0.08), rgba(0,0,0,0) 70%);
+    border-right: 1px solid var(--border-glow);
+    justify-content: center;
+}
+
+.forms-column {
+    background: rgba(10, 20, 16, 0.4);
+    backdrop-filter: blur(10px);
+}
+
+.modal-header-mini .modal-logo {
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: var(--accent-primary);
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+    margin-bottom: 3rem;
+}
+
+.auth-toggle {
+    display: flex !important;
+    background: rgba(255, 255, 255, 0.03);
+    padding: 6px;
+    border-radius: 16px;
+    border: 1px solid var(--border-glow);
+    margin-bottom: 2rem;
+}
+
+.auth-toggle .toggle-btn {
+    flex: 1;
+    padding: 12px;
+    border: none;
+    background: transparent;
+    color: var(--text-muted);
+    font-weight: 700;
+    font-size: 0.9rem;
+    cursor: pointer;
+    border-radius: 12px;
+    transition: var(--transition);
+}
+
+.auth-toggle .toggle-btn.active {
+    background: var(--accent-primary) !important;
+    color: white !important;
+    box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3) !important;
+}
+
+.modal-header-text h2 {
+    font-size: 2.2rem;
+    margin-bottom: 0.5rem;
+    background: linear-gradient(to right, #fff, var(--accent-primary));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+/* Mobile Responsiveness for Modal */
+@media (max-width: 850px) {
+    .premium-auth-layout {
+        flex-direction: column;
+        max-width: 450px !important;
+        height: auto;
+        max-height: 90vh;
+        overflow-y: auto;
+    }
+    
+    .demo-column {
+        border-right: none;
+        border-bottom: 1px solid var(--border-glow);
+        padding: 2.5rem;
+    }
+    
+    .forms-column {
+        padding: 2.5rem;
+    }
+
+    .auth-column {
+        flex: none;
+    }
+}
+
