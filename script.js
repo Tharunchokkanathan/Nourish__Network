@@ -846,38 +846,52 @@ document.addEventListener('DOMContentLoaded', () => {
         const swSeller = document.getElementById('sw-seller');
         const swBuyer = document.getElementById('sw-buyer');
         const swHome = document.getElementById('sw-home');
-        const user = JSON.parse(localStorage.getItem('nourishUser'));
+        const userData = localStorage.getItem('nourishUser');
+        
+        if (userData) {
+            try {
+                const user = JSON.parse(userData);
+                // Fallback for different property names or missing type
+                const accountType = user.type || user.accountType || user.role;
+                
+                if (accountType) {
+                    const isSeller = ['vendor', 'restaurant', 'seller'].includes(accountType.toLowerCase());
+                    const isBuyer = ['ngo', 'shelter', 'buyer'].includes(accountType.toLowerCase());
 
-        if (user) {
-            const isSeller = user.type === 'vendor' || user.type === 'restaurant' || user.accountType === 'restaurant' || user.accountType === 'vendor';
-            const isBuyer = user.type === 'ngo' || user.type === 'shelter' || user.accountType === 'ngo' || user.accountType === 'shelter';
-
-            if (isSeller) {
-                if (swSeller) swSeller.style.display = 'flex';
-                if (swBuyer) {
-                    swBuyer.style.display = 'none';
-                    if (state.activePortal === 'buyer') {
-                        state.activePortal = 'home';
-                        swHome.click();
+                    if (isSeller) {
+                        if (swSeller) swSeller.style.setProperty('display', 'flex', 'important');
+                        if (swBuyer) {
+                            swBuyer.style.setProperty('display', 'none', 'important');
+                            if (state.activePortal === 'buyer') {
+                                state.activePortal = 'home';
+                                if (swHome) swHome.click();
+                            }
+                        }
+                    } else if (isBuyer) {
+                        if (swSeller) {
+                            swSeller.style.setProperty('display', 'none', 'important');
+                            if (state.activePortal === 'seller') {
+                                state.activePortal = 'home';
+                                if (swHome) swHome.click();
+                            }
+                        }
+                        if (swBuyer) swBuyer.style.setProperty('display', 'flex', 'important');
+                    } else {
+                        // Default to showing all if type is unrecognized
+                        if (swSeller) swSeller.style.setProperty('display', 'flex', 'important');
+                        if (swBuyer) swBuyer.style.setProperty('display', 'flex', 'important');
                     }
                 }
-            } else if (isBuyer) {
-                if (swSeller) {
-                    swSeller.style.display = 'none';
-                    if (state.activePortal === 'seller') {
-                        state.activePortal = 'home';
-                        swHome.click();
-                    }
-                }
-                if (swBuyer) swBuyer.style.display = 'flex';
+            } catch (e) {
+                console.error("Error parsing user data for switcher:", e);
             }
         } else {
             // Not logged in: Show all (they trigger login)
-            if (swSeller) swSeller.style.display = 'flex';
-            if (swBuyer) swBuyer.style.display = 'flex';
+            if (swSeller) swSeller.style.setProperty('display', 'flex', 'important');
+            if (swBuyer) swBuyer.style.setProperty('display', 'flex', 'important');
         }
         
-        setTimeout(updateLiquidIndicator, 50);
+        setTimeout(updateLiquidIndicator, 100);
     }
 
     function logout() {
