@@ -29,16 +29,16 @@
 
 
 [data-theme='light'] {
-    --bg-main: #fdfcf0; /* Warm Sand */
+    --bg-main: #f0fdf4; /* Light Emerald Tint */
     --bg-surface: #ffffff;
-    --accent-primary: #059669;
-    --accent-secondary: #f59e0b;
-    --text-primary: #111827;
-    --text-secondary: #4b5563;
-    --border-glow: rgba(6, 78, 59, 0.08);
-    --glass-bg: rgba(253, 252, 240, 0.7);
-    --glass-border: 1px solid rgba(0, 0, 0, 0.05);
-    --glass-shadow: 0 12px 40px -10px rgba(6, 78, 59, 0.08);
+    --accent-primary: #10b981; /* The vibrant emerald from the image */
+    --accent-secondary: #059669;
+    --text-primary: #064e3b; /* Dark emerald text */
+    --text-secondary: #047857;
+    --border-glow: rgba(16, 185, 129, 0.2);
+    --glass-bg: rgba(255, 255, 255, 0.8);
+    --glass-border: 1px solid rgba(16, 185, 129, 0.15);
+    --glass-shadow: 0 12px 40px -10px rgba(16, 185, 129, 0.15);
 }
 
 * {
