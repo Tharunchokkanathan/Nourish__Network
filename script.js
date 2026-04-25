@@ -807,50 +807,61 @@ document.addEventListener('DOMContentLoaded', () => {
         // IDs from index.html: cart-toggle-dock (buyer), add-listing-dock (seller)
         const cartDockItem  = document.getElementById('cart-toggle-dock');
         const addDockItem   = document.getElementById('add-listing-dock');
+        const loginDockItem = document.getElementById('login-toggle-dock');
         const landingItems  = document.querySelectorAll('.landing-only');
 
         if (state.activePortal === 'buyer') {
             landingItems.forEach(el => el.style.setProperty('display', 'none', 'important'));
             if (cartDockItem)  cartDockItem.style.setProperty('display', 'flex', 'important');
             if (addDockItem)   addDockItem.style.setProperty('display', 'none', 'important');
+            if (loginDockItem) loginDockItem.style.setProperty('display', 'none', 'important');
         } else if (state.activePortal === 'seller') {
             landingItems.forEach(el => el.style.setProperty('display', 'none', 'important'));
             if (cartDockItem)  cartDockItem.style.setProperty('display', 'none', 'important');
             if (addDockItem)   addDockItem.style.setProperty('display', 'flex', 'important');
+            if (loginDockItem) loginDockItem.style.setProperty('display', 'none', 'important');
         } else {
             landingItems.forEach(el => el.style.setProperty('display', 'flex', 'important'));
             if (cartDockItem)  cartDockItem.style.setProperty('display', 'none', 'important');
             if (addDockItem)   addDockItem.style.setProperty('display', 'none', 'important');
+            if (loginDockItem) loginDockItem.style.setProperty('display', 'flex', 'important');
         }
     }
 
     function syncPortalSwitcher() {
+        const switcherWrap = document.querySelector('.portal-switcher-wrap');
         const swSeller = document.getElementById('sw-seller');
         const swBuyer  = document.getElementById('sw-buyer');
         const userData = localStorage.getItem('nourishUser');
         const token    = localStorage.getItem('nourishToken');
 
-        if (userData && token) {
-            try {
-                const user = JSON.parse(userData);
-                // Server returns type: "restaurant" for sellers, "ngo"/"shelter" for buyers
-                const t = (user.type || user.accountType || user.role || '').toLowerCase();
-                const isSeller = t === 'restaurant' || t === 'vendor'   || t === 'seller';
-                const isBuyer  = t === 'ngo'        || t === 'shelter'  || t === 'buyer';
-
-                if (isSeller) {
-                    if (swSeller) swSeller.style.setProperty('display', 'flex', 'important');
-                    if (swBuyer)  swBuyer.style.setProperty('display',  'none', 'important');
-                } else if (isBuyer) {
-                    if (swSeller) swSeller.style.setProperty('display', 'none', 'important');
-                    if (swBuyer)  swBuyer.style.setProperty('display',  'flex', 'important');
-                }
-            } catch (e) { console.error('syncPortalSwitcher error:', e); }
+        if (state.activePortal !== 'home') {
+            if (switcherWrap) switcherWrap.style.setProperty('display', 'none', 'important');
         } else {
-            if (swSeller) swSeller.style.setProperty('display', 'flex', 'important');
-            if (swBuyer)  swBuyer.style.setProperty('display',  'flex', 'important');
+            if (switcherWrap) switcherWrap.style.setProperty('display', 'flex', 'important');
+            
+            if (userData && token) {
+                try {
+                    const user = JSON.parse(userData);
+                    // Server returns type: "restaurant" for sellers, "ngo"/"shelter" for buyers
+                    const t = (user.type || user.accountType || user.role || '').toLowerCase();
+                    const isSeller = t === 'restaurant' || t === 'vendor'   || t === 'seller';
+                    const isBuyer  = t === 'ngo'        || t === 'shelter'  || t === 'buyer';
+
+                    if (isSeller) {
+                        if (swSeller) swSeller.style.setProperty('display', 'flex', 'important');
+                        if (swBuyer)  swBuyer.style.setProperty('display',  'none', 'important');
+                    } else if (isBuyer) {
+                        if (swSeller) swSeller.style.setProperty('display', 'none', 'important');
+                        if (swBuyer)  swBuyer.style.setProperty('display',  'flex', 'important');
+                    }
+                } catch (e) { console.error('syncPortalSwitcher error:', e); }
+            } else {
+                if (swSeller) swSeller.style.setProperty('display', 'flex', 'important');
+                if (swBuyer)  swBuyer.style.setProperty('display',  'flex', 'important');
+            }
+            setTimeout(updateLiquidIndicator, 150);
         }
-        setTimeout(updateLiquidIndicator, 150);
     }
 
     function logout() {
