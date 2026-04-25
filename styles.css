@@ -18,7 +18,15 @@
     --font-heading: 'Playfair Display', serif;
     --font-body: 'Outfit', sans-serif;
     --transition: all 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+
+    /* Missing variables for Dock */
+    --midnight-surface: #12211b;
+    --text-muted: #94a3b8;
+    --emerald-glow: #10b981;
+    --emerald-muted: rgba(16, 185, 129, 0.1);
+    --terracotta: #e67e22;
 }
+
 
 [data-theme='light'] {
     --bg-main: #fdfcf0; /* Warm Sand */
@@ -1735,8 +1743,9 @@ img {
     transform: translateX(-50%);
     z-index: 2000;
     max-width: fit-content;
-    animation: slideUpNav 0.8s cubic-bezier(0.19, 1, 0.22, 1);
+    opacity: 1 !important;
 }
+
 
 .bottom-nav-container {
     display: flex;
