@@ -1448,11 +1448,14 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // --- BOOTSTRAP APP ---
+    initSwitcher();
+    renderReviewsSlider();
+    renderCommunityWall();
+    updateCartBadge();
+
     // Check for existing session
     const savedUser = localStorage.getItem('nourishUser');
     if (savedUser) {
-        // Option: verify token with /api/user/me if desired
-        // For now, assume validity and trigger refresh
         refreshState();
     } else {
         renderPortal(); // Just show home
