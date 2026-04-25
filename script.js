@@ -763,6 +763,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // 4. Rendering Engine
     function renderPortal() {
         syncDock();
+        syncPortalSwitcher();
         if (state.activePortal === 'home') {
             if (homePortal) homePortal.style.display = 'block';
             if (portalsRoot) portalsRoot.style.display = 'none';
@@ -789,9 +790,9 @@ document.addEventListener('DOMContentLoaded', () => {
         
         const loginTextDock = document.getElementById('login-text-dock');
         const loginIconDock = document.querySelector('#login-toggle-dock i');
-        const user = localStorage.getItem('nourishToken');
+        const userToken = localStorage.getItem('nourishToken');
 
-        if (user) {
+        if (userToken) {
             if (loginTextDock) loginTextDock.innerText = 'Logout';
             if (loginIconDock) {
                 loginIconDock.classList.remove('fa-user');
@@ -808,12 +809,12 @@ document.addEventListener('DOMContentLoaded', () => {
         const bottomNav = document.querySelector('.bottom-nav');
 
         if (state.activePortal === 'buyer') {
-            if (bottomNav) bottomNav.style.display = 'none';
+            if (bottomNav) bottomNav.style.display = 'block';
             landingItems.forEach(el => el.style.display = 'none');
             buyerItems.forEach(el => el.style.display = 'flex');
             sellerItems.forEach(el => el.style.display = 'none');
         } else if (state.activePortal === 'seller') {
-            if (bottomNav) bottomNav.style.display = 'none';
+            if (bottomNav) bottomNav.style.display = 'block';
             landingItems.forEach(el => el.style.display = 'none');
             buyerItems.forEach(el => el.style.display = 'none');
             sellerItems.forEach(el => el.style.display = 'flex');
@@ -824,6 +825,30 @@ document.addEventListener('DOMContentLoaded', () => {
             buyerItems.forEach(el => el.style.display = 'none');
             sellerItems.forEach(el => el.style.display = 'none');
         }
+    }
+
+    function syncPortalSwitcher() {
+        const swSeller = document.getElementById('sw-seller');
+        const swBuyer = document.getElementById('sw-buyer');
+        const user = JSON.parse(localStorage.getItem('nourishUser'));
+
+        if (user) {
+            const isSeller = user.type === 'vendor' || user.type === 'restaurant';
+            const isBuyer = user.type === 'ngo' || user.type === 'shelter';
+
+            if (isSeller) {
+                if (swSeller) swSeller.style.display = 'flex';
+                if (swBuyer) swBuyer.style.display = 'none';
+            } else if (isBuyer) {
+                if (swSeller) swSeller.style.display = 'none';
+                if (swBuyer) swBuyer.style.display = 'flex';
+            }
+        } else {
+            // Not logged in: Show all (they trigger login)
+            if (swSeller) swSeller.style.display = 'flex';
+            if (swBuyer) swBuyer.style.display = 'flex';
+        }
+        updateLiquidIndicator();
     }
 
     function logout() {
