@@ -287,11 +287,7 @@ document.addEventListener('DOMContentLoaded', () => {
             e.preventDefault();
             authModal.classList.add('active');
 
-            // Hide bottom dock when login is open
-            const bottomNav = document.querySelector('.bottom-nav');
-            if (bottomNav) {
-                bottomNav.style.setProperty('display', 'none', 'important');
-            }
+            // Show modal
 
             const btnText = btn.innerText.toLowerCase();
             if (btnText.includes('log in')) {
@@ -328,10 +324,6 @@ document.addEventListener('DOMContentLoaded', () => {
     // Toggle Forms
     function showLoginForm() {
         authModal.classList.add('active');
-        const bottomNav = document.querySelector('.bottom-nav');
-        if (bottomNav) {
-            bottomNav.style.setProperty('display', 'none', 'important');
-        }
 
         toggleRegisterBtn.classList.remove('active');
         toggleLoginBtn.classList.add('active');
@@ -343,10 +335,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function showRegisterForm() {
         authModal.classList.add('active');
-        const bottomNav = document.querySelector('.bottom-nav');
-        if (bottomNav) {
-            bottomNav.style.setProperty('display', 'none', 'important');
-        }
 
         toggleLoginBtn.classList.remove('active');
         toggleRegisterBtn.classList.add('active');
@@ -821,16 +809,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const bottomNav = document.querySelector('.bottom-nav');
         
-        // Only show dock if auth modal is NOT active
-        const authModal = document.getElementById('authModal');
-        const isAuthOpen = authModal ? authModal.classList.contains('active') : false;
-
+        // Ensure dock is visible (it will naturally be behind the modal due to lower z-index)
         if (bottomNav) {
-            if (isAuthOpen) {
-                bottomNav.style.setProperty('display', 'none', 'important');
-            } else {
-                bottomNav.style.setProperty('display', 'flex', 'important');
-            }
+            bottomNav.style.setProperty('display', 'block', 'important');
+            bottomNav.style.setProperty('opacity', '1', 'important');
+            bottomNav.style.setProperty('visibility', 'visible', 'important');
         }
 
         if (state.activePortal === 'buyer') {
