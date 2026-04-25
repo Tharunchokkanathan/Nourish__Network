@@ -785,101 +785,71 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function syncDock() {
-        const landingItems = document.querySelectorAll('.landing-only');
-        const buyerItems = document.querySelectorAll('.buyer-only');
-        const sellerItems = document.querySelectorAll('.seller-only');
-        
+        // --- Login/Logout text ---
         const loginTextDock = document.getElementById('login-text-dock');
         const loginIconDock = document.querySelector('#login-toggle-dock i');
         const userToken = localStorage.getItem('nourishToken');
-
         if (userToken) {
             if (loginTextDock) loginTextDock.innerText = 'Logout';
-            if (loginIconDock) {
-                loginIconDock.classList.remove('fa-user');
-                loginIconDock.classList.add('fa-right-from-bracket');
-            }
+            if (loginIconDock) { loginIconDock.classList.remove('fa-user'); loginIconDock.classList.add('fa-right-from-bracket'); }
         } else {
             if (loginTextDock) loginTextDock.innerText = 'Login';
-            if (loginIconDock) {
-                loginIconDock.classList.remove('fa-right-from-bracket');
-                loginIconDock.classList.add('fa-user');
-            }
+            if (loginIconDock) { loginIconDock.classList.remove('fa-right-from-bracket'); loginIconDock.classList.add('fa-user'); }
         }
 
+        // --- Always keep the dock visible ---
         const bottomNav = document.querySelector('.bottom-nav');
-        
-        // Ensure dock is visible (it will naturally be behind the modal due to lower z-index)
         if (bottomNav) {
-            bottomNav.style.setProperty('display', 'block', 'important');
-            bottomNav.style.setProperty('opacity', '1', 'important');
-            bottomNav.style.setProperty('visibility', 'visible', 'important');
+            bottomNav.style.cssText += '; display: block !important; opacity: 1 !important; visibility: visible !important;';
         }
+
+        // --- Show/hide dock items based on portal ---
+        // IDs from index.html: cart-toggle-dock (buyer), add-listing-dock (seller)
+        const cartDockItem  = document.getElementById('cart-toggle-dock');
+        const addDockItem   = document.getElementById('add-listing-dock');
+        const landingItems  = document.querySelectorAll('.landing-only');
 
         if (state.activePortal === 'buyer') {
-            landingItems.forEach(el => el.style.display = 'none');
-            buyerItems.forEach(el => el.style.display = 'flex');
-            sellerItems.forEach(el => el.style.display = 'none');
+            landingItems.forEach(el => el.style.setProperty('display', 'none', 'important'));
+            if (cartDockItem)  cartDockItem.style.setProperty('display', 'flex', 'important');
+            if (addDockItem)   addDockItem.style.setProperty('display', 'none', 'important');
         } else if (state.activePortal === 'seller') {
-            landingItems.forEach(el => el.style.display = 'none');
-            buyerItems.forEach(el => el.style.display = 'none');
-            sellerItems.forEach(el => el.style.display = 'flex');
+            landingItems.forEach(el => el.style.setProperty('display', 'none', 'important'));
+            if (cartDockItem)  cartDockItem.style.setProperty('display', 'none', 'important');
+            if (addDockItem)   addDockItem.style.setProperty('display', 'flex', 'important');
         } else {
-            // Home Portal
-            landingItems.forEach(el => el.style.display = 'flex');
-            buyerItems.forEach(el => el.style.display = 'none');
-            sellerItems.forEach(el => el.style.display = 'none');
+            landingItems.forEach(el => el.style.setProperty('display', 'flex', 'important'));
+            if (cartDockItem)  cartDockItem.style.setProperty('display', 'none', 'important');
+            if (addDockItem)   addDockItem.style.setProperty('display', 'none', 'important');
         }
     }
 
     function syncPortalSwitcher() {
-        const swSeller = document.getElementById('sw-seller') || document.querySelector('.portal-btn[data-portal="seller"]');
-        const swBuyer = document.getElementById('sw-buyer') || document.querySelector('.portal-btn[data-portal="buyer"]');
-        const swHome = document.getElementById('sw-home') || document.querySelector('.portal-btn[data-portal="home"]');
-        
+        const swSeller = document.getElementById('sw-seller');
+        const swBuyer  = document.getElementById('sw-buyer');
         const userData = localStorage.getItem('nourishUser');
-        const token = localStorage.getItem('nourishToken');
-        
+        const token    = localStorage.getItem('nourishToken');
+
         if (userData && token) {
             try {
                 const user = JSON.parse(userData);
-                // Broadest possible check for user role/type
-                const accountType = (user.type || user.accountType || user.role || "").toLowerCase();
-                
-                const isSeller = ['vendor', 'restaurant', 'seller'].some(r => accountType.includes(r));
-                const isBuyer = ['ngo', 'shelter', 'buyer'].some(r => accountType.includes(r));
+                // Server returns type: "restaurant" for sellers, "ngo"/"shelter" for buyers
+                const t = (user.type || user.accountType || user.role || '').toLowerCase();
+                const isSeller = t === 'restaurant' || t === 'vendor'   || t === 'seller';
+                const isBuyer  = t === 'ngo'        || t === 'shelter'  || t === 'buyer';
 
                 if (isSeller) {
                     if (swSeller) swSeller.style.setProperty('display', 'flex', 'important');
-                    if (swBuyer) {
-                        swBuyer.style.setProperty('display', 'none', 'important');
-                        // Safety: If somehow on buyer portal, force back to home
-                        if (state.activePortal === 'buyer') {
-                            state.activePortal = 'home';
-                            renderPortal();
-                        }
-                    }
+                    if (swBuyer)  swBuyer.style.setProperty('display',  'none', 'important');
                 } else if (isBuyer) {
-                    if (swSeller) {
-                        swSeller.style.setProperty('display', 'none', 'important');
-                        // Safety: If somehow on seller portal, force back to home
-                        if (state.activePortal === 'seller') {
-                            state.activePortal = 'home';
-                            renderPortal();
-                        }
-                    }
-                    if (swBuyer) swBuyer.style.setProperty('display', 'flex', 'important');
+                    if (swSeller) swSeller.style.setProperty('display', 'none', 'important');
+                    if (swBuyer)  swBuyer.style.setProperty('display',  'flex', 'important');
                 }
-            } catch (e) {
-                console.error("Auth Sync Error:", e);
-            }
+            } catch (e) { console.error('syncPortalSwitcher error:', e); }
         } else {
-            // Logged out: All portals available for preview (redirects to login on click)
             if (swSeller) swSeller.style.setProperty('display', 'flex', 'important');
-            if (swBuyer) swBuyer.style.setProperty('display', 'flex', 'important');
+            if (swBuyer)  swBuyer.style.setProperty('display',  'flex', 'important');
         }
-        
-        // Reposition the liquid indicator
         setTimeout(updateLiquidIndicator, 150);
     }
 
@@ -1410,7 +1380,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    const addListingDock = document.getElementById('open-add-listing-dock');
+    const addListingDock = document.getElementById('add-listing-dock');
     if (addListingDock) {
         addListingDock.addEventListener('click', (e) => {
             e.preventDefault();
@@ -1418,7 +1388,6 @@ document.addEventListener('DOMContentLoaded', () => {
             if (section) {
                 section.scrollIntoView({ behavior: 'smooth', block: 'center' });
             } else {
-                // If not on seller dashboard, switch to it
                 state.activePortal = 'seller';
                 renderPortal();
                 setTimeout(() => {
