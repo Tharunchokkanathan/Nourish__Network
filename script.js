@@ -469,7 +469,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (data.token) localStorage.setItem('nourishToken', data.token);
                 
                 setTimeout(() => {
-                    loginModal.classList.remove('active');
+                    authModal.classList.remove('active');
                     refreshState();
                 }, 1000);
             } else {
@@ -518,7 +518,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (data.token) localStorage.setItem('nourishToken', data.token);
 
                 setTimeout(() => {
-                    registerModal.classList.remove('active');
+                    authModal.classList.remove('active');
                     refreshState();
                 }, 1000);
             } else {
