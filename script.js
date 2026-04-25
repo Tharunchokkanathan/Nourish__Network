@@ -850,55 +850,54 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function syncPortalSwitcher() {
-        const swSeller = document.getElementById('sw-seller');
-        const swBuyer = document.getElementById('sw-buyer');
-        const swHome = document.getElementById('sw-home');
-        const userData = localStorage.getItem('nourishUser');
+        const swSeller = document.getElementById('sw-seller') || document.querySelector('.portal-btn[data-portal="seller"]');
+        const swBuyer = document.getElementById('sw-buyer') || document.querySelector('.portal-btn[data-portal="buyer"]');
+        const swHome = document.getElementById('sw-home') || document.querySelector('.portal-btn[data-portal="home"]');
         
-        if (userData) {
+        const userData = localStorage.getItem('nourishUser');
+        const token = localStorage.getItem('nourishToken');
+        
+        if (userData && token) {
             try {
                 const user = JSON.parse(userData);
-                // Fallback for different property names or missing type
-                const accountType = user.type || user.accountType || user.role;
+                // Broadest possible check for user role/type
+                const accountType = (user.type || user.accountType || user.role || "").toLowerCase();
                 
-                if (accountType) {
-                    const isSeller = ['vendor', 'restaurant', 'seller'].includes(accountType.toLowerCase());
-                    const isBuyer = ['ngo', 'shelter', 'buyer'].includes(accountType.toLowerCase());
+                const isSeller = ['vendor', 'restaurant', 'seller'].some(r => accountType.includes(r));
+                const isBuyer = ['ngo', 'shelter', 'buyer'].some(r => accountType.includes(r));
 
-                    if (isSeller) {
-                        if (swSeller) swSeller.style.setProperty('display', 'flex', 'important');
-                        if (swBuyer) {
-                            swBuyer.style.setProperty('display', 'none', 'important');
-                            if (state.activePortal === 'buyer') {
-                                state.activePortal = 'home';
-                                if (swHome) swHome.click();
-                            }
+                if (isSeller) {
+                    if (swSeller) swSeller.style.setProperty('display', 'flex', 'important');
+                    if (swBuyer) {
+                        swBuyer.style.setProperty('display', 'none', 'important');
+                        // Safety: If somehow on buyer portal, force back to home
+                        if (state.activePortal === 'buyer') {
+                            state.activePortal = 'home';
+                            renderPortal();
                         }
-                    } else if (isBuyer) {
-                        if (swSeller) {
-                            swSeller.style.setProperty('display', 'none', 'important');
-                            if (state.activePortal === 'seller') {
-                                state.activePortal = 'home';
-                                if (swHome) swHome.click();
-                            }
-                        }
-                        if (swBuyer) swBuyer.style.setProperty('display', 'flex', 'important');
-                    } else {
-                        // Default to showing all if type is unrecognized
-                        if (swSeller) swSeller.style.setProperty('display', 'flex', 'important');
-                        if (swBuyer) swBuyer.style.setProperty('display', 'flex', 'important');
                     }
+                } else if (isBuyer) {
+                    if (swSeller) {
+                        swSeller.style.setProperty('display', 'none', 'important');
+                        // Safety: If somehow on seller portal, force back to home
+                        if (state.activePortal === 'seller') {
+                            state.activePortal = 'home';
+                            renderPortal();
+                        }
+                    }
+                    if (swBuyer) swBuyer.style.setProperty('display', 'flex', 'important');
                 }
             } catch (e) {
-                console.error("Error parsing user data for switcher:", e);
+                console.error("Auth Sync Error:", e);
             }
         } else {
-            // Not logged in: Show all (they trigger login)
+            // Logged out: All portals available for preview (redirects to login on click)
             if (swSeller) swSeller.style.setProperty('display', 'flex', 'important');
             if (swBuyer) swBuyer.style.setProperty('display', 'flex', 'important');
         }
         
-        setTimeout(updateLiquidIndicator, 100);
+        // Reposition the liquid indicator
+        setTimeout(updateLiquidIndicator, 150);
     }
 
     function logout() {
