@@ -1,4 +1,7 @@
 document.addEventListener('DOMContentLoaded', () => {
+    // 1. Configuration
+    const API_BASE = '/api';
+
     // 1. Initial State
     const state = {
         activePortal: 'home', 
@@ -369,9 +372,6 @@ document.addEventListener('DOMContentLoaded', () => {
     // API INTEGRATION & FORM HANDLING
     // =========================================
 
-    // Set Base URL for the API
-    // Using a relative path makes the code work seamlessly on localhost AND the live internet domain.
-    const API_BASE = '/api';
 
     // Helper to toggle button loading state
     function setLoading(btn, isLoading, originalText) {
@@ -385,13 +385,11 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // Check if user is already logged in
-    const checkLoginStatus = () => {
         const user = JSON.parse(localStorage.getItem('nourishUser'));
         if (user) {
-            const navButtons = document.querySelector('.nav-buttons');
-            if (navButtons) {
-                navButtons.innerHTML = `<a href="dashboard.html" class="btn btn-outline"><i class="fa-solid fa-user"></i> Dashboard</a>`;
-            }
+            // Already logged in - refresh data
+            refreshState();
+        }
             // Also update any "Join Now" or "Donate Food" buttons on the landing page
             const heroActions = document.querySelectorAll('.hero-action a, .action-card button');
             heroActions.forEach(btn => {
@@ -460,30 +458,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         setLoading(submitBtn, true, originalText);
 
-        // Check for Demo Accounts
-        if (email === 'seller@demo.com' || email === 'buyer@demo.com') {
-            const isSeller = email === 'seller@demo.com';
-            const demoUser = isSeller ? {
-                id: 'demo-seller-123',
-                name: 'Mathsya Mess (Demo)',
-                email: 'seller@demo.com',
-                type: 'vendor'
-            } : {
-                id: 'demo-buyer-456',
-                name: 'Hope Shelter (Demo)',
-                email: 'buyer@demo.com',
-                type: 'ngo'
-            };
 
-            localStorage.setItem('nourishUser', JSON.stringify(demoUser));
-            localStorage.setItem('nourishToken', isSeller ? 'demo-token-seller' : 'demo-token-buyer');
-            
-            showToast(`Welcome back, ${demoUser.name}!`);
-            setTimeout(() => {
-                window.location.href = 'dashboard.html';
-            }, 1000);
-            return;
-        }
 
         try {
             const response = await fetch(`${API_BASE}/login`, {
@@ -502,7 +477,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (data.token) localStorage.setItem('nourishToken', data.token);
                 
                 setTimeout(() => {
-                    window.location.href = 'dashboard.html';
+                    loginModal.classList.remove('active');
+                    refreshState();
                 }, 1000);
             } else {
                 showToast(data.error || "Login failed", "error");
@@ -550,7 +526,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (data.token) localStorage.setItem('nourishToken', data.token);
 
                 setTimeout(() => {
-                    window.location.href = 'dashboard.html';
+                    registerModal.classList.remove('active');
+                    refreshState();
                 }, 1000);
             } else {
                 showToast(data.error || "Registration failed", "error");
@@ -1235,7 +1212,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 const token = localStorage.getItem('nourishToken');
                 if (!token) {
-                    showToast("Session expired. Please login again.", "error");
+                    showToast("Please login to publish your listing.", "info");
+                    showLoginForm();
                     return;
                 }
 
@@ -1340,6 +1318,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
         form.addEventListener('submit', (e) => {
             e.preventDefault();
+
+            const token = localStorage.getItem('nourishToken');
+            if (!token) {
+                showToast("Please login to share your thoughts.", "info");
+                showLoginForm();
+                return;
+            }
+
             const text = input.value.trim();
             if (!text) return;
 
