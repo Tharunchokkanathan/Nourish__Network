@@ -1401,6 +1401,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const openCart = () => cartDrawer.classList.add('active');
     
     cartToggle.addEventListener('click', openCart);
+    // Dock Portal-Specific Listeners
     const cartToggleDock = document.getElementById('cart-toggle-dock');
     if (cartToggleDock) {
         cartToggleDock.addEventListener('click', (e) => {
@@ -1409,6 +1410,25 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    const addListingDock = document.getElementById('open-add-listing-dock');
+    if (addListingDock) {
+        addListingDock.addEventListener('click', (e) => {
+            e.preventDefault();
+            const section = document.getElementById('add-listing-section');
+            if (section) {
+                section.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            } else {
+                // If not on seller dashboard, switch to it
+                state.activePortal = 'seller';
+                renderPortal();
+                setTimeout(() => {
+                    document.getElementById('add-listing-section')?.scrollIntoView({ behavior: 'smooth' });
+                }, 500);
+            }
+        });
+    }
+
+});
     const loginToggleDock = document.getElementById('login-toggle-dock');
     if (loginToggleDock) {
         loginToggleDock.addEventListener('click', (e) => {
