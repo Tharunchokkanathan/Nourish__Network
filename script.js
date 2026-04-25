@@ -1,25 +1,9 @@
 document.addEventListener('DOMContentLoaded', () => {
-    // 1. Initial State & Mock Data
+    // 1. Initial State
     const state = {
         activePortal: 'home', 
         cart: [],
-        listings: [
-            { 
-                id: 1, vendorId: 101, vendorName: "Saravana Bhavan", category: "Cooked", 
-                name: "Mini Tiffin Combo", description: "Classic Tamil Nadu mini tiffin including idli, vada, pongal, sweet, and coffee.", price: 60, qty: 25, unit: "Plate",
-                expiry: new Date(Date.now() + 2 * 3600000).toISOString(), img: "https://images.unsplash.com/photo-1589301760014-d929f39ce9b1?w=400", status: "available"
-            },
-            { 
-                id: 2, vendorId: 102, vendorName: "Murugan Idli Shop", category: "Cooked", 
-                name: "Malli Poo Idli & Chutney", description: "Soft fluffy idlis served with 4 types of signature chutneys and sambar.", price: 40, qty: 40, unit: "Plate",
-                expiry: new Date(Date.now() + 4 * 3600000).toISOString(), img: "https://images.unsplash.com/photo-1626777552726-4a6b54c97e46?w=400", status: "available"
-            },
-            { 
-                id: 3, vendorId: 103, vendorName: "A2B (Adyar Ananda Bhavan)", category: "Desserts", 
-                name: "Assorted Sweets Box", description: "Freshly made ghee sweets prepared today.", price: 150, qty: 10, unit: "Pack",
-                expiry: new Date(Date.now() + 48 * 3600000).toISOString(), img: "https://images.unsplash.com/photo-1605197136001-09689456ce43?w=400", status: "available"
-            }
-        ],
+        listings: [],
         communityComments: [
             {
                 name: "Chef Marco",
@@ -48,8 +32,51 @@ document.addEventListener('DOMContentLoaded', () => {
             { id: 102, name: "Annapoorna Catering", cat: "Bakery & Sweets", rating: 4.5, dist: "0.8 km" },
             { id: 103, name: "Green Leaf Salads", cat: "Healthy", rating: 4.9, dist: "2.5 km" }
         ],
-        stats: { listed: 450, fulfilled: 320, revenue: 12500, co2: 85 }
+        stats: { totalListings: 0, totalClaimed: 0, totalVendors: 0, totalNGOs: 0 }
     };
+
+    // --- BACKEND SYNC ENGINE ---
+    async function refreshState() {
+        try {
+            // Fetch Listings
+            const listRes = await fetch(`${API_BASE}/listings`);
+            if (listRes.ok) {
+                const rawListings = await listRes.json();
+                // Normalize keys for frontend (quantity -> qty, expiryTime -> expiry, imageUrl -> img)
+                state.listings = rawListings.map(item => ({
+                    ...item,
+                    qty: item.quantity || item.qty || 0,
+                    expiry: item.expiryTime || item.expiry || null,
+                    img: item.imageUrl || item.img || "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=600"
+                }));
+            }
+
+
+            // Fetch Stats
+            const statsRes = await fetch(`${API_BASE}/stats`);
+            if (statsRes.ok) {
+                state.stats = await statsRes.json();
+                updateLiveStats();
+            }
+
+            // Re-render current portal
+            renderPortal();
+        } catch (err) {
+            console.error("Backend Sync Failed:", err);
+        }
+    }
+
+    function updateLiveStats() {
+        const listedEl = document.querySelector('[data-target-stat="listed"]');
+        const fulfilledEl = document.querySelector('[data-target-stat="fulfilled"]');
+        
+        if (listedEl) listedEl.setAttribute('data-target', state.stats.totalListings);
+        if (fulfilledEl) fulfilledEl.setAttribute('data-target', state.stats.totalClaimed);
+        
+        // Re-trigger counters if visible
+        if (hasCounted) startCounters();
+    }
+
 
     // 2. Scroll Animations Setup using Intersection Observer
     const animateElements = document.querySelectorAll('.animate-on-scroll');
@@ -920,10 +947,29 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         document.querySelectorAll('.delete-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
+            btn.addEventListener('click', async () => {
                 const id = btn.dataset.id;
-                state.listings = state.listings.filter(l => l.id != id);
-                renderSellerListings();
+                if (!confirm("Are you sure you want to delete this listing?")) return;
+
+                const token = localStorage.getItem('nourishToken');
+                if (!token) return;
+
+                try {
+                    const response = await fetch(`${API_BASE}/listings/${id}`, {
+                        method: 'DELETE',
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    });
+
+                    if (response.ok) {
+                        showToast("Listing deleted successfully.");
+                        refreshState();
+                    } else {
+                        const data = await response.json();
+                        showToast(data.error || "Delete failed", "error");
+                    }
+                } catch (err) {
+                    showToast("Network error.", "error");
+                }
             });
         });
     }
@@ -1177,7 +1223,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         if (form) {
-            form.addEventListener('submit', (e) => {
+            form.addEventListener('submit', async (e) => {
                 e.preventDefault();
                 const pId = document.getElementById('p-id').value;
                 const name = document.getElementById('p-name').value;
@@ -1187,38 +1233,56 @@ document.addEventListener('DOMContentLoaded', () => {
                 const description = document.getElementById('p-desc').value;
                 const expiry = document.getElementById('p-expiry').value;
 
-                if (pId) {
-                    // Edit
-                    const idx = state.listings.findIndex(l => l.id == pId);
-                    if (idx !== -1) {
-                        state.listings[idx] = { 
-                            ...state.listings[idx], 
-                            name, category, qty: parseInt(qty), price: parseFloat(price), description, 
-                            expiry: new Date(expiry).toISOString() 
-                        };
-                        showToast("Listing updated! 🌱", "success");
-                    }
-                } else {
-                    // New
-                    const newItem = {
-                        id: Date.now(),
-                        vendorId: 101,
-                        vendorName: "Mathsya Mess",
-                        name, category, qty: parseInt(qty), price: parseFloat(price), description,
-                        expiry: new Date(expiry).toISOString(),
-                        img: "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=600",
-                        status: "available"
-                    };
-                    state.listings.unshift(newItem);
-                    showToast("Listing published successfully! 🌱", "success");
+                const token = localStorage.getItem('nourishToken');
+                if (!token) {
+                    showToast("Session expired. Please login again.", "error");
+                    return;
                 }
-                
-                form.reset();
-                document.getElementById('p-id').value = '';
-                document.getElementById('submit-btn').innerHTML = '<i class="fa-solid fa-leaf"></i> Publish Listing';
-                if(cancelBtn) cancelBtn.style.display = 'none';
-                
-                renderSellerListings();
+
+                const payload = {
+                    name, category, quantity: parseInt(qty), 
+                    price: parseFloat(price), description,
+                    expiryTime: expiry ? new Date(expiry).toISOString() : null
+                };
+
+                try {
+                    let response;
+                    if (pId) {
+                        // UPDATE
+                        response = await fetch(`${API_BASE}/listings/${pId}`, {
+                            method: 'PUT',
+                            headers: { 
+                                'Content-Type': 'application/json',
+                                'Authorization': `Bearer ${token}`
+                            },
+                            body: JSON.stringify(payload)
+                        });
+                    } else {
+                        // CREATE
+                        response = await fetch(`${API_BASE}/listings`, {
+                            method: 'POST',
+                            headers: { 
+                                'Content-Type': 'application/json',
+                                'Authorization': `Bearer ${token}`
+                            },
+                            body: JSON.stringify(payload)
+                        });
+                    }
+
+                    const data = await response.json();
+                    if (response.ok) {
+                        showToast(pId ? "Listing updated! 🌱" : "Published successfully! 🌱", "success");
+                        form.reset();
+                        document.getElementById('p-id').value = '';
+                        document.getElementById('submit-btn').innerHTML = '<i class="fa-solid fa-leaf"></i> Publish Listing';
+                        if(cancelBtn) cancelBtn.style.display = 'none';
+                        refreshState(); // Refresh everything
+                    } else {
+                        showToast(data.error || "Operation failed", "error");
+                    }
+                } catch (err) {
+                    showToast("Network error while publishing.", "error");
+                }
             });
         }
     }
@@ -1350,22 +1414,65 @@ document.addEventListener('DOMContentLoaded', () => {
     closeCart.addEventListener('click', () => cartDrawer.classList.remove('active'));
     document.querySelector('.cart-drawer-overlay').addEventListener('click', () => cartDrawer.classList.remove('active'));
 
-    document.getElementById('confirm-claim').addEventListener('click', () => {
+    document.getElementById('confirm-claim').addEventListener('click', async () => {
         if (state.cart.length === 0) {
             showToast("Basket is empty!", "error");
             return;
         }
-        showToast("Order confirmed! 🌱 Thank you for being part of the Nourish Network.", "success");
-        state.cart = [];
-        updateCartBadge();
-        renderCartItems();
-        cartDrawer.classList.remove('active');
-        
-        if (state.activePortal === 'buyer') renderExchangeGrid();
+
+        const token = localStorage.getItem('nourishToken');
+        if (!token) {
+            showToast("Please login to place an order.", "info");
+            showLoginForm();
+            return;
+        }
+
+        try {
+            const response = await fetch(`${API_BASE}/checkout`, {
+                method: 'POST',
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({ 
+                    items: state.cart.map(c => ({ 
+                        listingId: c.item.id, 
+                        quantity: c.qty,
+                        price: c.item.price 
+                    })),
+                    notes: "Nourish Network Web Claim"
+                })
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                showToast(data.message || "Order confirmed! 🌱", "success");
+                state.cart = [];
+                updateCartBadge();
+                renderCartItems();
+                cartDrawer.classList.remove('active');
+                refreshState(); // Refresh to show sold items
+            } else {
+                showToast(data.error || "Checkout failed", "error");
+            }
+        } catch (error) {
+            showToast("Connection error during checkout.", "error");
+        }
     });
 
-    // Default start
-    renderPortal();
+    // --- BOOTSTRAP APP ---
+    // Check for existing session
+    const savedUser = localStorage.getItem('nourishUser');
+    if (savedUser) {
+        // Option: verify token with /api/user/me if desired
+        // For now, assume validity and trigger refresh
+        refreshState();
+    } else {
+        renderPortal(); // Just show home
+        refreshState(); // Get public listings
+    }
+
 
 
 
