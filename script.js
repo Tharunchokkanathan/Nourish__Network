@@ -330,12 +330,8 @@ document.addEventListener('DOMContentLoaded', () => {
         modalSubtitle.innerText = "Create an account to get started.";
     }
 
-    const navLoginBtn = document.getElementById('nav-login-btn');
-    if (navLoginBtn) {
-        navLoginBtn.addEventListener('click', showLoginForm);
-    }
-    
     toggleLoginBtn.addEventListener('click', showLoginForm);
+
     toggleRegisterBtn.addEventListener('click', showRegisterForm);
 
 
