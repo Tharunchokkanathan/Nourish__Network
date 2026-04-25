@@ -280,7 +280,10 @@ document.addEventListener('DOMContentLoaded', () => {
             e.preventDefault();
             authModal.classList.add('active');
 
-            // If the button text contains "Log In", show Login. Otherwise show Register.
+            // Hide bottom dock when login is open
+            const bottomNav = document.querySelector('.bottom-nav');
+            if (bottomNav) bottomNav.style.display = 'none';
+
             const btnText = btn.innerText.toLowerCase();
             if (btnText.includes('log in')) {
                 showLoginForm();
@@ -293,6 +296,8 @@ document.addEventListener('DOMContentLoaded', () => {
     // Close Modal
     function closeAuthModal() {
         authModal.classList.remove('active');
+        // Show dock back if we are on home
+        syncDock();
     }
 
     closeModal.addEventListener('click', closeAuthModal);
@@ -313,6 +318,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Toggle Forms
     function showLoginForm() {
+        authModal.classList.add('active');
+        const bottomNav = document.querySelector('.bottom-nav');
+        if (bottomNav) bottomNav.style.display = 'none';
+
         toggleRegisterBtn.classList.remove('active');
         toggleLoginBtn.classList.add('active');
         registerForm.classList.remove('active');
@@ -322,6 +331,10 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function showRegisterForm() {
+        authModal.classList.add('active');
+        const bottomNav = document.querySelector('.bottom-nav');
+        if (bottomNav) bottomNav.style.display = 'none';
+
         toggleLoginBtn.classList.remove('active');
         toggleRegisterBtn.classList.add('active');
         loginForm.classList.remove('active');
@@ -792,15 +805,21 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
 
+        const bottomNav = document.querySelector('.bottom-nav');
+
         if (state.activePortal === 'buyer') {
+            if (bottomNav) bottomNav.style.display = 'none';
             landingItems.forEach(el => el.style.display = 'none');
             buyerItems.forEach(el => el.style.display = 'flex');
             sellerItems.forEach(el => el.style.display = 'none');
         } else if (state.activePortal === 'seller') {
+            if (bottomNav) bottomNav.style.display = 'none';
             landingItems.forEach(el => el.style.display = 'none');
             buyerItems.forEach(el => el.style.display = 'none');
             sellerItems.forEach(el => el.style.display = 'flex');
         } else {
+            // Home Portal
+            if (bottomNav) bottomNav.style.display = 'block';
             landingItems.forEach(el => el.style.display = 'flex');
             buyerItems.forEach(el => el.style.display = 'none');
             sellerItems.forEach(el => el.style.display = 'none');
