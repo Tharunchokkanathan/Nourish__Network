@@ -772,6 +772,24 @@ document.addEventListener('DOMContentLoaded', () => {
         const buyerItems = document.querySelectorAll('.buyer-only');
         const sellerItems = document.querySelectorAll('.seller-only');
         
+        const loginTextDock = document.getElementById('login-text-dock');
+        const loginIconDock = document.querySelector('#login-toggle-dock i');
+        const user = localStorage.getItem('nourishToken');
+
+        if (user) {
+            if (loginTextDock) loginTextDock.innerText = 'Logout';
+            if (loginIconDock) {
+                loginIconDock.classList.remove('fa-user');
+                loginIconDock.classList.add('fa-right-from-bracket');
+            }
+        } else {
+            if (loginTextDock) loginTextDock.innerText = 'Login';
+            if (loginIconDock) {
+                loginIconDock.classList.remove('fa-right-from-bracket');
+                loginIconDock.classList.add('fa-user');
+            }
+        }
+
         if (state.activePortal === 'buyer') {
             landingItems.forEach(el => el.style.display = 'none');
             buyerItems.forEach(el => el.style.display = 'flex');
@@ -786,6 +804,18 @@ document.addEventListener('DOMContentLoaded', () => {
             sellerItems.forEach(el => el.style.display = 'none');
         }
     }
+
+    function logout() {
+        localStorage.removeItem('nourishUser');
+        localStorage.removeItem('nourishToken');
+        state.activePortal = 'home';
+        state.cart = [];
+        renderPortal();
+        updateLiquidIndicator();
+        syncDock();
+        showToast("Logged out successfully.", "info");
+    }
+
 
     function renderSellerPortal() {
         portalsRoot.innerHTML = `
@@ -1300,6 +1330,22 @@ document.addEventListener('DOMContentLoaded', () => {
             openCart();
         });
     }
+
+    const loginToggleDock = document.getElementById('login-toggle-dock');
+    if (loginToggleDock) {
+        loginToggleDock.addEventListener('click', (e) => {
+            e.preventDefault();
+            const token = localStorage.getItem('nourishToken');
+            if (token) {
+                if (confirm("Are you sure you want to logout?")) {
+                    logout();
+                }
+            } else {
+                showLoginForm();
+            }
+        });
+    }
+
     
     // Community Hub / Comments Logic
     function renderCommunityWall() {
