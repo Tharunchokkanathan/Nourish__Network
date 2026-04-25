@@ -65,6 +65,11 @@
                 <button id="theme-toggle" class="theme-toggle" aria-label="Toggle Theme">
                     <i class="fa-solid fa-moon"></i>
                 </button>
+
+                <button id="nav-login-btn" class="btn btn-secondary btn-sm" style="margin-left: 1rem; border-radius: 12px; border: 1px solid var(--border-glow); background: rgba(255,255,255,0.05);">
+                    <i class="fa-solid fa-user"></i> Sign In
+                </button>
+
             </div>
         </div>
     </nav>
@@ -424,8 +429,28 @@
                     <button class="toggle-btn active" id="toggleLogin">Log In</button>
                     <button class="toggle-btn" id="toggleRegister">Register</button>
                 </div>
-                <h3 id="modalTitle">Welcome Back</h3>
-                <p id="modalSubtitle">Log in to continue your impact.</p>
+            <!-- Premium Demo Dashboard -->
+            <div id="demo-access-dashboard" class="demo-dashboard">
+                <p class="demo-label">ELITE QUICK ACCESS</p>
+                <div class="demo-grid">
+                    <div class="demo-card" id="btn-demo-seller">
+                        <div class="demo-icon"><i class="fa-solid fa-shop"></i></div>
+                        <div class="demo-info">
+                            <strong>Seller Account</strong>
+                            <span>Elite Catering (Demo)</span>
+                        </div>
+                        <i class="fa-solid fa-chevron-right"></i>
+                    </div>
+                    <div class="demo-card" id="btn-demo-buyer">
+                        <div class="demo-icon"><i class="fa-solid fa-hands-holding-child"></i></div>
+                        <div class="demo-info">
+                            <strong>Buyer Account</strong>
+                            <span>Global Outreach (Demo)</span>
+                        </div>
+                        <i class="fa-solid fa-chevron-right"></i>
+                    </div>
+                </div>
+                <div class="divider"><span>OR USE CREDENTIALS</span></div>
             </div>
 
             <!-- Login Form -->
@@ -434,7 +459,7 @@
                     <label for="loginEmail">Email Address</label>
                     <div class="input-with-icon">
                         <i class="fa-regular fa-envelope"></i>
-                        <input type="email" id="loginEmail" class="form-control" placeholder="you@domain.com" required>
+                        <input type="email" id="loginEmail" class="form-control" placeholder="serverdemo@gmail.com" required>
                     </div>
                 </div>
                 <div class="form-group">
@@ -445,16 +470,11 @@
                     </div>
                     <a href="#" class="forgot-link">Forgot password?</a>
                 </div>
-                
-                <div class="demo-login-group" style="display: flex; gap: 0.5rem; margin-bottom: 1rem; align-items: center; justify-content: center; font-size: 0.85rem;">
-                    <span style="color: var(--text-muted); margin-right: 0.5rem;">Quick Demo:</span>
-                    <button type="button" class="btn btn-sm" id="btn-demo-seller" style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); padding: 0.25rem 0.75rem; border-radius: 4px; color: var(--text-primary);">Seller</button>
-                    <button type="button" class="btn btn-sm" id="btn-demo-buyer" style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); padding: 0.25rem 0.75rem; border-radius: 4px; color: var(--text-primary);">Buyer</button>
-                </div>
 
                 <button type="submit" class="btn btn-primary w-100 btn-glow">Log In <i
                         class="fa-solid fa-arrow-right-to-bracket"></i></button>
             </form>
+
 
             <!-- Registration Form -->
             <form id="registerForm" class="auth-form">
