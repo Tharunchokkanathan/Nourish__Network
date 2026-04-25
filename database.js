@@ -83,6 +83,7 @@ const db = new sqlite3.Database(dbPath, (err) => {
             FOREIGN KEY (buyerId)   REFERENCES users(id),
             FOREIGN KEY (listingId) REFERENCES food_listings(id)
         )
+    `, logErr('orders'));
     // ─── SEED INITIAL DATA ──────────────────────────────────────────────────────
     db.serialize(() => {
         db.get("SELECT COUNT(*) as count FROM food_listings", (err, row) => {
