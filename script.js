@@ -385,22 +385,21 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // Check if user is already logged in
-        const user = JSON.parse(localStorage.getItem('nourishUser'));
-        if (user) {
-            // Already logged in - refresh data
-            refreshState();
-        }
-            // Also update any "Join Now" or "Donate Food" buttons on the landing page
-            const heroActions = document.querySelectorAll('.hero-action a, .action-card button');
-            heroActions.forEach(btn => {
-                btn.onclick = (e) => {
-                    e.preventDefault();
-                    window.location.href = 'dashboard.html';
-                };
-            });
-        }
-    };
-    checkLoginStatus();
+    const user = JSON.parse(localStorage.getItem('nourishUser'));
+    if (user) {
+        // Also update any "Join Now" or "Donate Food" buttons on the landing page
+        const heroActions = document.querySelectorAll('.hero-action a, .action-card button');
+        heroActions.forEach(btn => {
+            btn.onclick = (e) => {
+                e.preventDefault();
+                // If they are already logged in, redirect them to their portal inside the SPA
+                const portal = user.type === 'vendor' || user.type === 'restaurant' ? 'seller' : 'buyer';
+                state.activePortal = portal;
+                renderPortal();
+                updateLiquidIndicator();
+            };
+        });
+    }
 
     // --- Demo Login Fillers ---
     const btnDemoSeller = document.getElementById('btn-demo-seller');
