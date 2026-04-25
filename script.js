@@ -1374,7 +1374,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-});
+
     const loginToggleDock = document.getElementById('login-toggle-dock');
     if (loginToggleDock) {
         loginToggleDock.addEventListener('click', (e) => {
@@ -1492,19 +1492,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Initial render for the wall if it exists
     renderCommunityWall();
 
-    const addListingDock = document.getElementById('add-listing-dock');
-    if (addListingDock) {
-        addListingDock.addEventListener('click', (e) => {
-            e.preventDefault();
-            const section = document.getElementById('add-listing-section');
-            if (section) {
-                window.scrollTo({
-                    top: section.offsetTop - 100,
-                    behavior: 'smooth'
-                });
-            }
-        });
-    }
+
     
     closeCart.addEventListener('click', () => cartDrawer.classList.remove('active'));
     document.querySelector('.cart-drawer-overlay').addEventListener('click', () => cartDrawer.classList.remove('active'));
