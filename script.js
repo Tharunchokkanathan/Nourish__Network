@@ -486,6 +486,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 
                 setTimeout(() => {
                     authModal.classList.remove('active');
+                    if (data.user) {
+                        const t = (data.user.type || data.user.accountType || data.user.role || '').toLowerCase();
+                        state.activePortal = (t === 'restaurant' || t === 'vendor' || t === 'seller') ? 'seller' : 'buyer';
+                    }
                     refreshState();
                 }, 1000);
             } else {
@@ -535,6 +539,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 setTimeout(() => {
                     authModal.classList.remove('active');
+                    if (data.user) {
+                        const t = (data.user.type || data.user.accountType || data.user.role || '').toLowerCase();
+                        state.activePortal = (t === 'restaurant' || t === 'vendor' || t === 'seller') ? 'seller' : 'buyer';
+                    }
                     refreshState();
                 }, 1000);
             } else {
@@ -669,34 +677,29 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // 3. Portal Switcher Logic
     function initSwitcher() {
-        updateLiquidIndicator();
-        [swHome, swSeller, swBuyer].forEach(btn => {
-            if(!btn) return;
-            btn.addEventListener('click', () => {
-                const portal = btn.dataset.portal;
-                
-                // Auth Check: Portals require login
-                if (portal !== 'home') {
-                    const token = localStorage.getItem('nourishToken');
-                    if (!token) {
-                        showToast(`Please login to access the ${portal === 'seller' ? 'Seller' : 'Buyer'} Portal.`, 'info');
-                        showLoginForm();
-                        return;
-                    }
-                }
-
-                state.activePortal = portal;
-                
-                // UI Toggle
-                swHome.classList.toggle('active', portal === 'home');
-                swSeller.classList.toggle('active', portal === 'seller');
-                swBuyer.classList.toggle('active', portal === 'buyer');
-                
-                updateLiquidIndicator();
+        // Wire up logo to go home
+        const logo = document.querySelector('.navbar .logo');
+        if (logo) {
+            logo.addEventListener('click', (e) => {
+                e.preventDefault();
+                state.activePortal = 'home';
                 renderPortal();
-                if (portal !== 'home') showToast(`Dashboard Loaded`, 'success');
+                window.scrollTo({ top: 0, behavior: 'smooth' });
             });
-        });
+        }
+        
+        // Wire up Dock Home button
+        const dockHome = document.querySelector('.bottom-nav .nav-item[href="#home"]');
+        if (dockHome) {
+            dockHome.addEventListener('click', (e) => {
+                if (state.activePortal !== 'home') {
+                    e.preventDefault();
+                    state.activePortal = 'home';
+                    renderPortal();
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                }
+            });
+        }
 
         // Handle window resize to keep indicator in sync
         window.addEventListener('resize', updateLiquidIndicator);
@@ -753,12 +756,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function updateLiquidIndicator() {
-        const indicator = document.getElementById('portal-indicator');
-        const activeBtn = document.querySelector('.portal-btn.active');
-        if (!indicator || !activeBtn) return;
-
-        indicator.style.width = `${activeBtn.offsetWidth}px`;
-        indicator.style.transform = `translateX(${activeBtn.offsetLeft - 4}px)`;
+        // Removed as the top pill switcher was replaced by the bottom dock.
     }
 
     // 4. Rendering Engine
@@ -829,39 +827,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function syncPortalSwitcher() {
-        const switcherWrap = document.querySelector('.portal-switcher-wrap');
-        const swSeller = document.getElementById('sw-seller');
-        const swBuyer  = document.getElementById('sw-buyer');
-        const userData = localStorage.getItem('nourishUser');
-        const token    = localStorage.getItem('nourishToken');
-
-        if (state.activePortal !== 'home') {
-            if (switcherWrap) switcherWrap.style.setProperty('display', 'none', 'important');
-        } else {
-            if (switcherWrap) switcherWrap.style.setProperty('display', 'flex', 'important');
-            
-            if (userData && token) {
-                try {
-                    const user = JSON.parse(userData);
-                    // Server returns type: "restaurant" for sellers, "ngo"/"shelter" for buyers
-                    const t = (user.type || user.accountType || user.role || '').toLowerCase();
-                    const isSeller = t === 'restaurant' || t === 'vendor'   || t === 'seller';
-                    const isBuyer  = t === 'ngo'        || t === 'shelter'  || t === 'buyer';
-
-                    if (isSeller) {
-                        if (swSeller) swSeller.style.setProperty('display', 'flex', 'important');
-                        if (swBuyer)  swBuyer.style.setProperty('display',  'none', 'important');
-                    } else if (isBuyer) {
-                        if (swSeller) swSeller.style.setProperty('display', 'none', 'important');
-                        if (swBuyer)  swBuyer.style.setProperty('display',  'flex', 'important');
-                    }
-                } catch (e) { console.error('syncPortalSwitcher error:', e); }
-            } else {
-                if (swSeller) swSeller.style.setProperty('display', 'flex', 'important');
-                if (swBuyer)  swBuyer.style.setProperty('display',  'flex', 'important');
-            }
-            setTimeout(updateLiquidIndicator, 150);
-        }
+        // Removed as the top pill switcher was replaced by the bottom dock.
     }
 
     function logout() {
