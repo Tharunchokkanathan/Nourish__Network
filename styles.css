@@ -3529,3 +3529,25 @@ select.form-control option {
         min-width: 60px;
     }
 }
+/* IMPACT MAP STYLES */
+.custom-map-marker {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.leaflet-popup-content-wrapper {
+    background: var(--bg-surface) !important;
+    color: var(--text-primary) !important;
+    border: 1px solid var(--border-glow) !important;
+    border-radius: 12px !important;
+    padding: 10px !important;
+}
+
+.leaflet-popup-tip {
+    background: var(--bg-surface) !important;
+}
+
+.leaflet-container {
+    background: #0a1410 !important;
+}

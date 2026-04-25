@@ -407,37 +407,30 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (btnDemoSeller) {
         btnDemoSeller.addEventListener('click', () => {
-            const demoUser = {
-                id: 'demo-seller-123',
-                name: 'Mathsya Mess (Demo)',
-                email: 'seller@demo.com',
-                type: 'vendor'
-            };
-            localStorage.setItem('nourishUser', JSON.stringify(demoUser));
-            localStorage.setItem('nourishToken', 'demo-token-seller');
-            showToast("Logging in as Demo Seller...");
-            setTimeout(() => {
-                window.location.href = 'dashboard.html';
-            }, 1000);
+            const emailInput = document.getElementById('loginEmail');
+            const passInput = document.getElementById('loginPassword');
+            if (emailInput && passInput) {
+                emailInput.value = 'serverdemo@gmail.com';
+                passInput.value = 'demo123';
+                // Trigger form submission
+                loginForm.requestSubmit(); 
+            }
         });
     }
 
     if (btnDemoBuyer) {
         btnDemoBuyer.addEventListener('click', () => {
-            const demoUser = {
-                id: 'demo-buyer-456',
-                name: 'Hope Shelter (Demo)',
-                email: 'buyer@demo.com',
-                type: 'ngo'
-            };
-            localStorage.setItem('nourishUser', JSON.stringify(demoUser));
-            localStorage.setItem('nourishToken', 'demo-token-buyer');
-            showToast("Logging in as Demo NGO...");
-            setTimeout(() => {
-                window.location.href = 'dashboard.html';
-            }, 1000);
+            const emailInput = document.getElementById('loginEmail');
+            const passInput = document.getElementById('loginPassword');
+            if (emailInput && passInput) {
+                emailInput.value = 'ngodemo@gmail.com';
+                passInput.value = 'demo123';
+                // Trigger form submission
+                loginForm.requestSubmit();
+            }
         });
     }
+
     // -------------------------
 
     // 1. Login Form Submit
@@ -1478,6 +1471,8 @@ document.addEventListener('DOMContentLoaded', () => {
     renderReviewsSlider();
     renderCommunityWall();
     updateCartBadge();
+    initImpactMap();
+
 
     // Check for existing session
     const savedUser = localStorage.getItem('nourishUser');
@@ -1488,7 +1483,58 @@ document.addEventListener('DOMContentLoaded', () => {
         refreshState(); // Get public listings
     }
 
+    // --- IMPACT MAP ENGINE ---
+    function initImpactMap() {
+        const mapContainer = document.getElementById('impact-map');
+        if (!mapContainer) return;
 
+        // Initialize map centered on a hub (e.g., Chennai)
+        const map = L.map('impact-map', {
+            scrollWheelZoom: false,
+            zoomControl: false
+        }).setView([13.0827, 80.2707], 12);
 
+        L.control.zoom({ position: 'bottomright' }).addTo(map);
+
+        // Dark Mode Map Layer
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+            attribution: '&copy; OpenStreetMap'
+        }).addTo(map);
+
+        // Add some realistic simulated points for the hackathon
+        const points = [
+            { pos: [13.0827, 80.2707], name: "Main Hub", type: "hub" },
+            { pos: [13.0475, 80.2089], name: "Grand Hotel", type: "seller" },
+            { pos: [13.0674, 80.2376], name: "Hope Shelter", type: "buyer" },
+            { pos: [13.0067, 80.2206], name: "Catering Co.", type: "seller" },
+            { pos: [13.1143, 80.2872], name: "Community Kitchen", type: "buyer" }
+        ];
+
+        points.forEach(p => {
+            const color = p.type === 'seller' ? '#10b981' : (p.type === 'buyer' ? '#3498db' : '#f1c40f');
+            const icon = L.divIcon({
+                className: 'custom-map-marker',
+                html: `<div style="background: ${color}; width: 12px; height: 12px; border-radius: 50%; box-shadow: 0 0 15px ${color};"></div>`,
+                iconSize: [12, 12]
+            });
+            L.marker(p.pos, { icon }).addTo(map).bindPopup(`<strong>${p.name}</strong><br>${p.type.toUpperCase()}`);
+        });
+
+        // Draw connections for "Active Paths"
+        const paths = [
+            [[13.0475, 80.2089], [13.0674, 80.2376]],
+            [[13.0067, 80.2206], [13.1143, 80.2872]]
+        ];
+
+        paths.forEach(path => {
+            L.polyline(path, {
+                color: '#10b981',
+                weight: 2,
+                opacity: 0.5,
+                dashArray: '5, 10',
+                lineJoin: 'round'
+            }).addTo(map);
+        });
+    }
 
 });
