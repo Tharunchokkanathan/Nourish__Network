@@ -282,7 +282,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // Hide bottom dock when login is open
             const bottomNav = document.querySelector('.bottom-nav');
-            if (bottomNav) bottomNav.style.display = 'none';
+            if (bottomNav) {
+                bottomNav.style.setProperty('display', 'none', 'important');
+            }
 
             const btnText = btn.innerText.toLowerCase();
             if (btnText.includes('log in')) {
@@ -320,7 +322,9 @@ document.addEventListener('DOMContentLoaded', () => {
     function showLoginForm() {
         authModal.classList.add('active');
         const bottomNav = document.querySelector('.bottom-nav');
-        if (bottomNav) bottomNav.style.display = 'none';
+        if (bottomNav) {
+            bottomNav.style.setProperty('display', 'none', 'important');
+        }
 
         toggleRegisterBtn.classList.remove('active');
         toggleLoginBtn.classList.add('active');
@@ -333,7 +337,9 @@ document.addEventListener('DOMContentLoaded', () => {
     function showRegisterForm() {
         authModal.classList.add('active');
         const bottomNav = document.querySelector('.bottom-nav');
-        if (bottomNav) bottomNav.style.display = 'none';
+        if (bottomNav) {
+            bottomNav.style.setProperty('display', 'none', 'important');
+        }
 
         toggleLoginBtn.classList.remove('active');
         toggleRegisterBtn.classList.add('active');
@@ -807,20 +813,29 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         const bottomNav = document.querySelector('.bottom-nav');
+        
+        // Only show dock if auth modal is NOT active
+        const authModal = document.getElementById('authModal');
+        const isAuthOpen = authModal ? authModal.classList.contains('active') : false;
+
+        if (bottomNav) {
+            if (isAuthOpen) {
+                bottomNav.style.setProperty('display', 'none', 'important');
+            } else {
+                bottomNav.style.setProperty('display', 'flex', 'important');
+            }
+        }
 
         if (state.activePortal === 'buyer') {
-            if (bottomNav) bottomNav.style.display = 'block';
             landingItems.forEach(el => el.style.display = 'none');
             buyerItems.forEach(el => el.style.display = 'flex');
             sellerItems.forEach(el => el.style.display = 'none');
         } else if (state.activePortal === 'seller') {
-            if (bottomNav) bottomNav.style.display = 'block';
             landingItems.forEach(el => el.style.display = 'none');
             buyerItems.forEach(el => el.style.display = 'none');
             sellerItems.forEach(el => el.style.display = 'flex');
         } else {
             // Home Portal
-            if (bottomNav) bottomNav.style.display = 'block';
             landingItems.forEach(el => el.style.display = 'flex');
             buyerItems.forEach(el => el.style.display = 'none');
             sellerItems.forEach(el => el.style.display = 'none');
@@ -830,17 +845,30 @@ document.addEventListener('DOMContentLoaded', () => {
     function syncPortalSwitcher() {
         const swSeller = document.getElementById('sw-seller');
         const swBuyer = document.getElementById('sw-buyer');
+        const swHome = document.getElementById('sw-home');
         const user = JSON.parse(localStorage.getItem('nourishUser'));
 
         if (user) {
-            const isSeller = user.type === 'vendor' || user.type === 'restaurant';
-            const isBuyer = user.type === 'ngo' || user.type === 'shelter';
+            const isSeller = user.type === 'vendor' || user.type === 'restaurant' || user.accountType === 'restaurant' || user.accountType === 'vendor';
+            const isBuyer = user.type === 'ngo' || user.type === 'shelter' || user.accountType === 'ngo' || user.accountType === 'shelter';
 
             if (isSeller) {
                 if (swSeller) swSeller.style.display = 'flex';
-                if (swBuyer) swBuyer.style.display = 'none';
+                if (swBuyer) {
+                    swBuyer.style.display = 'none';
+                    if (state.activePortal === 'buyer') {
+                        state.activePortal = 'home';
+                        swHome.click();
+                    }
+                }
             } else if (isBuyer) {
-                if (swSeller) swSeller.style.display = 'none';
+                if (swSeller) {
+                    swSeller.style.display = 'none';
+                    if (state.activePortal === 'seller') {
+                        state.activePortal = 'home';
+                        swHome.click();
+                    }
+                }
                 if (swBuyer) swBuyer.style.display = 'flex';
             }
         } else {
@@ -848,7 +876,8 @@ document.addEventListener('DOMContentLoaded', () => {
             if (swSeller) swSeller.style.display = 'flex';
             if (swBuyer) swBuyer.style.display = 'flex';
         }
-        updateLiquidIndicator();
+        
+        setTimeout(updateLiquidIndicator, 50);
     }
 
     function logout() {
