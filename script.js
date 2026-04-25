@@ -1,6 +1,6 @@
 document.addEventListener('DOMContentLoaded', () => {
     // 1. Configuration
-    const API_BASE = '/api';
+    const API_BASE = 'https://nourish-network-4bit.onrender.com/api';
 
     // 1. Initial State
     const state = {
@@ -46,12 +46,19 @@ document.addEventListener('DOMContentLoaded', () => {
             if (listRes.ok) {
                 const rawListings = await listRes.json();
                 // Normalize keys for frontend (quantity -> qty, expiryTime -> expiry, imageUrl -> img)
-                state.listings = rawListings.map(item => ({
-                    ...item,
-                    qty: item.quantity || item.qty || 0,
-                    expiry: item.expiryTime || item.expiry || null,
-                    img: item.imageUrl || item.img || "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=600"
-                }));
+                state.listings = rawListings.map(item => {
+                    let finalImg = item.imageUrl || item.img || "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=600";
+                    // If image is a local upload path, point to the production server
+                    if (finalImg.startsWith('/uploads')) {
+                        finalImg = 'https://nourish-network-4bit.onrender.com' + finalImg;
+                    }
+                    return {
+                        ...item,
+                        qty: item.quantity || item.qty || 0,
+                        expiry: item.expiryTime || item.expiry || null,
+                        img: finalImg
+                    };
+                });
             }
 
 
