@@ -694,8 +694,13 @@ document.addEventListener('DOMContentLoaded', () => {
             dockHome.addEventListener('click', (e) => {
                 if (state.activePortal !== 'home') {
                     e.preventDefault();
-                    state.activePortal = 'home';
-                    renderPortal();
+                    // Auto-logout when going home from a dashboard
+                    if (localStorage.getItem('nourishToken')) {
+                        logout();
+                    } else {
+                        state.activePortal = 'home';
+                        renderPortal();
+                    }
                     window.scrollTo({ top: 0, behavior: 'smooth' });
                 }
             });
