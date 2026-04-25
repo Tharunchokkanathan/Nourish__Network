@@ -1318,7 +1318,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
     // 7. Initialize Everything
-    initSwitcher();
+
     
     const openCart = () => cartDrawer.classList.add('active');
     
