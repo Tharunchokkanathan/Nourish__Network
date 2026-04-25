@@ -665,6 +665,17 @@ document.addEventListener('DOMContentLoaded', () => {
             if(!btn) return;
             btn.addEventListener('click', () => {
                 const portal = btn.dataset.portal;
+                
+                // Auth Check: Portals require login
+                if (portal !== 'home') {
+                    const token = localStorage.getItem('nourishToken');
+                    if (!token) {
+                        showToast(`Please login to access the ${portal === 'seller' ? 'Seller' : 'Buyer'} Portal.`, 'info');
+                        showLoginForm();
+                        return;
+                    }
+                }
+
                 state.activePortal = portal;
                 
                 // UI Toggle
@@ -674,7 +685,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 
                 updateLiquidIndicator();
                 renderPortal();
-                if (portal !== 'home') showToast(`Switched to ${portal === 'seller' ? 'Seller' : 'Buyer'} Portal`, 'info');
+                if (portal !== 'home') showToast(`Dashboard Loaded`, 'success');
             });
         });
 
@@ -867,8 +878,24 @@ document.addEventListener('DOMContentLoaded', () => {
     function renderSellerListings() {
         const container = document.getElementById('my-listings-container');
         if (!container) return;
+
+        const user = JSON.parse(localStorage.getItem('nourishUser'));
+        if (!user) return;
+
+        // Filter to show only THIS seller's items
+        const myItems = state.listings.filter(l => l.vendorId == user.id);
+
+        if (myItems.length === 0) {
+            container.innerHTML = `
+                <div class="empty-state" style="grid-column: 1 / -1; padding: 4rem; text-align: center; background: var(--bg-card); border-radius: 20px; border: 1px dashed var(--border-glow);">
+                    <i class="fa-solid fa-utensils" style="font-size: 3rem; color: var(--accent-primary); opacity: 0.5; margin-bottom: 1rem;"></i>
+                    <p style="color: var(--text-muted);">You haven't listed any food yet. Use the form below to start rescuing!</p>
+                </div>
+            `;
+            return;
+        }
         
-        container.innerHTML = state.listings.map((item, idx) => `
+        container.innerHTML = myItems.map((item, idx) => `
             <div class="nn-food-card stagger-item ${item.qty <= 0 ? 'is-sold-out' : ''} ${new Date(item.expiry) < new Date() ? 'is-expired' : ''}" data-id="${item.id}" style="animation-delay: ${idx * 0.05}s">
                 <div class="nn-card-img-wrap">
                     <img src="${item.img}" alt="${item.name}" loading="lazy">
