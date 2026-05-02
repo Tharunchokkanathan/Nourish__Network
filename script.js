@@ -79,11 +79,9 @@ document.addEventListener('DOMContentLoaded', () => {
     function updateLiveStats() {
         const listedEl = document.querySelector('[data-target-stat="listed"]');
         const fulfilledEl = document.querySelector('[data-target-stat="fulfilled"]');
-        const greenRouteEl = document.querySelector('[data-target-stat="green"]');
         
         if (listedEl) listedEl.setAttribute('data-target', state.stats.totalListings);
         if (fulfilledEl) fulfilledEl.setAttribute('data-target', state.stats.totalClaimed);
-        if (greenRouteEl) greenRouteEl.setAttribute('data-target', state.stats.totalGreenRoute || 0);
         
         // Re-trigger counters if visible
         if (hasCounted) startCounters();
