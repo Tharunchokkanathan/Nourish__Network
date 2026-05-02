@@ -171,6 +171,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 </span>
             `;
 
+            let actionBtn = '';
+            if (userData.type === 'ngo' && !isClaimed) {
+                actionBtn = `<button class="btn btn-primary w-100 btn-claim" data-id="${item.id}" style="margin-top: 10px;">Claim Food <i class="fa-solid fa-hand-holding-heart"></i></button>`;
+            }
+
             card.innerHTML = `
                 <div class="d-flex justify-between" style="margin-bottom: 5px; align-items: center;">
                     <span class="vendor-name" style="margin: 0; font-size: 0.95rem;">${item.vendorName}</span>
