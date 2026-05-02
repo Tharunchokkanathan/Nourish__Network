@@ -100,19 +100,12 @@ document.addEventListener('DOMContentLoaded', () => {
                     <p>No listings found yet.</p>
                 </div>
             `;
+            return;
         }
-
-        const greenRouteContainer = document.getElementById('greenRouteContainer');
-        const greenRouteFeed = document.getElementById('greenRouteFeed');
-        
-        if (greenRouteFeed) {
-            greenRouteFeed.innerHTML = '';
-        }
-        
-        let hasGreenRoute = false;
 
         listings.forEach(item => {
             const card = document.createElement('div');
+            card.className = 'food-card animate-on-scroll fade-up';
             
             const isClaimed = item.status === 'claimed';
             const statusHtml = `<span class="status-badge ${isClaimed ? 'status-claimed' : 'status-available'}">${item.status}</span>`;
@@ -128,7 +121,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     <span class="vendor-name">${item.vendorName}</span>
                     ${statusHtml}
                 </div>
-                <h4 class="food-desc">${item.description || item.name}</h4>
+                <h4 class="food-desc">${item.description}</h4>
                 <div class="food-meta">
                     <div><i class="fa-solid fa-weight-hanging"></i> Quantity: ${item.quantity}</div>
                     <div><i class="fa-solid fa-clock"></i> Pickup: ${item.pickupTime}</div>
@@ -136,31 +129,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 ${actionBtn}
             `;
             
-            if (item.is_green_route && (userData.type === 'restaurant' || userData.type === 'vendor')) {
-                card.className = 'food-card green-route-card animate-on-scroll fade-up';
-                // Override status html for green route
-                card.innerHTML = `
-                    <div class="d-flex justify-between" style="margin-bottom: 10px;">
-                        <span class="vendor-name">${item.vendorName}</span>
-                        <span class="status-badge" style="background: rgba(16, 185, 129, 0.2); color: #047857;"><i class="fa-solid fa-leaf"></i> Routed</span>
-                    </div>
-                    <h4 class="food-desc" style="color: #065f46;">${item.description || item.name}</h4>
-                    <div class="food-meta" style="color: #064e3b; opacity: 0.8;">
-                        <div><i class="fa-solid fa-weight-hanging"></i> Quantity: ${item.quantity}</div>
-                        <div><i class="fa-solid fa-clock"></i> Status: Given back to Earth</div>
-                    </div>
-                `;
-                if (greenRouteFeed) greenRouteFeed.appendChild(card);
-                hasGreenRoute = true;
-            } else {
-                card.className = 'food-card animate-on-scroll fade-up';
-                listingsFeed.appendChild(card);
-            }
+            listingsFeed.appendChild(card);
         });
-        
-        if (greenRouteContainer) {
-            greenRouteContainer.style.display = hasGreenRoute ? 'block' : 'none';
-        }
 
         // Add Event Listeners to Claim buttons
         document.querySelectorAll('.btn-claim').forEach(btn => {
@@ -179,15 +149,12 @@ document.addEventListener('DOMContentLoaded', () => {
             const submitBtn = postForm.querySelector('button');
             const originalText = submitBtn.innerHTML;
             
-            const isGreenRoute = document.getElementById('isGreenRoute')?.checked || false;
             const payload = {
                 vendorId: userData.id,
                 vendorName: userData.name || userData.email,
-                name: document.getElementById('foodDesc').value, // Used name to pass validation
                 description: document.getElementById('foodDesc').value,
                 quantity: document.getElementById('foodQty').value,
-                pickupTime: document.getElementById('pickupTime').value,
-                isGreenRoute: isGreenRoute
+                pickupTime: document.getElementById('pickupTime').value
             };
 
             submitBtn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Posting...';
@@ -201,11 +168,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
 
                 if (response.ok) {
-                    if (isGreenRoute) {
-                        showToast("Your listing has been routed to our Green Partner 🌱");
-                    } else {
-                        showToast("Food listing shared successfully!");
-                    }
+                    showToast("Food listing shared successfully!");
                     postForm.reset();
                     fetchListings(); // Refresh feed
                 } else {

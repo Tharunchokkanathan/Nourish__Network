@@ -61,7 +61,6 @@ const db = new sqlite3.Database(dbPath, (err) => {
             status       TEXT    NOT NULL DEFAULT 'available'
                             CHECK(status IN ('available','claimed','sold','expired')),
             claimedBy    INTEGER,
-            is_green_route BOOLEAN NOT NULL DEFAULT 0,
             datePosted   TEXT    NOT NULL DEFAULT (datetime('now')),
             FOREIGN KEY (vendorId)  REFERENCES users(id),
             FOREIGN KEY (claimedBy) REFERENCES users(id)

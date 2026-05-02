@@ -181,14 +181,7 @@
                                 <label for="pickupTime">Pickup By Time</label>
                                 <input type="text" id="pickupTime" class="form-control" placeholder="e.g. Today by 9:00 PM" required>
                             </div>
-                            <div class="form-group" style="margin-top: 15px; background: rgba(16, 185, 129, 0.05); padding: 15px; border-radius: 12px; border: 1px solid rgba(16, 185, 129, 0.2);">
-                                <label class="d-flex align-items-center" style="cursor: pointer; display: flex; align-items: center; gap: 10px; margin-bottom: 5px;">
-                                    <input type="checkbox" id="isGreenRoute" style="width: 18px; height: 18px; accent-color: #10b981;">
-                                    <span style="font-weight: 600; color: #047857;">Route to Green Partner <i class="fa-solid fa-leaf" style="color: #10b981;"></i></span>
-                                </label>
-                                <p style="font-size: 0.85rem; color: #64748b; margin: 0; padding-left: 28px;">Food past serving condition will be redirected to our sustainability partner instead of the exchange feed.</p>
-                            </div>
-                            <button type="submit" class="btn btn-primary w-100" style="margin-top: 15px;">Post Listing <i class="fa-solid fa-paper-plane"></i></button>
+                            <button type="submit" class="btn btn-primary w-100">Post Listing <i class="fa-solid fa-paper-plane"></i></button>
                         </form>
                     </div>
 
@@ -220,17 +213,6 @@
                         </div>
                         <div id="listingsFeed" class="listings-container">
                             <!-- Cards will be injected here -->
-                        </div>
-                    </div>
-
-                    <!-- Green Route Section -->
-                    <div id="greenRouteContainer" class="glass-card animate-on-scroll fade-up delay-300 vendor-only" style="margin-top: 30px; display: none; min-height: 200px; background: linear-gradient(145deg, rgba(16, 185, 129, 0.05), rgba(16, 185, 129, 0.01)); border: 1px solid rgba(16, 185, 129, 0.1);">
-                        <div class="card-header" style="border-bottom-color: rgba(16, 185, 129, 0.1);">
-                            <i class="fa-solid fa-leaf" style="color: #10b981;"></i>
-                            <h3 style="color: #047857;">Green Route</h3>
-                        </div>
-                        <div id="greenRouteFeed" class="listings-container">
-                            <!-- Green route cards will be injected here -->
                         </div>
                     </div>
                 </main>
