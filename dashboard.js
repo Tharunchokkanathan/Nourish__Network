@@ -8,23 +8,28 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
     }
 
+    // Normalize user type
+    const userType = (userData.type || userData.accountType || userData.role || '').toLowerCase();
+    const isVendor = (userType === 'restaurant' || userType === 'vendor' || userType === 'seller');
+    const isNgo = (userType === 'ngo' || userType === 'buyer');
+
     // Populate UI with User Info
-    document.getElementById('userName').innerText = userData.name || userData.email;
+    document.getElementById('userName').innerText = userData.name || userData.organizationName || userData.email;
     const typeBadge = document.getElementById('userTypeBadge');
-    typeBadge.innerText = (userData.type === 'restaurant' || userData.type === 'vendor') ? 'Food Vendor' : 'NGO / Shelter';
-    typeBadge.className = `badge ${userData.type === 'ngo' ? 'badge-secondary' : 'badge-primary'}`;
+    typeBadge.innerText = isVendor ? 'Food Vendor' : 'NGO / Shelter';
+    typeBadge.className = `badge ${isNgo ? 'badge-secondary' : 'badge-primary'}`;
 
     // Switch Views based on User Type
     const vendorActionBox = document.getElementById('vendorActionBox');
     const ngoActionBox = document.getElementById('ngoActionBox');
     const feedTitle = document.getElementById('feedTitle');
 
-    if (userData.type === 'restaurant' || userData.type === 'vendor') {
+    if (isVendor) {
         vendorActionBox.style.display = 'block';
-        feedTitle.innerText = "My Food Listings";
+        if(feedTitle) feedTitle.innerText = "My Food Listings";
     } else {
         ngoActionBox.style.display = 'block';
-        feedTitle.innerText = "Available Community Meals";
+        if(feedTitle) feedTitle.innerText = "Available Community Meals";
     }
 
     // 2. Logout Logic
@@ -63,7 +68,7 @@ document.addEventListener('DOMContentLoaded', () => {
         let listings = [];
         try {
             // If vendor, we want their specific listings. If NGO, we want all available.
-            const queryParam = (userData.type === 'restaurant' || userData.type === 'vendor') ? `?vendorId=${userData.id}` : '';
+            const queryParam = isVendor ? `?vendorId=${userData.id}` : '';
             const response = await fetch(`${API_BASE}/listings${queryParam}`, {
                 headers: authHeaders
             });
@@ -78,7 +83,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         // HARDCODED DEMO OVERRIDE FOR SELLER DASHBOARD
-        if (userData.type === 'restaurant' || userData.type === 'vendor') {
+        if (isVendor) {
             listings = [
                 { name: "Idli with Sambar", quantity: "12 servings", dietary: "vegetarian", prepared: "7:00 AM", bestBefore: "10:00 AM", vendorName: "Murugan Idli Shop", section: "listings" },
                 { name: "Masala Dosa", quantity: "8 servings", dietary: "vegetarian", prepared: "7:30 AM", bestBefore: "10:30 AM", vendorName: "Saravana Bhavan", section: "listings" },
@@ -172,7 +177,7 @@ document.addEventListener('DOMContentLoaded', () => {
             `;
 
             let actionBtn = '';
-            if (userData.type === 'ngo' && !isClaimed) {
+            if (isNgo && !isClaimed) {
                 actionBtn = `<button class="btn btn-primary w-100 btn-claim" data-id="${item.id}" style="margin-top: 10px;">Claim Food <i class="fa-solid fa-hand-holding-heart"></i></button>`;
             }
 
