@@ -3809,3 +3809,15 @@ select.form-control option {
     }
 }
 
+/* Green Route Styles */
+.green-route-card {
+    background: linear-gradient(145deg, rgba(16, 185, 129, 0.08), rgba(16, 185, 129, 0.02)) !important;
+    border: 1px solid rgba(16, 185, 129, 0.2) !important;
+    box-shadow: 0 4px 15px rgba(16, 185, 129, 0.05) !important;
+}
+
+.green-route-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 25px rgba(16, 185, 129, 0.1) !important;
+    border-color: rgba(16, 185, 129, 0.4) !important;
+}

@@ -207,9 +207,9 @@ app.get('/api/listings', (req, res) => {
         sql += ` AND vendorId = ?`;
         params.push(vendorId);
     } else {
-        // Public feed: only available items by default
+        // Public feed: only available items by default, omit green route
         const targetStatus = status || 'available';
-        sql += ` AND status = ?`;
+        sql += ` AND status = ? AND is_green_route = 0`;
         params.push(targetStatus);
     }
 
@@ -234,7 +234,8 @@ app.get('/api/stats', (req, res) => {
         totalClaimed   : `SELECT COUNT(*) as count FROM food_listings WHERE status IN ('claimed','sold')`,
         totalVendors   : `SELECT COUNT(*) as count FROM users WHERE accountType IN ('restaurant','vendor')`,
         totalNGOs      : `SELECT COUNT(*) as count FROM users WHERE accountType IN ('ngo','shelter')`,
-        totalOrders    : `SELECT COUNT(*) as count FROM orders`
+        totalOrders    : `SELECT COUNT(*) as count FROM orders`,
+        totalGreenRoute: `SELECT COALESCE(SUM(CAST(quantity AS NUMERIC)), 0) as count FROM food_listings WHERE is_green_route = 1`
     };
 
     const results = {};
@@ -283,7 +284,7 @@ app.post('/api/listings', authenticateToken, (req, res) => {
     const {
         name, description, category, price,
         quantity, unit, expiryTime, pickupTime,
-        condition, allergens, imageUrl
+        condition, allergens, imageUrl, isGreenRoute
     } = req.body;
 
     if (!name || !quantity) {
@@ -293,8 +294,8 @@ app.post('/api/listings', authenticateToken, (req, res) => {
     const sql = `
         INSERT INTO food_listings
             (vendorId, vendorName, name, description, category, price, quantity, unit,
-             expiryTime, pickupTime, condition, allergens, imageUrl, datePosted)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
+             expiryTime, pickupTime, condition, allergens, imageUrl, is_green_route, datePosted)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
     `;
     const params = [
         req.user.id,
@@ -309,7 +310,8 @@ app.post('/api/listings', authenticateToken, (req, res) => {
         pickupTime      || null,
         condition       || 'Fresh',
         allergens       || null,
-        imageUrl        || null
+        imageUrl        || null,
+        isGreenRoute ? 1 : 0
     ];
 
     db.run(sql, params, function (err) {
