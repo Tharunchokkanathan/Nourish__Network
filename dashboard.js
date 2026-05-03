@@ -145,8 +145,22 @@ document.addEventListener('DOMContentLoaded', () => {
             `;
 
             let actionBtn = '';
+            let editBtn = '';
+            
             if (isNgo && !isClaimed) {
                 actionBtn = `<button class="btn btn-primary w-100 btn-claim" data-id="${item.id || 'demo'}" style="margin-top: 10px;">Claim Food <i class="fa-solid fa-hand-holding-heart"></i></button>`;
+            } else if (isVendor) {
+                // For presentation: Add Edit and Delete buttons for vendors
+                editBtn = `
+                    <div style="display:flex; gap: 8px; margin-top: 10px;">
+                        <button class="btn btn-secondary w-100 btn-edit" style="font-size: 0.85rem; padding: 6px 12px; background: rgba(0,0,0,0.05); color: #475569; border: 1px solid rgba(0,0,0,0.1);">
+                            <i class="fa-solid fa-pen-to-square"></i> Edit
+                        </button>
+                        <button class="btn btn-secondary w-100 btn-delete" style="font-size: 0.85rem; padding: 6px 12px; background: rgba(0,0,0,0.05); color: #dc2626; border: 1px solid rgba(220, 38, 38, 0.1);">
+                            <i class="fa-solid fa-trash"></i>
+                        </button>
+                    </div>
+                `;
             }
 
             card.innerHTML = `
@@ -169,6 +183,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 </div>
                 ${unepBadge}
                 ${actionBtn}
+                ${editBtn}
             `;
             
             if (item.section === 'sweets' && sweetsFeed) {
@@ -182,6 +197,25 @@ document.addEventListener('DOMContentLoaded', () => {
         document.querySelectorAll('.btn-claim').forEach(btn => {
             btn.addEventListener('click', () => {
                 alert("This is a hardcoded presentation demo. In the live version, this would reserve the meal for your organization.");
+            });
+        });
+
+        // Event Listeners for Edit buttons (Mock)
+        document.querySelectorAll('.btn-edit').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const foodName = btn.closest('.food-card').querySelector('.food-desc').innerText.trim();
+                alert(`Opening Edit Panel for: ${foodName}\n\nIn the live version, this would allow you to update servings, best-before times, and dietary tags.`);
+            });
+        });
+
+        // Event Listeners for Delete buttons (Mock)
+        document.querySelectorAll('.btn-delete').forEach(btn => {
+            btn.addEventListener('click', () => {
+                if (confirm("Are you sure you want to remove this listing? This action cannot be undone.")) {
+                    btn.closest('.food-card').style.opacity = '0.5';
+                    btn.closest('.food-card').style.pointerEvents = 'none';
+                    alert("Listing marked for removal. In the live version, this would permanently delete the item from the marketplace.");
+                }
             });
         });
     }
