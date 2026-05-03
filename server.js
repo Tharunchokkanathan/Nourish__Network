@@ -230,11 +230,10 @@ app.get('/api/listings', (req, res) => {
 // GET /api/stats
 app.get('/api/stats', (req, res) => {
     const queries = {
-        totalListings  : `SELECT COUNT(*) as count FROM food_listings`,
-        totalClaimed   : `SELECT COUNT(*) as count FROM food_listings WHERE status IN ('claimed','sold')`,
-        totalVendors   : `SELECT COUNT(*) as count FROM users WHERE accountType IN ('restaurant','vendor')`,
-        totalNGOs      : `SELECT COUNT(*) as count FROM users WHERE accountType IN ('ngo','shelter')`,
-        totalOrders    : `SELECT COUNT(*) as count FROM orders`
+        totalMealsSaved : `SELECT SUM(CAST(quantity AS REAL)) as count FROM food_listings WHERE status IN ('claimed','sold')`,
+        totalKgShared   : `SELECT SUM(CASE WHEN LOWER(unit) = 'kg' THEN CAST(quantity AS REAL) ELSE CAST(quantity AS REAL) * 0.4 END) as count FROM food_listings WHERE status IN ('claimed','sold')`,
+        totalVendors     : `SELECT COUNT(*) as count FROM users WHERE accountType IN ('restaurant','vendor')`,
+        totalNGOs        : `SELECT COUNT(*) as count FROM users WHERE accountType IN ('ngo','shelter')`
     };
 
     const results = {};

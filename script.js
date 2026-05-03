@@ -1,6 +1,7 @@
 document.addEventListener('DOMContentLoaded', () => {
-    // 1. Configuration
-    const API_BASE = 'https://nourish-network-4bit.onrender.com/api';
+    // 1. Configuration - Dynamic API Detection
+    const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+    const API_BASE = isLocal ? '/api' : 'https://nourish-network-4bit.onrender.com/api';
 
     // 1. Initial State
     const state = {
@@ -14,62 +15,33 @@ document.addEventListener('DOMContentLoaded', () => {
                 text: "Nourish Network has completely changed how we give back. We used to throw away kilos of premium food a day; now it feeds kids at the local orphanage within hours.",
                 stars: 5,
                 img: "https://i.pravatar.cc/100?img=1"
-            },
-            {
-                name: "Sarah Jenkins",
-                org: "Hope Shelter NGO",
-                text: "As a small shelter, getting consistent, nutritious food was a daily struggle. This platform gives us dignity and reliability. We are immensely grateful.",
-                stars: 5,
-                img: "https://i.pravatar.cc/100?img=5"
-            },
-            {
-                name: "David Lee",
-                org: "Event Catering Co.",
-                text: "The interface is so easy to use. I can share our freshly prepared catering food in 2 minutes, and a volunteer comes to pick it up. Everyone in hospitality should join.",
-                stars: 5,
-                img: "https://i.pravatar.cc/100?img=33"
             }
         ],
-        vendors: [
-            { id: 101, name: "Mathsya Mess", cat: "South Indian", rating: 4.8, dist: "1.2 km" },
-            { id: 102, name: "Annapoorna Catering", cat: "Bakery & Sweets", rating: 4.5, dist: "0.8 km" },
-            { id: 103, name: "Green Leaf Salads", cat: "Healthy", rating: 4.9, dist: "2.5 km" }
-        ],
-        stats: { totalListings: 0, totalClaimed: 0, totalVendors: 0, totalNGOs: 0 }
+        stats: { totalMealsSaved: 0, totalKgShared: 0, totalVendors: 0, totalNGOs: 0 }
     };
 
     // --- BACKEND SYNC ENGINE ---
     async function refreshState() {
         try {
-            // Fetch Listings
             const listRes = await fetch(`${API_BASE}/listings`);
             if (listRes.ok) {
                 const rawListings = await listRes.json();
-                // Normalize keys for frontend (quantity -> qty, expiryTime -> expiry, imageUrl -> img)
-                state.listings = rawListings.map(item => {
-                    let finalImg = item.imageUrl || item.img || "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=600";
-                    // If image is a local upload path, point to the production server
-                    if (finalImg.startsWith('/uploads')) {
-                        finalImg = 'https://nourish-network-4bit.onrender.com' + finalImg;
-                    }
-                    return {
-                        ...item,
-                        qty: item.quantity || item.qty || 0,
-                        expiry: item.expiryTime || item.expiry || null,
-                        img: finalImg
-                    };
-                });
+                state.listings = rawListings.map(item => ({
+                    ...item,
+                    qty: item.quantity || item.qty || 0,
+                    expiry: item.expiryTime || item.expiry || null,
+                    img: (item.imageUrl || item.img || "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=600").startsWith('/uploads') 
+                        ? (isLocal ? '' : 'https://nourish-network-4bit.onrender.com') + (item.imageUrl || item.img)
+                        : (item.imageUrl || item.img)
+                }));
             }
 
-
-            // Fetch Stats
             const statsRes = await fetch(`${API_BASE}/stats`);
             if (statsRes.ok) {
                 state.stats = await statsRes.json();
                 updateLiveStats();
             }
 
-            // Re-render current portal
             renderPortal();
         } catch (err) {
             console.error("Backend Sync Failed:", err);
@@ -79,12 +51,15 @@ document.addEventListener('DOMContentLoaded', () => {
     function updateLiveStats() {
         const listedEl = document.querySelector('[data-target-stat="listed"]');
         const fulfilledEl = document.querySelector('[data-target-stat="fulfilled"]');
+        const vendorsEl = document.querySelector('[data-target-stat="vendors"]');
+        const ngosEl = document.querySelector('[data-target-stat="ngos"]');
         
-        if (listedEl) listedEl.setAttribute('data-target', state.stats.totalListings);
-        if (fulfilledEl) fulfilledEl.setAttribute('data-target', state.stats.totalClaimed);
+        if (listedEl) listedEl.setAttribute('data-target', Math.round(state.stats.totalMealsSaved || 0));
+        if (fulfilledEl) fulfilledEl.setAttribute('data-target', Math.round(state.stats.totalKgShared || 0));
+        if (vendorsEl) vendorsEl.setAttribute('data-target', state.stats.totalVendors || 0);
+        if (ngosEl) ngosEl.setAttribute('data-target', state.stats.totalNGOs || 0);
         
-        // Re-trigger counters if visible
-        if (hasCounted) startCounters();
+        startCounters();
     }
 
 
