@@ -3,13 +3,33 @@ document.addEventListener('DOMContentLoaded', () => {
     let userData = null;
     try {
         userData = JSON.parse(localStorage.getItem('nourishUser'));
-    } catch (e) {
-        console.error("User data corruption", e);
+    } catch (e) {}
+
+    // Fallback for presentation if not logged in
+    if (!userData) {
+        console.warn("No user found, using presentation fallback mode.");
+        userData = { name: "Presentation Guest", type: "vendor", organizationName: "Nourish Hub" };
     }
 
-    if (!userData) {
-        window.location.href = 'index.html';
-        return;
+    // Scroll Animation Logic (Crucial for visibility)
+    const observerOptions = {
+        threshold: 0.1,
+        rootMargin: '0px 0px -50px 0px'
+    };
+
+    const scrollObserver = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                entry.target.classList.add('animated');
+                scrollObserver.unobserve(entry.target);
+            }
+        });
+    }, observerOptions);
+
+    function initAnimations() {
+        document.querySelectorAll('.animate-on-scroll').forEach(el => {
+            scrollObserver.observe(el);
+        });
     }
 
     // Normalize user type
@@ -221,5 +241,13 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // Run safe render
-    renderDashboard().catch(err => console.error("Render failed", err));
+    renderDashboard().then(() => {
+        initAnimations();
+    }).catch(err => {
+        console.error("Render failed", err);
+        initAnimations(); // Still try to animate static content
+    });
+
+    // Initial static animations
+    initAnimations();
 });
