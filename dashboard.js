@@ -82,42 +82,40 @@ document.addEventListener('DOMContentLoaded', () => {
             console.warn("Backend API unavailable, using fallback.");
         }
 
-        // HARDCODED DEMO OVERRIDE FOR SELLER DASHBOARD
-        if (isVendor) {
-            listings = [
-                { name: "Idli with Sambar", quantity: "12 servings", dietary: "vegetarian", prepared: "7:00 AM", bestBefore: "10:00 AM", vendorName: "Murugan Idli Shop", section: "listings" },
-                { name: "Masala Dosa", quantity: "8 servings", dietary: "vegetarian", prepared: "7:30 AM", bestBefore: "10:30 AM", vendorName: "Saravana Bhavan", section: "listings" },
-                { name: "Vada with Coconut Chutney", quantity: "15 servings", dietary: "vegetarian", prepared: "8:00 AM", bestBefore: "11:00 AM", vendorName: "Vasanta Bhavan", section: "listings" },
-                { name: "Pongal", quantity: "18 servings", dietary: "vegetarian", prepared: "7:00 AM", bestBefore: "11:00 AM", vendorName: "Karpagambal Mess", section: "listings" },
-                { name: "Curd Rice", quantity: "14 servings", dietary: "vegetarian", prepared: "12:00 PM", bestBefore: "4:00 PM", vendorName: "Sangeetha Restaurant", section: "listings" },
-                { name: "Lemon Rice", quantity: "10 servings", dietary: "vegetarian", prepared: "12:00 PM", bestBefore: "4:00 PM", vendorName: "Saravana Bhavan", section: "listings" },
-                { name: "Tamarind Rice (Puliyodarai)", quantity: "9 servings", dietary: "vegetarian", prepared: "11:30 AM", bestBefore: "4:00 PM", vendorName: "Karpagambal Mess", section: "listings" },
-                { name: "Vegetable Biryani", quantity: "16 servings", dietary: "vegetarian", prepared: "12:30 PM", bestBefore: "5:00 PM", vendorName: "Vasanta Bhavan", section: "listings" },
-                { name: "Chicken Biryani", quantity: "20 servings", dietary: "non-vegetarian", prepared: "12:00 PM", bestBefore: "4:30 PM", vendorName: "Anjappar Chettinad", section: "listings" },
-                { name: "Mutton Kuzhambu", quantity: "11 servings", dietary: "non-vegetarian", prepared: "11:00 AM", bestBefore: "3:00 PM", vendorName: "Junior Kuppanna", section: "listings" },
-                { name: "Rasam Rice", quantity: "13 servings", dietary: "vegetarian", prepared: "12:00 PM", bestBefore: "4:00 PM", vendorName: "Murugan Idli Shop", section: "listings" },
-                { name: "Kootu (Mixed Vegetable)", quantity: "10 servings", dietary: "vegetarian", prepared: "11:30 AM", bestBefore: "3:30 PM", vendorName: "Sangeetha Restaurant", section: "listings" },
-                { name: "Appam with Vegetable Stew", quantity: "9 servings", dietary: "vegetarian", prepared: "7:00 AM", bestBefore: "10:00 AM", vendorName: "Vasanta Bhavan", section: "listings" },
-                { name: "Poori with Potato Masala", quantity: "12 servings", dietary: "vegetarian", prepared: "8:00 AM", bestBefore: "11:00 AM", vendorName: "Saravana Bhavan", section: "listings" },
-                { name: "Upma", quantity: "14 servings", dietary: "vegetarian", prepared: "7:30 AM", bestBefore: "10:30 AM", vendorName: "Karpagambal Mess", section: "listings" },
-                { name: "Fish Curry with Rice", quantity: "11 servings", dietary: "non-vegetarian", prepared: "12:00 PM", bestBefore: "3:00 PM", vendorName: "Junior Kuppanna", section: "listings" },
-                { name: "Egg Curry", quantity: "8 servings", dietary: "non-vegetarian", prepared: "11:30 AM", bestBefore: "3:00 PM", vendorName: "Anjappar Chettinad", section: "listings" },
-                { name: "Chapati with Dal", quantity: "15 servings", dietary: "vegetarian", prepared: "6:30 PM", bestBefore: "9:30 PM", vendorName: "Sangeetha Restaurant", section: "listings" },
-                { name: "Sambar Rice", quantity: "17 servings", dietary: "vegetarian", prepared: "12:00 PM", bestBefore: "4:00 PM", vendorName: "Murugan Idli Shop", section: "listings" },
-                { name: "Tomato Rice", quantity: "10 servings", dietary: "vegetarian", prepared: "11:30 AM", bestBefore: "3:30 PM", vendorName: "Saravana Bhavan", section: "listings" },
-                
-                { name: "Rava Kesari", quantity: "14 servings", dietary: "vegetarian", prepared: "8:00 AM", bestBefore: "8:00 PM", vendorName: "Adyar Ananda Bhavan", section: "sweets" },
-                { name: "Payasam (Semiya/Vermicelli)", quantity: "11 servings", dietary: "vegetarian", prepared: "10:00 AM", bestBefore: "6:00 PM", vendorName: "Murugan Idli Shop", section: "sweets" },
-                { name: "Paal Payasam (Milk Kheer)", quantity: "9 servings", dietary: "vegetarian", prepared: "9:00 AM", bestBefore: "3:00 PM", vendorName: "Saravana Bhavan", section: "sweets" },
-                { name: "Sakkarai Pongal (Sweet Pongal)", quantity: "13 servings", dietary: "vegetarian", prepared: "7:00 AM", bestBefore: "12:00 PM", vendorName: "Karpagambal Mess", section: "sweets" },
-                { name: "Adhirasam", quantity: "10 servings", dietary: "vegetarian", prepared: "9:00 AM", bestBefore: "9:00 PM", vendorName: "Adyar Ananda Bhavan", section: "sweets" },
-                { name: "Mysore Pak", quantity: "8 servings", dietary: "vegetarian", prepared: "8:30 AM", bestBefore: "9:00 PM", vendorName: "Adyar Ananda Bhavan", section: "sweets" },
-                { name: "Coconut Burfi", quantity: "7 servings", dietary: "vegetarian", prepared: "8:00 AM", bestBefore: "9:00 PM", vendorName: "Sangeetha Restaurant", section: "sweets" },
-                { name: "Kozhukattai (Modak)", quantity: "12 servings", dietary: "vegetarian", prepared: "7:30 AM", bestBefore: "1:00 PM", vendorName: "Vasanta Bhavan", section: "sweets" },
-                { name: "Aval Payasam (Poha Kheer)", quantity: "9 servings", dietary: "vegetarian", prepared: "10:00 AM", bestBefore: "4:00 PM", vendorName: "Murugan Idli Shop", section: "sweets" },
-                { name: "Unniyappam", quantity: "16 servings", dietary: "vegetarian", prepared: "8:00 AM", bestBefore: "8:00 PM", vendorName: "Adyar Ananda Bhavan", section: "sweets" }
-            ];
-        }
+        // HARDCODED DEMO OVERRIDE (FOR PRESENTATION)
+        listings = [
+            { name: "Idli with Sambar", quantity: "12 servings", dietary: "vegetarian", prepared: "7:00 AM", bestBefore: "10:00 AM", vendorName: "Murugan Idli Shop", section: "listings" },
+            { name: "Masala Dosa", quantity: "8 servings", dietary: "vegetarian", prepared: "7:30 AM", bestBefore: "10:30 AM", vendorName: "Saravana Bhavan", section: "listings" },
+            { name: "Vada with Coconut Chutney", quantity: "15 servings", dietary: "vegetarian", prepared: "8:00 AM", bestBefore: "11:00 AM", vendorName: "Vasanta Bhavan", section: "listings" },
+            { name: "Pongal", quantity: "18 servings", dietary: "vegetarian", prepared: "7:00 AM", bestBefore: "11:00 AM", vendorName: "Karpagambal Mess", section: "listings" },
+            { name: "Curd Rice", quantity: "14 servings", dietary: "vegetarian", prepared: "12:00 PM", bestBefore: "4:00 PM", vendorName: "Sangeetha Restaurant", section: "listings" },
+            { name: "Lemon Rice", quantity: "10 servings", dietary: "vegetarian", prepared: "12:00 PM", bestBefore: "4:00 PM", vendorName: "Saravana Bhavan", section: "listings" },
+            { name: "Tamarind Rice (Puliyodarai)", quantity: "9 servings", dietary: "vegetarian", prepared: "11:30 AM", bestBefore: "4:00 PM", vendorName: "Karpagambal Mess", section: "listings" },
+            { name: "Vegetable Biryani", quantity: "16 servings", dietary: "vegetarian", prepared: "12:30 PM", bestBefore: "5:00 PM", vendorName: "Vasanta Bhavan", section: "listings" },
+            { name: "Chicken Biryani", quantity: "20 servings", dietary: "non-vegetarian", prepared: "12:00 PM", bestBefore: "4:30 PM", vendorName: "Anjappar Chettinad", section: "listings" },
+            { name: "Mutton Kuzhambu", quantity: "11 servings", dietary: "non-vegetarian", prepared: "11:00 AM", bestBefore: "3:00 PM", vendorName: "Junior Kuppanna", section: "listings" },
+            { name: "Rasam Rice", quantity: "13 servings", dietary: "vegetarian", prepared: "12:00 PM", bestBefore: "4:00 PM", vendorName: "Murugan Idli Shop", section: "listings" },
+            { name: "Kootu (Mixed Vegetable)", quantity: "10 servings", dietary: "vegetarian", prepared: "11:30 AM", bestBefore: "3:30 PM", vendorName: "Sangeetha Restaurant", section: "listings" },
+            { name: "Appam with Vegetable Stew", quantity: "9 servings", dietary: "vegetarian", prepared: "7:00 AM", bestBefore: "10:00 AM", vendorName: "Vasanta Bhavan", section: "listings" },
+            { name: "Poori with Potato Masala", quantity: "12 servings", dietary: "vegetarian", prepared: "8:00 AM", bestBefore: "11:00 AM", vendorName: "Saravana Bhavan", section: "listings" },
+            { name: "Upma", quantity: "14 servings", dietary: "vegetarian", prepared: "7:30 AM", bestBefore: "10:30 AM", vendorName: "Karpagambal Mess", section: "listings" },
+            { name: "Fish Curry with Rice", quantity: "11 servings", dietary: "non-vegetarian", prepared: "12:00 PM", bestBefore: "3:00 PM", vendorName: "Junior Kuppanna", section: "listings" },
+            { name: "Egg Curry", quantity: "8 servings", dietary: "non-vegetarian", prepared: "11:30 AM", bestBefore: "3:00 PM", vendorName: "Anjappar Chettinad", section: "listings" },
+            { name: "Chapati with Dal", quantity: "15 servings", dietary: "vegetarian", prepared: "6:30 PM", bestBefore: "9:30 PM", vendorName: "Sangeetha Restaurant", section: "listings" },
+            { name: "Sambar Rice", quantity: "17 servings", dietary: "vegetarian", prepared: "12:00 PM", bestBefore: "4:00 PM", vendorName: "Murugan Idli Shop", section: "listings" },
+            { name: "Tomato Rice", quantity: "10 servings", dietary: "vegetarian", prepared: "11:30 AM", bestBefore: "3:30 PM", vendorName: "Saravana Bhavan", section: "listings" },
+            
+            { name: "Rava Kesari", quantity: "14 servings", dietary: "vegetarian", prepared: "8:00 AM", bestBefore: "8:00 PM", vendorName: "Adyar Ananda Bhavan", section: "sweets" },
+            { name: "Payasam (Semiya/Vermicelli)", quantity: "11 servings", dietary: "vegetarian", prepared: "10:00 AM", bestBefore: "6:00 PM", vendorName: "Murugan Idli Shop", section: "sweets" },
+            { name: "Paal Payasam (Milk Kheer)", quantity: "9 servings", dietary: "vegetarian", prepared: "9:00 AM", bestBefore: "3:00 PM", vendorName: "Saravana Bhavan", section: "sweets" },
+            { name: "Sakkarai Pongal (Sweet Pongal)", quantity: "13 servings", dietary: "vegetarian", prepared: "7:00 AM", bestBefore: "12:00 PM", vendorName: "Karpagambal Mess", section: "sweets" },
+            { name: "Adhirasam", quantity: "10 servings", dietary: "vegetarian", prepared: "9:00 AM", bestBefore: "9:00 PM", vendorName: "Adyar Ananda Bhavan", section: "sweets" },
+            { name: "Mysore Pak", quantity: "8 servings", dietary: "vegetarian", prepared: "8:30 AM", bestBefore: "9:00 PM", vendorName: "Adyar Ananda Bhavan", section: "sweets" },
+            { name: "Coconut Burfi", quantity: "7 servings", dietary: "vegetarian", prepared: "8:00 AM", bestBefore: "9:00 PM", vendorName: "Sangeetha Restaurant", section: "sweets" },
+            { name: "Kozhukattai (Modak)", quantity: "12 servings", dietary: "vegetarian", prepared: "7:30 AM", bestBefore: "1:00 PM", vendorName: "Vasanta Bhavan", section: "sweets" },
+            { name: "Aval Payasam (Poha Kheer)", quantity: "9 servings", dietary: "vegetarian", prepared: "10:00 AM", bestBefore: "4:00 PM", vendorName: "Murugan Idli Shop", section: "sweets" },
+            { name: "Unniyappam", quantity: "16 servings", dietary: "vegetarian", prepared: "8:00 AM", bestBefore: "8:00 PM", vendorName: "Adyar Ananda Bhavan", section: "sweets" }
+        ];
 
         loader.style.display = 'none';
         listingsFeed.innerHTML = '';
