@@ -20,6 +20,22 @@ document.addEventListener('DOMContentLoaded', () => {
         stats: { totalMealsSaved: 0, totalKgShared: 0, totalVendors: 0, totalNGOs: 0 }
     };
 
+    // --- ATTACH GLOBAL LISTENERS ---
+    const loginToggleDock = document.getElementById('login-toggle-dock');
+    if (loginToggleDock) {
+        loginToggleDock.addEventListener('click', (e) => {
+            e.preventDefault();
+            const token = sessionStorage.getItem('nourishToken');
+            if (token) {
+                if (confirm("Are you sure you want to logout?")) {
+                    logout();
+                }
+            } else {
+                showLoginForm();
+            }
+        });
+    }
+
     // --- BACKEND SYNC ENGINE ---
     async function refreshState(silent = false) {
         try {
@@ -1428,22 +1444,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
 
-    const loginToggleDock = document.getElementById('login-toggle-dock');
-    if (loginToggleDock) {
-        console.log("Attaching Login/Logout listener to dock item");
-        loginToggleDock.onclick = (e) => {
-            e.preventDefault();
-            const token = sessionStorage.getItem('nourishToken');
-            console.log("Dock Login/Logout clicked. Token exists:", !!token);
-            if (token) {
-                if (confirm("Are you sure you want to logout?")) {
-                    logout();
-                }
-            } else {
-                showLoginForm();
-            }
-        };
-    }
 
     
     // Community Hub / Comments Logic
