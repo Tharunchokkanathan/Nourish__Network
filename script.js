@@ -2023,9 +2023,9 @@ document.addEventListener('DOMContentLoaded', () => {
         // Listen for the custom event to load data
         document.addEventListener('load-profile-data', loadProfile);
         
-        const settingsToggleNav = document.getElementById('settings-toggle-nav');
-        if (settingsToggleNav) {
-            settingsToggleNav.onclick = (e) => {
+        const settingsNavBtn = document.getElementById('settings-toggle-nav');
+        if (settingsNavBtn) {
+            settingsNavBtn.onclick = (e) => {
                 e.preventDefault();
                 window.openSettings();
             };
