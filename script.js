@@ -720,8 +720,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const dockHome = document.querySelector('.bottom-nav .nav-item[href="#home"]');
         if (dockHome) {
             dockHome.addEventListener('click', (e) => {
+                e.preventDefault();
                 if (state.activePortal !== 'home') {
-                    e.preventDefault();
                     // Auto-logout when going home from a dashboard
                     if (sessionStorage.getItem('nourishToken')) {
                         logout();
@@ -729,7 +729,33 @@ document.addEventListener('DOMContentLoaded', () => {
                         state.activePortal = 'home';
                         renderPortal();
                     }
-                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                }
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            });
+        }
+
+        // Wire up Dock Add Listing button (Seller)
+        const addDockItem = document.getElementById('add-listing-dock');
+        if (addDockItem) {
+            addDockItem.addEventListener('click', (e) => {
+                e.preventDefault();
+                const formSection = document.getElementById('add-listing-section');
+                if (formSection) {
+                    formSection.scrollIntoView({ behavior: 'smooth' });
+                    // Highlight the form
+                    formSection.style.boxShadow = '0 0 30px var(--primary-color)';
+                    setTimeout(() => formSection.style.boxShadow = '', 2000);
+                }
+            });
+        }
+
+        // Wire up Dock Cart button (Buyer)
+        const cartDockItem = document.getElementById('cart-toggle-dock');
+        if (cartDockItem) {
+            cartDockItem.addEventListener('click', (e) => {
+                e.preventDefault();
+                if (cartDrawer) {
+                    cartDrawer.classList.add('active');
                 }
             });
         }
