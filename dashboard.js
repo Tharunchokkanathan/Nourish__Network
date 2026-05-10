@@ -115,6 +115,78 @@ document.addEventListener('DOMContentLoaded', () => {
                 
                 vendorTypeBadge.innerHTML = `Food Vendor <span class="badge ${badgeClass}" style="margin-left: 10px; margin-bottom: 0; animation: badge-glow 2s infinite alternate;">${badgeName} <i class="fa-solid fa-medal"></i></span>`;
             }
+
+            // --- Analytics Dashboard Logic ---
+            const analyticsDashboard = document.getElementById('analyticsDashboard');
+            if (analyticsDashboard) {
+                analyticsDashboard.style.display = 'block';
+                
+                const totalMealsStat = document.getElementById('totalMealsStat');
+                const co2OffsetStat = document.getElementById('co2OffsetStat');
+                
+                if (totalMealsStat) totalMealsStat.innerText = totalMealsDonated;
+                if (co2OffsetStat) co2OffsetStat.innerText = (totalMealsDonated * 2.5).toFixed(1);
+                
+                // Group data by date
+                const dateData = {};
+                // listings are ordered DESC by datePosted from API, so reverse for chronological chart
+                const chronListings = [...listings].reverse(); 
+                chronListings.forEach(item => {
+                    const dateObj = new Date(item.datePosted || Date.now());
+                    const dateStr = dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                    const qty = parseFloat(item.quantity) || 0;
+                    dateData[dateStr] = (dateData[dateStr] || 0) + qty;
+                });
+                
+                const labels = Object.keys(dateData);
+                const data = Object.values(dateData);
+                
+                // Initialize Chart
+                const ctx = document.getElementById('impactChart');
+                if (ctx && window.Chart) {
+                    if (window.impactChartInstance) window.impactChartInstance.destroy();
+                    window.impactChartInstance = new Chart(ctx, {
+                        type: 'line',
+                        data: {
+                            labels: labels.length ? labels : ['Today'],
+                            datasets: [{
+                                label: 'Meals Saved',
+                                data: data.length ? data : [0],
+                                borderColor: '#10b981',
+                                backgroundColor: 'rgba(16, 185, 129, 0.2)',
+                                borderWidth: 3,
+                                fill: true,
+                                tension: 0.4,
+                                pointBackgroundColor: '#10b981',
+                                pointRadius: 4
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: { display: false },
+                                tooltip: {
+                                    backgroundColor: '#1e293b',
+                                    titleFont: { family: "'Inter', sans-serif" },
+                                    bodyFont: { family: "'Inter', sans-serif" },
+                                    padding: 10,
+                                    cornerRadius: 8
+                                }
+                            },
+                            scales: {
+                                y: { 
+                                    beginAtZero: true,
+                                    grid: { color: 'rgba(226, 232, 240, 0.5)' }
+                                },
+                                x: {
+                                    grid: { display: false }
+                                }
+                            }
+                        }
+                    });
+                }
+            }
         }
         // --------------------------
 
