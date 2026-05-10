@@ -824,6 +824,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const addDockItem   = document.getElementById('add-listing-dock');
         const loginDockItem = document.getElementById('login-toggle-dock');
         const settingsDockItem = document.getElementById('settings-toggle-dock');
+        const settingsNavItem = document.getElementById('settings-toggle-nav');
         const landingItems  = document.querySelectorAll('.landing-only');
 
         if (state.activePortal === 'buyer') {
@@ -831,18 +832,21 @@ document.addEventListener('DOMContentLoaded', () => {
             if (cartDockItem)  cartDockItem.style.setProperty('display', 'flex', 'important');
             if (addDockItem)   addDockItem.style.setProperty('display', 'none', 'important');
             if (settingsDockItem) settingsDockItem.style.setProperty('display', 'flex', 'important');
+            if (settingsNavItem)  settingsNavItem.style.setProperty('display', 'flex', 'important');
             if (loginDockItem) loginDockItem.style.setProperty('display', 'flex', 'important');
         } else if (state.activePortal === 'seller') {
             landingItems.forEach(el => el.style.setProperty('display', 'none', 'important'));
             if (cartDockItem)  cartDockItem.style.setProperty('display', 'none', 'important');
             if (addDockItem)   addDockItem.style.setProperty('display', 'flex', 'important');
             if (settingsDockItem) settingsDockItem.style.setProperty('display', 'flex', 'important');
+            if (settingsNavItem)  settingsNavItem.style.setProperty('display', 'flex', 'important');
             if (loginDockItem) loginDockItem.style.setProperty('display', 'flex', 'important');
         } else {
             landingItems.forEach(el => el.style.setProperty('display', 'flex', 'important'));
             if (cartDockItem)  cartDockItem.style.setProperty('display', 'none', 'important');
             if (addDockItem)   addDockItem.style.setProperty('display', 'none', 'important');
             if (settingsDockItem) settingsDockItem.style.setProperty('display', 'none', 'important');
+            if (settingsNavItem)  settingsNavItem.style.setProperty('display', 'none', 'important');
             if (loginDockItem) loginDockItem.style.setProperty('display', 'flex', 'important');
         }
     }
@@ -1801,11 +1805,22 @@ document.addEventListener('DOMContentLoaded', () => {
             } catch (e) { console.error(e); }
         }
 
-        if (settingsToggle) {
-            console.log("Attaching settings listener to dock item");
-            settingsToggle.onclick = (e) => {
+        const settingsToggleDock = document.getElementById('settings-toggle-dock');
+        const settingsToggleNav = document.getElementById('settings-toggle-nav');
+
+        if (settingsToggleDock) {
+            settingsToggleDock.onclick = (e) => {
                 e.preventDefault();
-                console.log("Settings dock item clicked");
+                console.log("Settings DOCK clicked");
+                loadProfile();
+                settingsModal.style.display = 'flex';
+            };
+        }
+
+        if (settingsToggleNav) {
+            settingsToggleNav.onclick = (e) => {
+                e.preventDefault();
+                console.log("Settings NAV clicked");
                 loadProfile();
                 settingsModal.style.display = 'flex';
             };
