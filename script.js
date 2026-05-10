@@ -1755,6 +1755,9 @@ document.addEventListener('DOMContentLoaded', () => {
         const settingsForm = document.getElementById('settingsForm');
         const bioInput = document.getElementById('bioInput');
         const locationInput = document.getElementById('locationInput');
+        const contactPersonInput = document.getElementById('contactPersonInput');
+        const publicPhoneInput = document.getElementById('publicPhoneInput');
+        const websiteInput = document.getElementById('websiteInput');
         const avatarInput = document.getElementById('avatarInput');
         const avatarPreview = document.getElementById('avatarPreview');
 
@@ -1770,6 +1773,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     const profile = await res.json();
                     if (bioInput) bioInput.value = profile.bio || '';
                     if (locationInput) locationInput.value = profile.address || '';
+                    if (contactPersonInput) contactPersonInput.value = profile.contactPerson || '';
+                    if (publicPhoneInput) publicPhoneInput.value = profile.publicPhone || '';
+                    if (websiteInput) websiteInput.value = profile.website || '';
                     if (profile.avatarUrl && avatarPreview) {
                         avatarPreview.src = profile.avatarUrl;
                     }
@@ -1778,7 +1784,10 @@ document.addEventListener('DOMContentLoaded', () => {
                         ...JSON.parse(sessionStorage.getItem('nourishUser') || '{}'),
                         bio: profile.bio,
                         address: profile.address,
-                        avatarUrl: profile.avatarUrl
+                        avatarUrl: profile.avatarUrl,
+                        contactPerson: profile.contactPerson,
+                        publicPhone: profile.publicPhone,
+                        website: profile.website
                     }));
                 }
             } catch (e) { console.error(e); }
@@ -1853,6 +1862,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 const bio = bioInput.value.trim();
                 const address = locationInput.value.trim();
+                const contactPerson = contactPersonInput ? contactPersonInput.value.trim() : '';
+                const publicPhone = publicPhoneInput ? publicPhoneInput.value.trim() : '';
+                const website = websiteInput ? websiteInput.value.trim() : '';
+                
                 let avatarUrl = avatarPreview.dataset.uploadedUrl;
                 if (!avatarUrl && avatarPreview.src && !avatarPreview.src.includes('pravatar')) {
                     avatarUrl = avatarPreview.src;
@@ -1866,7 +1879,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             'Content-Type': 'application/json',
                             'Authorization': `Bearer ${token}` 
                         },
-                        body: JSON.stringify({ bio, address, avatarUrl })
+                        body: JSON.stringify({ bio, address, avatarUrl, contactPerson, publicPhone, website })
                     });
 
                     if (res.ok) {
