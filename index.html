@@ -512,67 +512,107 @@
         </div>
     </div>
 
-    <!-- Settings Modal -->
-    <div id="settingsModal" style="display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.5); z-index: 2000; align-items: center; justify-content: center; backdrop-filter: blur(5px);">
-        <div class="glass-card animate-on-scroll fade-up" style="width: 100%; max-width: 500px; padding: 40px; position: relative; background: var(--bg-surface);">
-            <button id="closeSettingsModal" style="position: absolute; top: 20px; right: 20px; background: none; border: none; font-size: 1.5rem; cursor: pointer; color: var(--text-primary);"><i class="fa-solid fa-xmark"></i></button>
-            <div class="card-header" style="margin-bottom: 20px; border-bottom: none; padding-bottom: 0;">
-                <i class="fa-solid fa-user-gear"></i>
-                <h2 style="margin: 0; font-size: 1.5rem;">Profile Settings</h2>
-            </div>
-            <form id="settingsForm">
-                <div class="form-group" style="text-align: center; margin-bottom: 20px;">
-                    <img id="avatarPreview" src="https://i.pravatar.cc/150?u=demo" alt="Avatar" style="width: 100px; height: 100px; border-radius: 50%; object-fit: cover; margin-bottom: 10px; border: 2px solid var(--primary-color);">
+    <!-- Settings Modal - Full Page Premium Design -->
+    <div id="settingsModal" style="display: none; position: fixed; inset: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.85); z-index: 2000; align-items: flex-start; justify-content: center; backdrop-filter: blur(14px); overflow-y: auto;">
+        <div style="width: 100%; max-width: 860px; margin: 40px auto 80px; padding: 0 16px;">
+
+            <!-- Header Bar -->
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 32px;">
+                <div style="display: flex; align-items: center; gap: 14px;">
+                    <div style="width: 46px; height: 46px; background: linear-gradient(135deg, var(--primary-color), #059669); border-radius: 12px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                        <i class="fa-solid fa-user-gear" style="color: white; font-size: 1.2rem;"></i>
+                    </div>
                     <div>
-                        <label for="avatarInput" class="btn btn-outline" style="font-size: 0.8rem; padding: 5px 10px; cursor: pointer;">Change Logo</label>
-                        <input type="file" id="avatarInput" accept="image/*" style="display: none;">
+                        <h2 style="margin: 0; font-size: 1.6rem; font-weight: 800; letter-spacing: -0.5px;">Profile Settings</h2>
+                        <p style="margin: 0; font-size: 0.8rem; color: var(--text-muted);">Manage your organization's identity and details</p>
                     </div>
                 </div>
-                <div class="form-group">
-                    <label for="bioInput">Short Bio</label>
-                    <textarea id="bioInput" class="form-control" placeholder="e.g. 5-Star Hotel in Downtown" rows="3" style="resize: vertical;"></textarea>
+                <button id="closeSettingsModal" style="width: 40px; height: 40px; background: rgba(255,255,255,0.06); border: 1px solid var(--border-glow); border-radius: 10px; font-size: 1.1rem; cursor: pointer; color: var(--text-primary); display: flex; align-items: center; justify-content: center;">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <form id="settingsForm">
+
+                <!-- SECTION 1: Identity -->
+                <div style="background: rgba(255,255,255,0.03); border: 1px solid var(--border-glow); border-radius: 20px; padding: 28px; margin-bottom: 20px;">
+                    <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px solid rgba(255,255,255,0.06);">
+                        <i class="fa-solid fa-id-card" style="color: var(--primary-color);"></i>
+                        <h3 style="margin: 0; font-size: 0.85rem; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: var(--text-muted);">Identity</h3>
+                        <div id="verificationBadgeContainer" style="display: none; margin-left: auto;">
+                            <span style="background: linear-gradient(135deg, #f59e0b, #d97706); color: white; font-size: 0.7rem; font-weight: 700; padding: 4px 12px; border-radius: 20px; letter-spacing: 0.5px;">
+                                <i class="fa-solid fa-circle-check"></i> VERIFIED PARTNER
+                            </span>
+                        </div>
+                    </div>
+                    <div style="display: flex; gap: 28px; align-items: flex-start;">
+                        <div style="flex-shrink: 0; text-align: center;">
+                            <div style="position: relative; display: inline-block; margin-bottom: 18px;">
+                                <img id="avatarPreview" src="https://i.pravatar.cc/150?u=demo" alt="Avatar" style="width: 100px; height: 100px; border-radius: 18px; object-fit: cover; border: 2px solid var(--primary-color); display: block;">
+                                <label for="avatarInput" style="position: absolute; bottom: -12px; left: 50%; transform: translateX(-50%); background: var(--primary-color); color: white; font-size: 0.6rem; font-weight: 700; padding: 4px 10px; border-radius: 20px; cursor: pointer; white-space: nowrap; letter-spacing: 0.5px;">CHANGE</label>
+                                <input type="file" id="avatarInput" accept="image/*" style="display: none;">
+                            </div>
+                        </div>
+                        <div style="flex: 1;">
+                            <label style="font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.8px; color: var(--text-muted); margin-bottom: 8px; display: block;">Short Bio</label>
+                            <textarea id="bioInput" class="form-control" placeholder="Describe your organization — e.g. 5-Star Hotel in Chennai offering surplus gourmet meals daily." rows="4" style="resize: none;"></textarea>
+                        </div>
+                    </div>
                 </div>
-                    <div class="form-group">
-                        <label>Contact Person</label>
-                        <input type="text" id="contactPersonInput" class="form-control" placeholder="e.g. John Doe">
-                    </div>
 
-                    <div class="form-group">
-                        <label>Public Phone</label>
-                        <input type="tel" id="publicPhoneInput" class="form-control" placeholder="e.g. +91 9876543210">
+                <!-- SECTION 2: Contact Details -->
+                <div style="background: rgba(255,255,255,0.03); border: 1px solid var(--border-glow); border-radius: 20px; padding: 28px; margin-bottom: 20px;">
+                    <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px solid rgba(255,255,255,0.06);">
+                        <i class="fa-solid fa-address-book" style="color: var(--primary-color);"></i>
+                        <h3 style="margin: 0; font-size: 0.85rem; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: var(--text-muted);">Contact Details</h3>
                     </div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 18px;">
+                        <div>
+                            <label style="font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.8px; color: var(--text-muted); margin-bottom: 8px; display: flex; align-items: center; gap: 6px;"><i class="fa-solid fa-user" style="font-size: 0.7rem;"></i> Contact Person</label>
+                            <input type="text" id="contactPersonInput" class="form-control" placeholder="e.g. Rajesh Kumar">
+                        </div>
+                        <div>
+                            <label style="font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.8px; color: var(--text-muted); margin-bottom: 8px; display: flex; align-items: center; gap: 6px;"><i class="fa-solid fa-phone" style="font-size: 0.7rem;"></i> Public Phone</label>
+                            <input type="tel" id="publicPhoneInput" class="form-control" placeholder="+91 98765 43210">
+                        </div>
+                        <div>
+                            <label style="font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.8px; color: var(--text-muted); margin-bottom: 8px; display: flex; align-items: center; gap: 6px;"><i class="fa-solid fa-globe" style="font-size: 0.7rem;"></i> Official Website</label>
+                            <input type="url" id="websiteInput" class="form-control" placeholder="https://yourrestaurant.com">
+                        </div>
+                        <div>
+                            <label style="font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.8px; color: var(--text-muted); margin-bottom: 8px; display: flex; align-items: center; gap: 6px;"><i class="fa-solid fa-location-dot" style="font-size: 0.7rem;"></i> Physical Address</label>
+                            <input type="text" id="locationInput" class="form-control" placeholder="123, Brigade Road, Bengaluru">
+                        </div>
+                    </div>
+                </div>
 
-                    <div class="form-group">
-                        <label>Official Website</label>
-                        <input type="url" id="websiteInput" class="form-control" placeholder="https://example.com">
+                <!-- SECTION 3: Compliance & Logistics -->
+                <div style="background: rgba(255,255,255,0.03); border: 1px solid var(--border-glow); border-radius: 20px; padding: 28px; margin-bottom: 28px;">
+                    <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px solid rgba(255,255,255,0.06);">
+                        <i class="fa-solid fa-shield-halved" style="color: var(--primary-color);"></i>
+                        <h3 style="margin: 0; font-size: 0.85rem; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: var(--text-muted);">Compliance & Logistics</h3>
                     </div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 18px;">
+                        <div>
+                            <label style="font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.8px; color: var(--text-muted); margin-bottom: 8px; display: flex; align-items: center; gap: 6px;"><i class="fa-solid fa-certificate" style="font-size: 0.7rem;"></i> FSSAI License No.</label>
+                            <input type="text" id="fssaiInput" class="form-control" placeholder="14-digit FSSAI number" style="font-family: monospace; letter-spacing: 1px;">
+                        </div>
+                        <div>
+                            <label style="font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.8px; color: var(--text-muted); margin-bottom: 8px; display: flex; align-items: center; gap: 6px;"><i class="fa-solid fa-clock" style="font-size: 0.7rem;"></i> Preferred Pickup Window</label>
+                            <input type="text" id="pickupWindowInput" class="form-control" placeholder="e.g. 10:00 PM – 11:30 PM">
+                        </div>
+                        <div style="grid-column: 1 / -1;">
+                            <label style="font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.8px; color: var(--text-muted); margin-bottom: 8px; display: flex; align-items: center; gap: 6px;"><i class="fa-solid fa-route" style="font-size: 0.7rem;"></i> Pickup Instructions</label>
+                            <textarea id="pickupInstructionsInput" class="form-control" placeholder="e.g. Enter through the service gate at the back. Ask for the kitchen supervisor." rows="3" style="resize: none;"></textarea>
+                        </div>
+                    </div>
+                </div>
 
-                    <div class="form-group">
-                        <label>FSSAI License No.</label>
-                        <input type="text" id="fssaiInput" class="form-control" placeholder="14-digit license number">
-                    </div>
+                <!-- Save Button -->
+                <button type="submit" id="saveSettingsBtn" class="btn btn-primary w-100 btn-glow" style="height: 54px; font-size: 1rem; font-weight: 700; letter-spacing: 0.5px; border-radius: 14px;">
+                    <i class="fa-solid fa-floppy-disk"></i>&nbsp; Save All Changes
+                </button>
 
-                    <div class="form-group">
-                        <label>Preferred Pickup Window</label>
-                        <input type="text" id="pickupWindowInput" class="form-control" placeholder="e.g. 10 PM - 11 PM">
-                    </div>
-
-                    <div class="form-group full-width">
-                        <label>Pickup Instructions</label>
-                        <textarea id="pickupInstructionsInput" class="form-control" placeholder="e.g. Enter through the service gate at the back." rows="2"></textarea>
-                    </div>
-
-                    <div class="form-group full-width">
-                        <label>Physical Address</label>
-                        <input type="text" id="locationInput" class="form-control" placeholder="Enter street address">
-                    </div>
-
-                    <div id="verificationBadgeContainer" style="margin-top: 10px; display: none;">
-                        <span class="badge badge-gold" style="padding: 5px 12px; font-size: 0.8rem;">
-                            <i class="fa-solid fa-circle-check"></i> Verified Partner
-                        </span>
-                    </div>
-                <button type="submit" id="saveSettingsBtn" class="btn btn-primary w-100 btn-glow">Save Changes</button>
             </form>
         </div>
     </div>
