@@ -24,6 +24,8 @@ const db = new sqlite3.Database(dbPath, (err) => {
             password        TEXT     NOT NULL,
             phone           TEXT,
             address         TEXT,
+            bio             TEXT,
+            avatarUrl       TEXT,
             createdAt       TEXT     NOT NULL DEFAULT (datetime('now'))
         )
     `, logErr('users'));
@@ -117,11 +119,17 @@ const db = new sqlite3.Database(dbPath, (err) => {
                 stmt.finalize();
                 console.log('✅ Successfully seeded 15 food items.');
             } else if (!err && row.count > 0) {
-                // ─── MIGRATION: Add profile fields ───────────────────────────────
-                db.run("ALTER TABLE users ADD COLUMN bio TEXT", (err) => { if (!err) console.log("✅ Added bio to users."); });
-                db.run("ALTER TABLE users ADD COLUMN avatarUrl TEXT", (err) => { if (!err) console.log("✅ Added avatarUrl to users."); });
+    // ─── MIGRATIONS ─────────────────────────────────────────────────────────────
+    db.serialize(() => {
+        db.run("ALTER TABLE users ADD COLUMN bio TEXT", (err) => { 
+            if (err && !err.message.includes('duplicate column name')) console.error("Migration error (bio):", err.message);
+        });
+        db.run("ALTER TABLE users ADD COLUMN avatarUrl TEXT", (err) => { 
+            if (err && !err.message.includes('duplicate column name')) console.error("Migration error (avatarUrl):", err.message);
+        });
+    });
 
-                // ─── MIGRATION: Fix existing zero-price records ──────────────────
+    // ─── SEED INITIAL DATA ──────────────────────────────────────────────────────
                 const prices = {
                     'Vegetable Biryani': 80, 'Paneer Butter Masala': 120, 'Assorted Sandwiches': 50,
                     'Steamed Idli': 30, 'Garden Fresh Salad': 60, 'Mixed Fruit Bowl': 70,
