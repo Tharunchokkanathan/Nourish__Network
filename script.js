@@ -1845,6 +1845,14 @@ document.addEventListener('DOMContentLoaded', () => {
         const modal = document.getElementById('settingsModal');
         if (modal) {
             modal.style.display = 'flex';
+            // Role-specific field visibility
+            const fssaiWrap = document.getElementById('fssaiFieldWrap');
+            const subtitle = modal.querySelector('p');
+            const isSeller = state.activePortal === 'seller';
+            if (fssaiWrap) fssaiWrap.style.display = isSeller ? 'block' : 'none';
+            if (subtitle) subtitle.textContent = isSeller 
+                ? "Manage your restaurant's profile, compliance & pickup details"
+                : "Manage your NGO's profile and pickup details";
             document.dispatchEvent(new CustomEvent('load-profile-data'));
         }
     };
