@@ -832,21 +832,18 @@ document.addEventListener('DOMContentLoaded', () => {
             if (cartDockItem)  cartDockItem.style.setProperty('display', 'flex', 'important');
             if (addDockItem)   addDockItem.style.setProperty('display', 'none', 'important');
             if (settingsDockItem) settingsDockItem.style.setProperty('display', 'flex', 'important');
-            if (settingsNavItem)  settingsNavItem.style.setProperty('display', 'flex', 'important');
             if (loginDockItem) loginDockItem.style.setProperty('display', 'flex', 'important');
         } else if (state.activePortal === 'seller') {
             landingItems.forEach(el => el.style.setProperty('display', 'none', 'important'));
             if (cartDockItem)  cartDockItem.style.setProperty('display', 'none', 'important');
             if (addDockItem)   addDockItem.style.setProperty('display', 'flex', 'important');
             if (settingsDockItem) settingsDockItem.style.setProperty('display', 'flex', 'important');
-            if (settingsNavItem)  settingsNavItem.style.setProperty('display', 'flex', 'important');
             if (loginDockItem) loginDockItem.style.setProperty('display', 'flex', 'important');
         } else {
             landingItems.forEach(el => el.style.setProperty('display', 'flex', 'important'));
             if (cartDockItem)  cartDockItem.style.setProperty('display', 'none', 'important');
             if (addDockItem)   addDockItem.style.setProperty('display', 'none', 'important');
             if (settingsDockItem) settingsDockItem.style.setProperty('display', 'none', 'important');
-            if (settingsNavItem)  settingsNavItem.style.setProperty('display', 'none', 'important');
             if (loginDockItem) loginDockItem.style.setProperty('display', 'flex', 'important');
         }
     }
@@ -1205,7 +1202,8 @@ document.addEventListener('DOMContentLoaded', () => {
         flyItem.style.top = rect.top + 'px';
         document.body.appendChild(flyItem);
 
-        const target = cartToggle.getBoundingClientRect();
+        const flyTarget = cartToggle || document.getElementById('cart-toggle-dock') || document.body;
+        const target = flyTarget.getBoundingClientRect();
         
         flyItem.animate([
             { left: rect.left + 'px', top: rect.top + 'px', transform: 'scale(1)' },
