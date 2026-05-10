@@ -226,8 +226,11 @@ app.get('/api/listings', (req, res) => {
     sql += ` ORDER BY f.datePosted DESC`;
 
     db.all(sql, params, (err, rows) => {
-        if (err) return res.status(500).json({ error: err.message });
-        res.status(200).json(rows);
+        if (err) {
+            console.error("Database Error (/api/listings):", err);
+            return res.status(500).json({ error: "Internal database error. Please try again later." });
+        }
+        res.status(200).json(rows || []);
     });
 });
 
@@ -247,7 +250,13 @@ app.get('/api/stats', (req, res) => {
 
     keys.forEach(key => {
         db.get(queries[key], [], (err, row) => {
-            results[key] = err ? 0 : row.count;
+            if (err) {
+                console.error(`Stats Error (${key}):`, err);
+                results[key] = 0;
+            } else {
+                results[key] = (row && row.count !== null) ? row.count : 0;
+            }
+            
             if (++done === keys.length) {
                 res.status(200).json(results);
             }
