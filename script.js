@@ -1447,9 +1447,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const loginToggleDock = document.getElementById('login-toggle-dock');
     if (loginToggleDock) {
-        loginToggleDock.addEventListener('click', (e) => {
+        console.log("Attaching Login/Logout listener to dock item");
+        loginToggleDock.onclick = (e) => {
             e.preventDefault();
             const token = sessionStorage.getItem('nourishToken');
+            console.log("Dock Login/Logout clicked. Token exists:", !!token);
             if (token) {
                 if (confirm("Are you sure you want to logout?")) {
                     logout();
@@ -1457,7 +1459,7 @@ document.addEventListener('DOMContentLoaded', () => {
             } else {
                 showLoginForm();
             }
-        });
+        };
     }
 
     
