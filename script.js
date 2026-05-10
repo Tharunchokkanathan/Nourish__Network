@@ -1133,8 +1133,11 @@ document.addEventListener('DOMContentLoaded', () => {
                     <div class="nn-card-vendor" style="display: flex; align-items: center; gap: 8px; background: rgba(0,0,0,0.6); padding: 5px 10px; border-radius: 20px;">
                         <img src="${avatarImg}" style="width: 24px; height: 24px; border-radius: 50%; border: 1px solid var(--border-glow); object-fit: cover;">
                         <div style="display: flex; flex-direction: column; text-align: left;">
-                            <strong style="font-size: 0.85rem; color: white;">${item.vendorName}</strong>
-                            ${bioText}
+                            <div style="display: flex; align-items: center; gap: 5px;">
+                                <strong style="font-size: 0.85rem; color: white;">${item.vendorName}</strong>
+                                ${item.isVerified ? '<i class="fa-solid fa-circle-check" style="color: #fbbf24; font-size: 0.7rem;" title="Verified Partner"></i>' : ''}
+                            </div>
+                            ${item.fssaiCode ? `<div style="font-size: 0.65rem; color: #10b981; font-weight: bold;">FSSAI: ${item.fssaiCode}</div>` : bioText}
                         </div>
                     </div>
                 </div>
@@ -1758,8 +1761,11 @@ document.addEventListener('DOMContentLoaded', () => {
         const contactPersonInput = document.getElementById('contactPersonInput');
         const publicPhoneInput = document.getElementById('publicPhoneInput');
         const websiteInput = document.getElementById('websiteInput');
+        const fssaiInput = document.getElementById('fssaiInput');
+        const pickupWindowInput = document.getElementById('pickupWindowInput');
+        const pickupInstructionsInput = document.getElementById('pickupInstructionsInput');
+        const verificationBadge = document.getElementById('verificationBadgeContainer');
         const avatarInput = document.getElementById('avatarInput');
-        const avatarPreview = document.getElementById('avatarPreview');
 
         if (!settingsModal) return;
 
@@ -1776,6 +1782,14 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (contactPersonInput) contactPersonInput.value = profile.contactPerson || '';
                     if (publicPhoneInput) publicPhoneInput.value = profile.publicPhone || '';
                     if (websiteInput) websiteInput.value = profile.website || '';
+                    if (fssaiInput) fssaiInput.value = profile.fssaiCode || '';
+                    if (pickupWindowInput) pickupWindowInput.value = profile.pickupWindow || '';
+                    if (pickupInstructionsInput) pickupInstructionsInput.value = profile.pickupInstructions || '';
+                    
+                    if (verificationBadge) {
+                        verificationBadge.style.display = profile.isVerified ? 'block' : 'none';
+                    }
+
                     if (profile.avatarUrl && avatarPreview) {
                         avatarPreview.src = profile.avatarUrl;
                     }
@@ -1787,7 +1801,11 @@ document.addEventListener('DOMContentLoaded', () => {
                         avatarUrl: profile.avatarUrl,
                         contactPerson: profile.contactPerson,
                         publicPhone: profile.publicPhone,
-                        website: profile.website
+                        website: profile.website,
+                        fssaiCode: profile.fssaiCode,
+                        pickupWindow: profile.pickupWindow,
+                        pickupInstructions: profile.pickupInstructions,
+                        isVerified: profile.isVerified
                     }));
                 }
             } catch (e) { console.error(e); }
@@ -1865,6 +1883,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 const contactPerson = contactPersonInput ? contactPersonInput.value.trim() : '';
                 const publicPhone = publicPhoneInput ? publicPhoneInput.value.trim() : '';
                 const website = websiteInput ? websiteInput.value.trim() : '';
+                const fssaiCode = fssaiInput ? fssaiInput.value.trim() : '';
+                const pickupWindow = pickupWindowInput ? pickupWindowInput.value.trim() : '';
+                const pickupInstructions = pickupInstructionsInput ? pickupInstructionsInput.value.trim() : '';
                 
                 let avatarUrl = avatarPreview.dataset.uploadedUrl;
                 if (!avatarUrl && avatarPreview.src && !avatarPreview.src.includes('pravatar')) {
@@ -1879,7 +1900,11 @@ document.addEventListener('DOMContentLoaded', () => {
                             'Content-Type': 'application/json',
                             'Authorization': `Bearer ${token}` 
                         },
-                        body: JSON.stringify({ bio, address, avatarUrl, contactPerson, publicPhone, website })
+                        body: JSON.stringify({ 
+                            bio, address, avatarUrl, contactPerson, 
+                            publicPhone, website, fssaiCode, 
+                            pickupWindow, pickupInstructions 
+                        })
                     });
 
                     if (res.ok) {

@@ -201,7 +201,13 @@ app.get('/api/listings', (req, res) => {
     const { vendorId, category, status } = req.query;
 
     let sql = `
-        SELECT f.*, u.bio as vendorBio, u.avatarUrl as vendorAvatar 
+        SELECT f.*, 
+               u.bio as vendorBio, 
+               u.avatarUrl as vendorAvatar,
+               u.fssaiCode,
+               u.isVerified,
+               u.pickupWindow,
+               u.pickupInstructions
         FROM food_listings f
         LEFT JOIN users u ON f.vendorId = u.id
         WHERE 1=1
@@ -283,16 +289,23 @@ app.get('/api/user/me', authenticateToken, (req, res) => {
 // PUT /api/user/me
 // Body: { bio?, address?, avatarUrl? }
 app.put('/api/user/me', authenticateToken, (req, res) => {
-    const { bio, address, avatarUrl, contactPerson, publicPhone, website } = req.body;
+    const { 
+        bio, address, avatarUrl, contactPerson, 
+        publicPhone, website, fssaiCode, 
+        pickupWindow, pickupInstructions 
+    } = req.body;
     
     const sql = `
         UPDATE users SET
-            bio           = COALESCE(?, bio),
-            address       = COALESCE(?, address),
-            avatarUrl     = COALESCE(?, avatarUrl),
-            contactPerson = COALESCE(?, contactPerson),
-            publicPhone   = COALESCE(?, publicPhone),
-            website       = COALESCE(?, website)
+            bio                = COALESCE(?, bio),
+            address            = COALESCE(?, address),
+            avatarUrl          = COALESCE(?, avatarUrl),
+            contactPerson      = COALESCE(?, contactPerson),
+            publicPhone        = COALESCE(?, publicPhone),
+            website            = COALESCE(?, website),
+            fssaiCode          = COALESCE(?, fssaiCode),
+            pickupWindow       = COALESCE(?, pickupWindow),
+            pickupInstructions = COALESCE(?, pickupInstructions)
         WHERE id = ?
     `;
     
@@ -303,6 +316,9 @@ app.put('/api/user/me', authenticateToken, (req, res) => {
         contactPerson || null, 
         publicPhone || null, 
         website || null, 
+        fssaiCode || null,
+        pickupWindow || null,
+        pickupInstructions || null,
         req.user.id
     ], function (err) {
         if (err) return res.status(500).json({ error: err.message });
