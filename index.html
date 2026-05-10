@@ -572,16 +572,12 @@
                             <input type="text" id="contactPersonInput" class="form-control" placeholder="e.g. Rajesh Kumar">
                         </div>
                         <div>
-                            <label style="font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.8px; color: var(--text-muted); margin-bottom: 8px; display: flex; align-items: center; gap: 6px;"><i class="fa-solid fa-phone" style="font-size: 0.7rem;"></i> Public Phone</label>
+                            <label style="font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.8px; color: var(--text-muted); margin-bottom: 8px; display: flex; align-items: center; gap: 6px;"><i class="fa-solid fa-phone" style="font-size: 0.7rem;"></i> Phone Number</label>
                             <input type="tel" id="publicPhoneInput" class="form-control" placeholder="+91 98765 43210">
                         </div>
-                        <div>
-                            <label style="font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.8px; color: var(--text-muted); margin-bottom: 8px; display: flex; align-items: center; gap: 6px;"><i class="fa-solid fa-globe" style="font-size: 0.7rem;"></i> Official Website</label>
-                            <input type="url" id="websiteInput" class="form-control" placeholder="https://yourrestaurant.com">
-                        </div>
-                        <div>
-                            <label style="font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.8px; color: var(--text-muted); margin-bottom: 8px; display: flex; align-items: center; gap: 6px;"><i class="fa-solid fa-location-dot" style="font-size: 0.7rem;"></i> Physical Address</label>
-                            <input type="text" id="locationInput" class="form-control" placeholder="123, Brigade Road, Bengaluru">
+                        <div style="grid-column: 1 / -1;">
+                            <label style="font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.8px; color: var(--text-muted); margin-bottom: 8px; display: flex; align-items: center; gap: 6px;"><i class="fa-solid fa-location-dot" style="font-size: 0.7rem;"></i> Address</label>
+                            <input type="text" id="locationInput" class="form-control" placeholder="123, Brigade Road, Bengaluru - 560001">
                         </div>
                     </div>
                 </div>
@@ -590,20 +586,18 @@
                 <div style="background: rgba(255,255,255,0.03); border: 1px solid var(--border-glow); border-radius: 20px; padding: 28px; margin-bottom: 28px;">
                     <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px solid rgba(255,255,255,0.06);">
                         <i class="fa-solid fa-shield-halved" style="color: var(--primary-color);"></i>
-                        <h3 style="margin: 0; font-size: 0.85rem; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: var(--text-muted);">Compliance & Logistics</h3>
+                        <h3 style="margin: 0; font-size: 0.85rem; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: var(--text-muted);">Compliance &amp; Logistics</h3>
                     </div>
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 18px;">
-                        <div>
+                        <!-- FSSAI: Seller only -->
+                        <div id="fssaiFieldWrap" style="grid-column: 1 / -1;">
                             <label style="font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.8px; color: var(--text-muted); margin-bottom: 8px; display: flex; align-items: center; gap: 6px;"><i class="fa-solid fa-certificate" style="font-size: 0.7rem;"></i> FSSAI License No.</label>
-                            <input type="text" id="fssaiInput" class="form-control" placeholder="14-digit FSSAI number" style="font-family: monospace; letter-spacing: 1px;">
+                            <input type="text" id="fssaiInput" class="form-control" placeholder="14-digit FSSAI number" style="font-family: monospace; letter-spacing: 1px; max-width: 340px;">
                         </div>
-                        <div>
-                            <label style="font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.8px; color: var(--text-muted); margin-bottom: 8px; display: flex; align-items: center; gap: 6px;"><i class="fa-solid fa-clock" style="font-size: 0.7rem;"></i> Preferred Pickup Window</label>
-                            <input type="text" id="pickupWindowInput" class="form-control" placeholder="e.g. 10:00 PM – 11:30 PM">
-                        </div>
+                        <!-- Pickup Instructions: Both -->
                         <div style="grid-column: 1 / -1;">
                             <label style="font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.8px; color: var(--text-muted); margin-bottom: 8px; display: flex; align-items: center; gap: 6px;"><i class="fa-solid fa-route" style="font-size: 0.7rem;"></i> Pickup Instructions</label>
-                            <textarea id="pickupInstructionsInput" class="form-control" placeholder="e.g. Enter through the service gate at the back. Ask for the kitchen supervisor." rows="3" style="resize: none;"></textarea>
+                            <textarea id="pickupInstructionsInput" class="form-control" placeholder="e.g. Enter through the rear service gate. Ask for the kitchen supervisor on duty." rows="3" style="resize: none;"></textarea>
                         </div>
                     </div>
                 </div>
