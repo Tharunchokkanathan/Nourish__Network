@@ -21,7 +21,7 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     // --- BACKEND SYNC ENGINE ---
-    async function refreshState() {
+    async function refreshState(silent = false) {
         try {
             const listRes = await fetch(`${API_BASE}/listings`);
             if (listRes.ok) {
@@ -42,7 +42,15 @@ document.addEventListener('DOMContentLoaded', () => {
                 updateLiveStats();
             }
 
-            renderPortal();
+            if (silent) {
+                if (state.activePortal === 'seller' && typeof renderSellerListings === 'function') {
+                    renderSellerListings();
+                } else if (state.activePortal === 'buyer' && typeof renderExchangeGrid === 'function') {
+                    renderExchangeGrid();
+                }
+            } else {
+                renderPortal();
+            }
         } catch (err) {
             console.error("Backend Sync Failed:", err);
         }
@@ -376,7 +384,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // Check if user is already logged in
-    const user = JSON.parse(localStorage.getItem('nourishUser'));
+    const user = JSON.parse(sessionStorage.getItem('nourishUser'));
     if (user) {
         // Also update any "Join Now" or "Donate Food" buttons on the landing page
         const heroActions = document.querySelectorAll('.hero-action a, .action-card button');
@@ -456,8 +464,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 showToast(`Welcome back, ${data.user.name || email}!`);
                 
                 // Save user and JWT token to localStorage
-                localStorage.setItem('nourishUser', JSON.stringify(data.user));
-                if (data.token) localStorage.setItem('nourishToken', data.token);
+                sessionStorage.setItem('nourishUser', JSON.stringify(data.user));
+                if (data.token) sessionStorage.setItem('nourishToken', data.token);
                 
                 setTimeout(() => {
                     authModal.classList.remove('active');
@@ -509,8 +517,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 showToast("Account created! Logging you in...");
                 
                 // Server auto-logs in on register — save user + token
-                if (data.user) localStorage.setItem('nourishUser', JSON.stringify(data.user));
-                if (data.token) localStorage.setItem('nourishToken', data.token);
+                if (data.user) sessionStorage.setItem('nourishUser', JSON.stringify(data.user));
+                if (data.token) sessionStorage.setItem('nourishToken', data.token);
 
                 setTimeout(() => {
                     authModal.classList.remove('active');
@@ -670,7 +678,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (state.activePortal !== 'home') {
                     e.preventDefault();
                     // Auto-logout when going home from a dashboard
-                    if (localStorage.getItem('nourishToken')) {
+                    if (sessionStorage.getItem('nourishToken')) {
                         logout();
                     } else {
                         state.activePortal = 'home';
@@ -766,7 +774,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // --- Login/Logout text ---
         const loginTextDock = document.getElementById('login-text-dock');
         const loginIconDock = document.querySelector('#login-toggle-dock i');
-        const userToken = localStorage.getItem('nourishToken');
+        const userToken = sessionStorage.getItem('nourishToken');
         if (userToken) {
             if (loginTextDock) loginTextDock.innerText = 'Logout';
             if (loginIconDock) { loginIconDock.classList.remove('fa-user'); loginIconDock.classList.add('fa-right-from-bracket'); }
@@ -811,8 +819,8 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function logout() {
-        localStorage.removeItem('nourishUser');
-        localStorage.removeItem('nourishToken');
+        sessionStorage.removeItem('nourishUser');
+        sessionStorage.removeItem('nourishToken');
         state.activePortal = 'home';
         state.cart = [];
         renderPortal();
@@ -907,7 +915,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const container = document.getElementById('my-listings-container');
         if (!container) return;
 
-        const user = JSON.parse(localStorage.getItem('nourishUser'));
+        const user = JSON.parse(sessionStorage.getItem('nourishUser'));
         if (!user) return;
 
         // Filter to show only THIS seller's items
@@ -982,7 +990,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const id = btn.dataset.id;
                 if (!confirm("Are you sure you want to delete this listing?")) return;
 
-                const token = localStorage.getItem('nourishToken');
+                const token = sessionStorage.getItem('nourishToken');
                 if (!token) return;
 
                 try {
@@ -1264,7 +1272,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const description = document.getElementById('p-desc').value;
                 const expiry = document.getElementById('p-expiry').value;
 
-                const token = localStorage.getItem('nourishToken');
+                const token = sessionStorage.getItem('nourishToken');
                 if (!token) {
                     showToast("Please login to publish your listing.", "info");
                     showLoginForm();
@@ -1359,7 +1367,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (loginToggleDock) {
         loginToggleDock.addEventListener('click', (e) => {
             e.preventDefault();
-            const token = localStorage.getItem('nourishToken');
+            const token = sessionStorage.getItem('nourishToken');
             if (token) {
                 if (confirm("Are you sure you want to logout?")) {
                     logout();
@@ -1408,7 +1416,7 @@ document.addEventListener('DOMContentLoaded', () => {
         form.addEventListener('submit', (e) => {
             e.preventDefault();
 
-            const token = localStorage.getItem('nourishToken');
+            const token = sessionStorage.getItem('nourishToken');
             if (!token) {
                 showToast("Please login to share your thoughts.", "info");
                 showLoginForm();
@@ -1483,7 +1491,7 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        const token = localStorage.getItem('nourishToken');
+        const token = sessionStorage.getItem('nourishToken');
         if (!token) {
             showToast("Please login to place an order.", "info");
             showLoginForm();
@@ -1533,13 +1541,21 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
     // Check for existing session
-    const savedUser = localStorage.getItem('nourishUser');
-    if (savedUser) {
+    const savedUserStr = sessionStorage.getItem('nourishUser');
+    if (savedUserStr) {
+        try {
+            const parsedUser = JSON.parse(savedUserStr);
+            const t = (parsedUser.type || parsedUser.accountType || parsedUser.role || '').toLowerCase();
+            state.activePortal = (t === 'restaurant' || t === 'vendor' || t === 'seller') ? 'seller' : 'buyer';
+        } catch (e) {}
         refreshState();
     } else {
         renderPortal(); // Just show home
         refreshState(); // Get public listings
     }
+
+    // Real-time silent polling every 5 seconds
+    setInterval(() => refreshState(true), 5000);
 
     // --- IMPACT MAP ENGINE ---
     function initImpactMap() {
