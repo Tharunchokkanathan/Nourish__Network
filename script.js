@@ -910,12 +910,23 @@ document.addEventListener('DOMContentLoaded', () => {
         const loginTextDock = document.getElementById('login-text-dock');
         const loginIconDock = document.querySelector('#login-toggle-dock i');
         const userToken = sessionStorage.getItem('nourishToken');
+        const navProfileBtn = document.getElementById('nav-profile-btn');
+        const navAvatarImg = document.getElementById('nav-avatar-img');
+
         if (userToken) {
             if (loginTextDock) loginTextDock.innerText = 'Logout';
             if (loginIconDock) { loginIconDock.classList.remove('fa-user'); loginIconDock.classList.add('fa-right-from-bracket'); }
+            // Show avatar in navbar
+            if (navProfileBtn) navProfileBtn.style.display = 'flex';
+            // Update avatar src from session
+            const user = JSON.parse(sessionStorage.getItem('nourishUser') || '{}');
+            if (navAvatarImg && user.avatarUrl) navAvatarImg.src = user.avatarUrl;
+            else if (navAvatarImg && user.id) navAvatarImg.src = `https://i.pravatar.cc/150?u=${user.id}`;
         } else {
             if (loginTextDock) loginTextDock.innerText = 'Login';
             if (loginIconDock) { loginIconDock.classList.remove('fa-right-from-bracket'); loginIconDock.classList.add('fa-user'); }
+            // Hide avatar in navbar
+            if (navProfileBtn) navProfileBtn.style.display = 'none';
         }
 
         // --- Always keep the dock visible ---
@@ -2016,6 +2027,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (res.ok) {
                         showToast("Profile updated successfully!", "success");
                         settingsModal.style.display = 'none';
+                        // Update navbar avatar immediately
+                        const navImg = document.getElementById('nav-avatar-img');
+                        if (navImg && avatarUrl) navImg.src = avatarUrl;
                         refreshState(true);
                     } else {
                         showToast("Failed to update profile.", "error");
