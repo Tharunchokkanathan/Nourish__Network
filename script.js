@@ -23,7 +23,13 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- BACKEND SYNC ENGINE ---
     async function refreshState(silent = false) {
         try {
-            const listRes = await fetch(`${API_BASE}/listings`);
+            const user = JSON.parse(sessionStorage.getItem('nourishUser') || '{}');
+            let url = `${API_BASE}/listings`;
+            if (state.activePortal === 'seller' && user.id) {
+                url += `?vendorId=${user.id}`;
+            }
+
+            const listRes = await fetch(url);
             if (listRes.ok) {
                 const rawListings = await listRes.json();
                 state.listings = rawListings.map(item => ({
@@ -57,6 +63,20 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         } catch (err) {
             console.error("Backend Sync Failed:", err);
+        }
+    }
+
+    // --- SESSION PERSISTENCE ---
+    function checkSession() {
+        const userStr = sessionStorage.getItem('nourishUser');
+        const token = sessionStorage.getItem('nourishToken');
+        if (userStr && token) {
+            const user = JSON.parse(userStr);
+            const type = (user.type || user.accountType || user.role || '').toLowerCase();
+            state.activePortal = (type === 'restaurant' || type === 'vendor' || type === 'seller') ? 'seller' : 'buyer';
+            refreshState();
+        } else {
+            refreshState();
         }
     }
 
@@ -840,7 +860,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function renderSellerPortal() {
         const user = JSON.parse(sessionStorage.getItem('nourishUser') || '{}');
-        const sellerListings = state.listings.filter(l => l.vendorId === user.id);
+        const sellerListings = state.listings.filter(l => l.vendorId == user.id);
 
         let totalMealsDonated = 0;
         sellerListings.forEach(item => { totalMealsDonated += parseFloat(item.qty) || 0; });
@@ -1331,7 +1351,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 const token = sessionStorage.getItem('nourishToken');
                 if (!token) {
                     showToast("Please login to publish your listing.", "info");
-                    showLoginForm();
+                    const authModal = document.getElementById('authModal');
+                    if (authModal) authModal.classList.add('active');
                     return;
                 }
 
@@ -1594,21 +1615,7 @@ document.addEventListener('DOMContentLoaded', () => {
     renderCommunityWall();
     updateCartBadge();
     initImpactMap();
-
-
-    // Check for existing session
-    const savedUserStr = sessionStorage.getItem('nourishUser');
-    if (savedUserStr) {
-        try {
-            const parsedUser = JSON.parse(savedUserStr);
-            const t = (parsedUser.type || parsedUser.accountType || parsedUser.role || '').toLowerCase();
-            state.activePortal = (t === 'restaurant' || t === 'vendor' || t === 'seller') ? 'seller' : 'buyer';
-        } catch (e) {}
-        refreshState();
-    } else {
-        renderPortal(); // Just show home
-        refreshState(); // Get public listings
-    }
+    checkSession();
 
     // Real-time silent polling every 5 seconds
     setInterval(() => refreshState(true), 5000);
@@ -1776,6 +1783,13 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (profile.avatarUrl && avatarPreview) {
                         avatarPreview.src = profile.avatarUrl;
                     }
+                    // Update the sessionStorage copy too just in case
+                    sessionStorage.setItem('nourishUser', JSON.stringify({
+                        ...JSON.parse(sessionStorage.getItem('nourishUser') || '{}'),
+                        bio: profile.bio,
+                        address: profile.address,
+                        avatarUrl: profile.avatarUrl
+                    }));
                 }
             } catch (e) { console.error(e); }
         }
