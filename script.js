@@ -20,21 +20,85 @@ document.addEventListener('DOMContentLoaded', () => {
         stats: { totalMealsSaved: 0, totalKgShared: 0, totalVendors: 0, totalNGOs: 0 }
     };
 
-    // --- ATTACH GLOBAL LISTENERS ---
-    const loginToggleDock = document.getElementById('login-toggle-dock');
-    if (loginToggleDock) {
-        loginToggleDock.addEventListener('click', (e) => {
-            e.preventDefault();
-            const token = sessionStorage.getItem('nourishToken');
-            if (token) {
-                if (confirm("Are you sure you want to logout?")) {
-                    logout();
+    // --- ATTACH GLOBAL DOCK LISTENERS ---
+    function wireDockButtons() {
+        console.log("WireDockButtons: Initializing dock listeners...");
+        
+        const loginDock = document.getElementById('login-toggle-dock');
+        if (loginDock) {
+            loginDock.onclick = (e) => {
+                e.preventDefault();
+                console.log("Dock: Login/Logout Clicked");
+                const token = sessionStorage.getItem('nourishToken');
+                if (token) {
+                    if (confirm("Are you sure you want to logout?")) logout();
+                } else {
+                    showLoginForm();
                 }
-            } else {
-                showLoginForm();
-            }
-        });
+            };
+        }
+
+        const addDock = document.getElementById('add-listing-dock');
+        if (addDock) {
+            addDock.onclick = (e) => {
+                e.preventDefault();
+                console.log("Dock: Add Listing Clicked");
+                const section = document.getElementById('add-listing-section');
+                if (section) {
+                    section.scrollIntoView({ behavior: 'smooth' });
+                    section.style.boxShadow = '0 0 40px var(--primary-color)';
+                    setTimeout(() => section.style.boxShadow = '', 1500);
+                } else {
+                    console.warn("Add Listing section not found in current portal");
+                }
+            };
+        }
+
+        const settingsDock = document.getElementById('settings-toggle-dock');
+        if (settingsDock) {
+            settingsDock.onclick = (e) => {
+                e.preventDefault();
+                console.log("Dock: Settings Clicked");
+                if (typeof window.openSettings === 'function') {
+                    window.openSettings();
+                } else {
+                    // Fallback if the function isn't globally exposed yet
+                    const modal = document.getElementById('settingsModal');
+                    if (modal) {
+                        modal.style.display = 'flex';
+                        // Trigger loadProfile if possible
+                        const event = new CustomEvent('open-settings');
+                        document.dispatchEvent(event);
+                    }
+                }
+            };
+        }
+
+        const cartDock = document.getElementById('cart-toggle-dock');
+        if (cartDock) {
+            cartDock.onclick = (e) => {
+                e.preventDefault();
+                console.log("Dock: Cart Clicked");
+                const drawer = document.getElementById('cart-drawer');
+                if (drawer) drawer.classList.add('active');
+            };
+        }
+
+        const homeDock = document.querySelector('.bottom-nav .nav-item[href="#home"]');
+        if (homeDock) {
+            homeDock.onclick = (e) => {
+                e.preventDefault();
+                console.log("Dock: Home Clicked");
+                if (state.activePortal !== 'home') {
+                    if (sessionStorage.getItem('nourishToken')) logout();
+                    else { state.activePortal = 'home'; renderPortal(); }
+                }
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            };
+        }
     }
+    
+    wireDockButtons();
 
     // --- BACKEND SYNC ENGINE ---
     async function refreshState(silent = false) {
@@ -1777,6 +1841,14 @@ document.addEventListener('DOMContentLoaded', () => {
     // =========================================
     // SETTINGS / PROFILE MODAL LOGIC
     // =========================================
+    window.openSettings = function() {
+        const modal = document.getElementById('settingsModal');
+        if (modal) {
+            modal.style.display = 'flex';
+            document.dispatchEvent(new CustomEvent('load-profile-data'));
+        }
+    };
+
     function attachSettingsListeners() {
         const settingsToggle = document.getElementById('settings-toggle-dock');
         const settingsModal = document.getElementById('settingsModal');
@@ -1947,6 +2019,16 @@ document.addEventListener('DOMContentLoaded', () => {
                     saveBtn.disabled = false;
                 }
             });
+        }
+        // Listen for the custom event to load data
+        document.addEventListener('load-profile-data', loadProfile);
+        
+        const settingsToggleNav = document.getElementById('settings-toggle-nav');
+        if (settingsToggleNav) {
+            settingsToggleNav.onclick = (e) => {
+                e.preventDefault();
+                window.openSettings();
+            };
         }
     }
 
