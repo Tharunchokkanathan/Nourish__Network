@@ -877,9 +877,9 @@ document.addEventListener('DOMContentLoaded', () => {
         else if (totalMealsDonated >= 50) { badgeName = 'Silver Partner'; badgeClass = 'badge-silver'; }
 
         portalsRoot.innerHTML = `
-            <div class="portal-wrapper" style="padding-top: 120px; min-height: 100vh;">
+            <div class="portal-wrapper" style="padding-top: 80px; min-height: 100vh;">
 
-                <div class="container" style="max-width: 1300px; margin: 0 auto; padding: 2.5rem 2rem 5rem;">
+                <div class="container" style="max-width: 1300px; margin: 0 auto; padding: 1.5rem 2rem 3rem;">
 
                     <h1 class="seller-page-title" style="display: flex; align-items: center; gap: 20px;">
                         <span class="premium-title">SELLER'S DASHBOARD</span>
@@ -887,22 +887,22 @@ document.addEventListener('DOMContentLoaded', () => {
                     </h1>
 
                     <!-- Analytics Dashboard -->
-                    <div id="analyticsDashboard" class="glass-card animate-on-scroll fade-up" style="margin-bottom: 30px; border-radius: 24px; padding: 20px;">
+                    <div id="analyticsDashboard" class="glass-card" style="margin-bottom: 20px; border-radius: 24px; padding: 15px;">
                         <div class="card-header" style="border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 15px; margin-bottom: 20px;">
                             <i class="fa-solid fa-chart-line" style="color: var(--primary-color);"></i>
                             <h3 style="margin: 0;">Impact Analytics</h3>
                         </div>
-                        <div class="analytics-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
-                            <div class="stat-box" style="padding: 1.5rem; text-align: center; background: rgba(16, 185, 129, 0.05); border: 1px solid var(--border-glow); border-radius: 15px;">
-                                <h4 style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 5px;">Total Meals Saved</h4>
-                                <p id="totalMealsStat" style="font-size: 2rem; font-weight: 800; color: var(--primary-color); margin: 0;">${totalMealsDonated}</p>
+                        <div class="analytics-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px;">
+                            <div class="stat-box" style="padding: 1rem; text-align: center; background: rgba(16, 185, 129, 0.05); border: 1px solid var(--border-glow); border-radius: 12px;">
+                                <h4 style="color: var(--text-muted); font-size: 0.8rem; margin-bottom: 2px;">Total Meals Saved</h4>
+                                <p id="totalMealsStat" style="font-size: 1.5rem; font-weight: 800; color: var(--primary-color); margin: 0;">${totalMealsDonated}</p>
                             </div>
-                            <div class="stat-box" style="padding: 1.5rem; text-align: center; background: rgba(16, 185, 129, 0.05); border: 1px solid var(--border-glow); border-radius: 15px;">
-                                <h4 style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 5px;">Est. CO2 Offset (kg)</h4>
-                                <p id="co2OffsetStat" style="font-size: 2rem; font-weight: 800; color: var(--primary-color); margin: 0;">${(totalMealsDonated * 2.5).toFixed(1)}</p>
+                            <div class="stat-box" style="padding: 1rem; text-align: center; background: rgba(16, 185, 129, 0.05); border: 1px solid var(--border-glow); border-radius: 12px;">
+                                <h4 style="color: var(--text-muted); font-size: 0.8rem; margin-bottom: 2px;">Est. CO2 Offset (kg)</h4>
+                                <p id="co2OffsetStat" style="font-size: 1.5rem; font-weight: 800; color: var(--primary-color); margin: 0;">${(totalMealsDonated * 2.5).toFixed(1)}</p>
                             </div>
                         </div>
-                        <div style="position: relative; height: 250px; width: 100%;">
+                        <div style="position: relative; height: 180px; width: 100%;">
                             <canvas id="impactChart"></canvas>
                         </div>
                     </div>
