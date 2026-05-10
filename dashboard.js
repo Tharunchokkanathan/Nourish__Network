@@ -2,7 +2,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // 1. Authentication Check & User Data
     let userData = null;
     try {
-        userData = JSON.parse(localStorage.getItem('nourishUser'));
+        userData = JSON.parse(sessionStorage.getItem('nourishUser'));
     } catch (e) {}
 
     // Fallback for presentation if not logged in
@@ -64,8 +64,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const logoutBtn = document.getElementById('logoutBtn');
     if (logoutBtn) {
         logoutBtn.addEventListener('click', () => {
-            localStorage.removeItem('nourishUser');
-            localStorage.removeItem('nourishToken');
+            sessionStorage.removeItem('nourishUser');
+            sessionStorage.removeItem('nourishToken');
             window.location.href = 'index.html';
         });
     }
@@ -97,6 +97,26 @@ document.addEventListener('DOMContentLoaded', () => {
         if (loader) loader.style.display = 'none';
         listingsFeed.innerHTML = '';
         if (sweetsFeed) sweetsFeed.innerHTML = '';
+
+        // --- Gamification Logic ---
+        if (isVendor) {
+            const vendorTypeBadge = document.getElementById('userTypeBadge');
+            if (vendorTypeBadge) {
+                let totalMealsDonated = 0;
+                listings.forEach(item => {
+                    totalMealsDonated += parseFloat(item.quantity) || 0;
+                });
+                
+                let badgeName = 'Member';
+                let badgeClass = 'badge-member';
+                if (totalMealsDonated >= 500) { badgeName = 'Platinum Elite'; badgeClass = 'badge-platinum'; }
+                else if (totalMealsDonated >= 100) { badgeName = 'Gold'; badgeClass = 'badge-gold'; }
+                else if (totalMealsDonated >= 50) { badgeName = 'Silver Partner'; badgeClass = 'badge-silver'; }
+                
+                vendorTypeBadge.innerHTML = `Food Vendor <span class="badge ${badgeClass}" style="margin-left: 10px; margin-bottom: 0; animation: badge-glow 2s infinite alternate;">${badgeName} <i class="fa-solid fa-medal"></i></span>`;
+            }
+        }
+        // --------------------------
 
         if (listings.length === 0) {
             listingsFeed.innerHTML = '<div class="empty-state"><i class="fa-solid fa-box-open"></i><p>No listings found yet.</p></div>';
@@ -144,7 +164,7 @@ document.addEventListener('DOMContentLoaded', () => {
             btn.addEventListener('click', async () => {
                 const id = btn.dataset.id;
                 try {
-                    const token = localStorage.getItem('nourishToken');
+                    const token = sessionStorage.getItem('nourishToken');
                     const res = await fetch(`${API_BASE}/listings/claim`, {
                         method: 'POST',
                         headers: { 
@@ -172,7 +192,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (!confirm("Are you sure you want to delete this listing?")) return;
                 const id = btn.dataset.id;
                 try {
-                    const token = localStorage.getItem('nourishToken');
+                    const token = sessionStorage.getItem('nourishToken');
                     const res = await fetch(`${API_BASE}/listings/${id}`, {
                         method: 'DELETE',
                         headers: { 'Authorization': `Bearer ${token}` }
@@ -197,7 +217,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const pickupTime = document.getElementById('pickupTime').value;
 
             try {
-                const token = localStorage.getItem('nourishToken');
+                const token = sessionStorage.getItem('nourishToken');
                 const res = await fetch(`${API_BASE}/listings`, {
                     method: 'POST',
                     headers: { 
