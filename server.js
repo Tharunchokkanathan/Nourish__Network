@@ -283,17 +283,28 @@ app.get('/api/user/me', authenticateToken, (req, res) => {
 // PUT /api/user/me
 // Body: { bio?, address?, avatarUrl? }
 app.put('/api/user/me', authenticateToken, (req, res) => {
-    const { bio, address, avatarUrl } = req.body;
+    const { bio, address, avatarUrl, contactPerson, publicPhone, website } = req.body;
     
     const sql = `
         UPDATE users SET
-            bio       = COALESCE(?, bio),
-            address   = COALESCE(?, address),
-            avatarUrl = COALESCE(?, avatarUrl)
+            bio           = COALESCE(?, bio),
+            address       = COALESCE(?, address),
+            avatarUrl     = COALESCE(?, avatarUrl),
+            contactPerson = COALESCE(?, contactPerson),
+            publicPhone   = COALESCE(?, publicPhone),
+            website       = COALESCE(?, website)
         WHERE id = ?
     `;
     
-    db.run(sql, [bio || null, address || null, avatarUrl || null, req.user.id], function (err) {
+    db.run(sql, [
+        bio || null, 
+        address || null, 
+        avatarUrl || null, 
+        contactPerson || null, 
+        publicPhone || null, 
+        website || null, 
+        req.user.id
+    ], function (err) {
         if (err) return res.status(500).json({ error: err.message });
         res.status(200).json({ message: 'Profile updated successfully!' });
     });

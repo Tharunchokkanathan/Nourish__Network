@@ -26,6 +26,9 @@ const db = new sqlite3.Database(dbPath, (err) => {
             address         TEXT,
             bio             TEXT,
             avatarUrl       TEXT,
+            contactPerson   TEXT,
+            publicPhone     TEXT,
+            website         TEXT,
             createdAt       TEXT     NOT NULL DEFAULT (datetime('now'))
         )
     `, logErr('users'));
@@ -124,9 +127,9 @@ const db = new sqlite3.Database(dbPath, (err) => {
         db.run("ALTER TABLE users ADD COLUMN bio TEXT", (err) => { 
             if (err && !err.message.includes('duplicate column name')) console.error("Migration error (bio):", err.message);
         });
-        db.run("ALTER TABLE users ADD COLUMN avatarUrl TEXT", (err) => { 
-            if (err && !err.message.includes('duplicate column name')) console.error("Migration error (avatarUrl):", err.message);
-        });
+        db.run("ALTER TABLE users ADD COLUMN contactPerson TEXT");
+        db.run("ALTER TABLE users ADD COLUMN publicPhone TEXT");
+        db.run("ALTER TABLE users ADD COLUMN website TEXT");
     });
 
     // ─── SEED INITIAL DATA ──────────────────────────────────────────────────────
