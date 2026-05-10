@@ -227,8 +227,8 @@ app.get('/api/listings', (req, res) => {
 
     db.all(sql, params, (err, rows) => {
         if (err) {
-            console.error("Database Error (/api/listings):", err);
-            return res.status(500).json({ error: err.message, sql, params }); 
+            console.error("CRITICAL_DB_ERR:", err);
+            return res.status(500).json({ error: "NEW_CODE_ERR: " + err.message, sql, params }); 
         }
         res.status(200).json(rows || []);
     });
