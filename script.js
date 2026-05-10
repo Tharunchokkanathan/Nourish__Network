@@ -798,22 +798,26 @@ document.addEventListener('DOMContentLoaded', () => {
         const cartDockItem  = document.getElementById('cart-toggle-dock');
         const addDockItem   = document.getElementById('add-listing-dock');
         const loginDockItem = document.getElementById('login-toggle-dock');
+        const settingsDockItem = document.getElementById('settings-toggle-dock');
         const landingItems  = document.querySelectorAll('.landing-only');
 
         if (state.activePortal === 'buyer') {
             landingItems.forEach(el => el.style.setProperty('display', 'none', 'important'));
             if (cartDockItem)  cartDockItem.style.setProperty('display', 'flex', 'important');
             if (addDockItem)   addDockItem.style.setProperty('display', 'none', 'important');
-            if (loginDockItem) loginDockItem.style.setProperty('display', 'none', 'important');
+            if (settingsDockItem) settingsDockItem.style.setProperty('display', 'flex', 'important');
+            if (loginDockItem) loginDockItem.style.setProperty('display', 'flex', 'important');
         } else if (state.activePortal === 'seller') {
             landingItems.forEach(el => el.style.setProperty('display', 'none', 'important'));
             if (cartDockItem)  cartDockItem.style.setProperty('display', 'none', 'important');
             if (addDockItem)   addDockItem.style.setProperty('display', 'flex', 'important');
-            if (loginDockItem) loginDockItem.style.setProperty('display', 'none', 'important');
+            if (settingsDockItem) settingsDockItem.style.setProperty('display', 'flex', 'important');
+            if (loginDockItem) loginDockItem.style.setProperty('display', 'flex', 'important');
         } else {
             landingItems.forEach(el => el.style.setProperty('display', 'flex', 'important'));
             if (cartDockItem)  cartDockItem.style.setProperty('display', 'none', 'important');
             if (addDockItem)   addDockItem.style.setProperty('display', 'none', 'important');
+            if (settingsDockItem) settingsDockItem.style.setProperty('display', 'none', 'important');
             if (loginDockItem) loginDockItem.style.setProperty('display', 'flex', 'important');
         }
     }
@@ -835,12 +839,45 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
     function renderSellerPortal() {
+        let totalMealsDonated = 0;
+        state.listings.forEach(item => { totalMealsDonated += parseFloat(item.qty) || 0; });
+        
+        let badgeName = 'Member';
+        let badgeClass = 'badge-member';
+        if (totalMealsDonated >= 500) { badgeName = 'Platinum Elite'; badgeClass = 'badge-platinum'; }
+        else if (totalMealsDonated >= 100) { badgeName = 'Gold'; badgeClass = 'badge-gold'; }
+        else if (totalMealsDonated >= 50) { badgeName = 'Silver Partner'; badgeClass = 'badge-silver'; }
+
         portalsRoot.innerHTML = `
             <div class="portal-wrapper" style="padding-top: 120px; min-height: 100vh;">
 
                 <div class="container" style="max-width: 1300px; margin: 0 auto; padding: 2.5rem 2rem 5rem;">
 
-                    <h1 class="seller-page-title"><span class="premium-title">SELLER'S DASHBOARD</span></h1>
+                    <h1 class="seller-page-title" style="display: flex; align-items: center; gap: 20px;">
+                        <span class="premium-title">SELLER'S DASHBOARD</span>
+                        <span class="badge ${badgeClass}" style="font-size: 0.9rem; padding: 8px 15px; animation: badge-glow 2s infinite alternate;">${badgeName} <i class="fa-solid fa-medal"></i></span>
+                    </h1>
+
+                    <!-- Analytics Dashboard -->
+                    <div id="analyticsDashboard" class="glass-card animate-on-scroll fade-up" style="margin-bottom: 30px; border-radius: 24px; padding: 20px;">
+                        <div class="card-header" style="border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 15px; margin-bottom: 20px;">
+                            <i class="fa-solid fa-chart-line" style="color: var(--primary-color);"></i>
+                            <h3 style="margin: 0;">Impact Analytics</h3>
+                        </div>
+                        <div class="analytics-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
+                            <div class="stat-box" style="padding: 1.5rem; text-align: center; background: rgba(16, 185, 129, 0.05); border: 1px solid var(--border-glow); border-radius: 15px;">
+                                <h4 style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 5px;">Total Meals Saved</h4>
+                                <p id="totalMealsStat" style="font-size: 2rem; font-weight: 800; color: var(--primary-color); margin: 0;">${totalMealsDonated}</p>
+                            </div>
+                            <div class="stat-box" style="padding: 1.5rem; text-align: center; background: rgba(16, 185, 129, 0.05); border: 1px solid var(--border-glow); border-radius: 15px;">
+                                <h4 style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 5px;">Est. CO2 Offset (kg)</h4>
+                                <p id="co2OffsetStat" style="font-size: 2rem; font-weight: 800; color: var(--primary-color); margin: 0;">${(totalMealsDonated * 2.5).toFixed(1)}</p>
+                            </div>
+                        </div>
+                        <div style="position: relative; height: 250px; width: 100%;">
+                            <canvas id="impactChart"></canvas>
+                        </div>
+                    </div>
 
                     <!-- Zone B: My Listed Foods -->
                     <div class="seller-listings-header">
@@ -913,6 +950,7 @@ document.addEventListener('DOMContentLoaded', () => {
         renderSellerListings();
         attachSellerListeners();
         attachPortalCommentListeners();
+        initImpactChart();
     }
 
     function renderSellerListings() {
@@ -1659,5 +1697,128 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
     }
+
+    // =========================================
+    // SETTINGS / PROFILE MODAL LOGIC
+    // =========================================
+    function attachSettingsListeners() {
+        const settingsToggle = document.getElementById('settings-toggle-dock');
+        const settingsModal = document.getElementById('settingsModal');
+        const closeSettingsModal = document.getElementById('closeSettingsModal');
+        const settingsForm = document.getElementById('settingsForm');
+        const bioInput = document.getElementById('bioInput');
+        const locationInput = document.getElementById('locationInput');
+        const avatarInput = document.getElementById('avatarInput');
+        const avatarPreview = document.getElementById('avatarPreview');
+
+        if (!settingsModal) return;
+
+        async function loadProfile() {
+            try {
+                const token = sessionStorage.getItem('nourishToken');
+                const res = await fetch(`${API_BASE}/user/me`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (res.ok) {
+                    const profile = await res.json();
+                    if (bioInput) bioInput.value = profile.bio || '';
+                    if (locationInput) locationInput.value = profile.address || '';
+                    if (profile.avatarUrl && avatarPreview) {
+                        avatarPreview.src = profile.avatarUrl;
+                    }
+                }
+            } catch (e) { console.error(e); }
+        }
+
+        if (settingsToggle) {
+            settingsToggle.addEventListener('click', (e) => {
+                e.preventDefault();
+                loadProfile();
+                settingsModal.style.display = 'flex';
+            });
+        }
+
+        if (closeSettingsModal) {
+            closeSettingsModal.addEventListener('click', () => {
+                settingsModal.style.display = 'none';
+            });
+        }
+
+        settingsModal.addEventListener('click', (e) => {
+            if (e.target === settingsModal) settingsModal.style.display = 'none';
+        });
+
+        if (avatarInput) {
+            avatarInput.addEventListener('change', async (e) => {
+                const file = e.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = (ev) => { avatarPreview.src = ev.target.result; };
+                    reader.readAsDataURL(file);
+                    
+                    const formData = new FormData();
+                    formData.append('image', file);
+                    try {
+                        const token = sessionStorage.getItem('nourishToken');
+                        const uploadRes = await fetch(`${API_BASE}/upload`, {
+                            method: 'POST',
+                            headers: { 'Authorization': `Bearer ${token}` },
+                            body: formData
+                        });
+                        if (uploadRes.ok) {
+                            const data = await uploadRes.json();
+                            avatarPreview.dataset.uploadedUrl = data.imageUrl;
+                        }
+                    } catch(err) {
+                        showToast('Avatar upload failed.', 'error');
+                    }
+                }
+            });
+        }
+
+        if (settingsForm) {
+            settingsForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const saveBtn = document.getElementById('saveSettingsBtn');
+                const originalText = saveBtn.innerText;
+                saveBtn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Saving...';
+                saveBtn.disabled = true;
+
+                const bio = bioInput.value.trim();
+                const address = locationInput.value.trim();
+                let avatarUrl = avatarPreview.dataset.uploadedUrl;
+                if (!avatarUrl && avatarPreview.src && !avatarPreview.src.includes('pravatar')) {
+                    avatarUrl = avatarPreview.src;
+                }
+
+                try {
+                    const token = sessionStorage.getItem('nourishToken');
+                    const res = await fetch(`${API_BASE}/user/me`, {
+                        method: 'PUT',
+                        headers: { 
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${token}` 
+                        },
+                        body: JSON.stringify({ bio, address, avatarUrl })
+                    });
+
+                    if (res.ok) {
+                        showToast("Profile updated successfully!", "success");
+                        settingsModal.style.display = 'none';
+                        refreshState(true);
+                    } else {
+                        showToast("Failed to update profile.", "error");
+                    }
+                } catch (err) {
+                    showToast("Network error.", "error");
+                } finally {
+                    saveBtn.innerText = originalText;
+                    saveBtn.disabled = false;
+                }
+            });
+        }
+    }
+
+    attachSettingsListeners();
 
 });
