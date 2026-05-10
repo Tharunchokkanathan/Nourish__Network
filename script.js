@@ -66,16 +66,21 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    checkSession();
+
     // --- SESSION PERSISTENCE ---
     function checkSession() {
+        console.log("Checking session...");
         const userStr = sessionStorage.getItem('nourishUser');
         const token = sessionStorage.getItem('nourishToken');
         if (userStr && token) {
             const user = JSON.parse(userStr);
             const type = (user.type || user.accountType || user.role || '').toLowerCase();
             state.activePortal = (type === 'restaurant' || type === 'vendor' || type === 'seller') ? 'seller' : 'buyer';
+            console.log("Session found, active portal:", state.activePortal);
             refreshState();
         } else {
+            console.log("No session found.");
             refreshState();
         }
     }
@@ -1795,11 +1800,13 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         if (settingsToggle) {
-            settingsToggle.addEventListener('click', (e) => {
+            console.log("Attaching settings listener to dock item");
+            settingsToggle.onclick = (e) => {
                 e.preventDefault();
+                console.log("Settings dock item clicked");
                 loadProfile();
                 settingsModal.style.display = 'flex';
-            });
+            };
         }
 
         if (closeSettingsModal) {
