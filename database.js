@@ -117,6 +117,10 @@ const db = new sqlite3.Database(dbPath, (err) => {
                 stmt.finalize();
                 console.log('✅ Successfully seeded 15 food items.');
             } else if (!err && row.count > 0) {
+                // ─── MIGRATION: Add profile fields ───────────────────────────────
+                db.run("ALTER TABLE users ADD COLUMN bio TEXT", (err) => { if (!err) console.log("✅ Added bio to users."); });
+                db.run("ALTER TABLE users ADD COLUMN avatarUrl TEXT", (err) => { if (!err) console.log("✅ Added avatarUrl to users."); });
+
                 // ─── MIGRATION: Fix existing zero-price records ──────────────────
                 const prices = {
                     'Vegetable Biryani': 80, 'Paneer Butter Masala': 120, 'Assorted Sandwiches': 50,

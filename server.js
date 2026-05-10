@@ -200,25 +200,30 @@ app.post('/api/contact', (req, res) => {
 app.get('/api/listings', (req, res) => {
     const { vendorId, category, status } = req.query;
 
-    let sql    = `SELECT * FROM food_listings WHERE 1=1`;
+    let sql = `
+        SELECT f.*, u.bio as vendorBio, u.avatarUrl as vendorAvatar 
+        FROM food_listings f
+        LEFT JOIN users u ON f.vendorId = u.id
+        WHERE 1=1
+    `;
     let params = [];
 
     if (vendorId) {
-        sql += ` AND vendorId = ?`;
+        sql += ` AND f.vendorId = ?`;
         params.push(vendorId);
     } else {
         // Public feed: only available items by default
         const targetStatus = status || 'available';
-        sql += ` AND status = ?`;
+        sql += ` AND f.status = ?`;
         params.push(targetStatus);
     }
 
     if (category && category !== 'All') {
-        sql += ` AND category = ?`;
+        sql += ` AND f.category = ?`;
         params.push(category);
     }
 
-    sql += ` ORDER BY datePosted DESC`;
+    sql += ` ORDER BY f.datePosted DESC`;
 
     db.all(sql, params, (err, rows) => {
         if (err) return res.status(500).json({ error: err.message });
@@ -257,11 +262,31 @@ app.get('/api/stats', (req, res) => {
 // 6. GET MY PROFILE
 // GET /api/user/me
 app.get('/api/user/me', authenticateToken, (req, res) => {
-    db.get(`SELECT id, accountType, organizationName, email, phone, address, createdAt
+    db.get(`SELECT id, accountType, organizationName, email, phone, address, bio, avatarUrl, createdAt
             FROM users WHERE id = ?`, [req.user.id], (err, user) => {
         if (err)   return res.status(500).json({ error: err.message });
         if (!user) return res.status(404).json({ error: 'User not found.' });
         res.status(200).json(user);
+    });
+});
+
+// 6b. UPDATE MY PROFILE
+// PUT /api/user/me
+// Body: { bio?, address?, avatarUrl? }
+app.put('/api/user/me', authenticateToken, (req, res) => {
+    const { bio, address, avatarUrl } = req.body;
+    
+    const sql = `
+        UPDATE users SET
+            bio       = COALESCE(?, bio),
+            address   = COALESCE(?, address),
+            avatarUrl = COALESCE(?, avatarUrl)
+        WHERE id = ?
+    `;
+    
+    db.run(sql, [bio || null, address || null, avatarUrl || null, req.user.id], function (err) {
+        if (err) return res.status(500).json({ error: err.message });
+        res.status(200).json({ message: 'Profile updated successfully!' });
     });
 });
 
