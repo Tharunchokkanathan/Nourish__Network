@@ -839,8 +839,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
     function renderSellerPortal() {
+        const user = JSON.parse(sessionStorage.getItem('nourishUser') || '{}');
+        const sellerListings = state.listings.filter(l => l.vendorId === user.id);
+
         let totalMealsDonated = 0;
-        state.listings.forEach(item => { totalMealsDonated += parseFloat(item.qty) || 0; });
+        sellerListings.forEach(item => { totalMealsDonated += parseFloat(item.qty) || 0; });
         
         let badgeName = 'Member';
         let badgeClass = 'badge-member';
@@ -1694,6 +1697,53 @@ document.addEventListener('DOMContentLoaded', () => {
                     dashArray: '5, 10',
                     lineJoin: 'round'
                 }).addTo(impactLayer);
+            }
+        });
+    }
+
+    function initImpactChart() {
+        const ctx = document.getElementById('impactChart');
+        if (!ctx || !window.Chart) return;
+
+        const user = JSON.parse(sessionStorage.getItem('nourishUser') || '{}');
+        const sellerListings = state.listings.filter(l => l.vendorId == user.id);
+
+        // Group data by date
+        const dateData = {};
+        const chronListings = [...sellerListings].reverse(); 
+        chronListings.forEach(item => {
+            const dateObj = new Date(item.datePosted || Date.now());
+            const dateStr = dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+            const qty = parseFloat(item.qty) || 0;
+            dateData[dateStr] = (dateData[dateStr] || 0) + qty;
+        });
+        
+        const labels = Object.keys(dateData);
+        const data = Object.values(dateData);
+
+        if (window.impactChartInstance) window.impactChartInstance.destroy();
+        window.impactChartInstance = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: labels.length ? labels : ['Today'],
+                datasets: [{
+                    label: 'Meals Saved',
+                    data: data.length ? data : [0],
+                    borderColor: '#10b981',
+                    backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                    fill: true,
+                    tension: 0.4,
+                    pointBackgroundColor: '#10b981'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: {
+                    y: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.05)' } },
+                    x: { grid: { display: false } }
+                }
             }
         });
     }
