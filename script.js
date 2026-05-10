@@ -1052,7 +1052,11 @@ document.addEventListener('DOMContentLoaded', () => {
         const grid = document.getElementById('exchange-grid');
         if (!grid) return;
 
-        grid.innerHTML = state.listings.map((item, idx) => `
+        grid.innerHTML = state.listings.map((item, idx) => {
+            const avatarImg = item.vendorAvatar ? item.vendorAvatar : `https://i.pravatar.cc/150?u=${item.vendorId || item.id}`;
+            const bioText = item.vendorBio ? `<div style="font-size: 0.75rem; color: #cbd5e1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 150px;">${item.vendorBio}</div>` : '';
+
+            return `
             <div class="nn-food-card stagger-item ${item.qty <= 0 ? 'is-sold-out' : ''} ${new Date(item.expiry) < new Date() ? 'is-expired' : ''}" data-id="${item.id}" style="animation-delay: ${idx * 0.05}s">
                 ${item.qty <= 0 ? '<div class="nn-sold-out-badge"><i class="fa-solid fa-ban"></i> Sold Out</div>' : ''}
                 <div class="nn-card-img-wrap">
@@ -1062,7 +1066,13 @@ document.addEventListener('DOMContentLoaded', () => {
                         <span class="nn-badge nn-badge-cat">${item.category}</span>
                         <span class="nn-badge nn-badge-qty ${item.qty <= 5 && item.qty > 0 ? 'nn-badge-low' : ''}"><i class="fa-solid fa-utensils"></i> ${item.qty} left</span>
                     </div>
-                    <div class="nn-card-vendor"><i class="fa-solid fa-store"></i> ${item.vendorName}</div>
+                    <div class="nn-card-vendor" style="display: flex; align-items: center; gap: 8px; background: rgba(0,0,0,0.6); padding: 5px 10px; border-radius: 20px;">
+                        <img src="${avatarImg}" style="width: 24px; height: 24px; border-radius: 50%; border: 1px solid var(--border-glow); object-fit: cover;">
+                        <div style="display: flex; flex-direction: column; text-align: left;">
+                            <strong style="font-size: 0.85rem; color: white;">${item.vendorName}</strong>
+                            ${bioText}
+                        </div>
+                    </div>
                 </div>
                 <div class="nn-expiry-container">
                     <span class="nn-expiry-label">Expires in:</span>
@@ -1087,7 +1097,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     </button>
                 </div>
             </div>
-        `).join('');
+            `;
+        }).join('');
         
         attachBuyerListeners();
     }

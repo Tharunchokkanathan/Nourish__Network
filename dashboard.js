@@ -209,9 +209,18 @@ document.addEventListener('DOMContentLoaded', () => {
                 actionBtn = `<button class="btn btn-outline w-100 btn-delete" data-id="${item.id}" style="margin-top: 10px; color: #dc2626; border-color: #dc2626;">Delete Listing <i class="fa-solid fa-trash"></i></button>`;
             }
 
+            const avatarImg = item.vendorAvatar ? item.vendorAvatar : `https://i.pravatar.cc/150?u=${item.vendorId}`;
+            const bioText = item.vendorBio ? `<div style="font-size: 0.8rem; color: #94a3b8; margin-top: 2px;">${item.vendorBio}</div>` : '';
+
             card.innerHTML = `
-                <div class="d-flex justify-between" style="margin-bottom: 5px; align-items: center;">
-                    <span class="vendor-name" style="margin: 0; font-size: 0.95rem;">${item.vendorName}</span>
+                <div class="d-flex justify-between" style="margin-bottom: 10px; align-items: flex-start;">
+                    <div class="d-flex" style="align-items: center; gap: 10px;">
+                        <img src="${avatarImg}" alt="Avatar" style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover; border: 1px solid var(--border-glow);">
+                        <div>
+                            <span class="vendor-name" style="margin: 0; font-size: 0.95rem; font-weight: bold;">${item.vendorName}</span>
+                            ${bioText}
+                        </div>
+                    </div>
                     ${statusHtml}
                 </div>
                 <h4 class="food-desc" style="margin-bottom: 5px; font-size: 1.15rem;">${item.name}</h4>
@@ -314,6 +323,120 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             } catch (err) {
                 alert("Network error.");
+            }
+        });
+    }
+
+    // =========================================
+    // SETTINGS / PROFILE MODAL LOGIC
+    // =========================================
+    const settingsBtn = document.getElementById('settingsBtn');
+    const settingsModal = document.getElementById('settingsModal');
+    const closeSettingsModal = document.getElementById('closeSettingsModal');
+    const settingsForm = document.getElementById('settingsForm');
+    const bioInput = document.getElementById('bioInput');
+    const locationInput = document.getElementById('locationInput');
+    const avatarInput = document.getElementById('avatarInput');
+    const avatarPreview = document.getElementById('avatarPreview');
+
+    // Load full profile details from backend
+    async function loadProfile() {
+        try {
+            const token = sessionStorage.getItem('nourishToken');
+            const res = await fetch(`${API_BASE}/user/me`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (res.ok) {
+                const profile = await res.json();
+                bioInput.value = profile.bio || '';
+                locationInput.value = profile.address || '';
+                if (profile.avatarUrl) {
+                    avatarPreview.src = profile.avatarUrl;
+                }
+            }
+        } catch (e) { console.error(e); }
+    }
+
+    if (settingsBtn && settingsModal) {
+        settingsBtn.addEventListener('click', () => {
+            loadProfile();
+            settingsModal.style.display = 'flex';
+        });
+
+        closeSettingsModal.addEventListener('click', () => {
+            settingsModal.style.display = 'none';
+        });
+
+        // Close on overlay click
+        settingsModal.addEventListener('click', (e) => {
+            if (e.target === settingsModal) settingsModal.style.display = 'none';
+        });
+
+        // Handle Avatar Preview
+        avatarInput.addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (e) => { avatarPreview.src = e.target.result; };
+                reader.readAsDataURL(file);
+                
+                // Upload immediately to get URL
+                const formData = new FormData();
+                formData.append('image', file);
+                try {
+                    const token = sessionStorage.getItem('nourishToken');
+                    const uploadRes = await fetch(`${API_BASE}/upload`, {
+                        method: 'POST',
+                        headers: { 'Authorization': `Bearer ${token}` },
+                        body: formData
+                    });
+                    if (uploadRes.ok) {
+                        const data = await uploadRes.json();
+                        avatarPreview.dataset.uploadedUrl = data.imageUrl; // save for submission
+                    }
+                } catch(err) {
+                    alert('Avatar upload failed.');
+                }
+            }
+        });
+
+        // Save Settings
+        settingsForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const saveBtn = document.getElementById('saveSettingsBtn');
+            const originalText = saveBtn.innerText;
+            saveBtn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Saving...';
+            saveBtn.disabled = true;
+
+            const bio = bioInput.value.trim();
+            const address = locationInput.value.trim();
+            let avatarUrl = avatarPreview.dataset.uploadedUrl;
+            if (!avatarUrl && !avatarPreview.src.includes('pravatar')) {
+                avatarUrl = avatarPreview.src; // Keep existing if not changing
+            }
+
+            try {
+                const token = sessionStorage.getItem('nourishToken');
+                const res = await fetch(`${API_BASE}/user/me`, {
+                    method: 'PUT',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}` 
+                    },
+                    body: JSON.stringify({ bio, address, avatarUrl })
+                });
+
+                if (res.ok) {
+                    alert("Profile updated successfully!");
+                    settingsModal.style.display = 'none';
+                } else {
+                    alert("Failed to update profile.");
+                }
+            } catch (err) {
+                alert("Network error.");
+            } finally {
+                saveBtn.innerText = originalText;
+                saveBtn.disabled = false;
             }
         });
     }
