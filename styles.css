@@ -1742,18 +1742,18 @@ img {
     left: 50%;
     transform: translateX(-50%);
     z-index: 2000;
+    width: fit-content;
     max-width: fit-content;
     opacity: 1 !important;
-    /* No background here — keep it invisible, just a container */
     background: none !important;
     border: none !important;
     box-shadow: none !important;
+    pointer-events: none;
 }
 
 .bottom-nav-container {
     display: flex;
     align-items: center;
-    /* Premium Glassmorphism — only on the pill */
     background: rgba(10, 20, 15, 0.65);
     backdrop-filter: blur(24px) saturate(180%);
     -webkit-backdrop-filter: blur(24px) saturate(180%);
@@ -1763,6 +1763,7 @@ img {
     gap: 1.8rem;
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5),
                 inset 0 1px 0 rgba(255, 255, 255, 0.06);
+    pointer-events: auto;
 }
 
 .nav-item {
@@ -2042,7 +2043,9 @@ input:checked + .slider:before { transform: translateX(20px); }
     display: flex;
     flex-direction: column;
     padding: 2.5rem;
+    padding-bottom: env(safe-area-inset-bottom, 2.5rem);
     border-left: 1px solid var(--border-glow);
+    overflow-y: auto;
 }
 
 .cart-drawer.active .cart-drawer-content { right: 0; }
