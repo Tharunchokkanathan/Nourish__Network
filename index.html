@@ -18,7 +18,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
     <!-- Custom Styles -->
-    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="styles.css?v=1.2">
 
     <!-- Leaflet.js for Impact Map -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -532,7 +532,7 @@
                         <p style="margin: 0; font-size: 0.8rem; color: var(--text-muted);">Manage your organization's identity and details</p>
                     </div>
                 </div>
-                <button id="closeSettingsModal" style="width: 40px; height: 40px; background: rgba(255,255,255,0.06); border: 1px solid var(--border-glow); border-radius: 10px; font-size: 1.1rem; cursor: pointer; color: var(--text-primary); display: flex; align-items: center; justify-content: center;">
+                <button id="closeSettingsModal" onclick="document.getElementById('settingsModal').style.display='none'" style="width: 40px; height: 40px; background: rgba(255,255,255,0.06); border: 1px solid var(--border-glow); border-radius: 10px; font-size: 1.1rem; cursor: pointer; color: var(--text-primary); display: flex; align-items: center; justify-content: center;">
                     <i class="fa-solid fa-xmark"></i>
                 </button>
             </div>
@@ -687,7 +687,7 @@
     </svg>
 
     <!-- Custom Script -->
-    <script src="script.js?v=1.1"></script>
+    <script src="script.js?v=1.2"></script>
 </body>
 </html>
 <!-- Nourish Network v1.0.1 - Auto-Deploy Test -->
