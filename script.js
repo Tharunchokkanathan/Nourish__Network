@@ -575,6 +575,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 // Save user and JWT token to localStorage
                 sessionStorage.setItem('nourishUser', JSON.stringify(data.user));
                 if (data.token) sessionStorage.setItem('nourishToken', data.token);
+                document.documentElement.classList.add('user-logged-in');
                 
                 setTimeout(() => {
                     authModal.classList.remove('active');
@@ -628,6 +629,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 // Server auto-logs in on register — save user + token
                 if (data.user) sessionStorage.setItem('nourishUser', JSON.stringify(data.user));
                 if (data.token) sessionStorage.setItem('nourishToken', data.token);
+                document.documentElement.classList.add('user-logged-in');
 
                 setTimeout(() => {
                     authModal.classList.remove('active');
@@ -980,6 +982,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function logout() {
         sessionStorage.removeItem('nourishUser');
         sessionStorage.removeItem('nourishToken');
+        document.documentElement.classList.remove('user-logged-in');
         state.activePortal = 'home';
         state.cart = [];
         renderPortal();

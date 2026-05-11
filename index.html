@@ -25,6 +25,18 @@
     <!-- Chart.js for Impact Analytics Dashboard -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
+    <!-- Anti-flash script for persistent sessions -->
+    <script>
+        (function() {
+            try {
+                const user = sessionStorage.getItem('nourishUser');
+                const token = sessionStorage.getItem('nourishToken');
+                if (user && token) {
+                    document.documentElement.classList.add('user-logged-in');
+                }
+            } catch (e) {}
+        })();
+    </script>
 </head>
 
 <body>

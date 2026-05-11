@@ -27,6 +27,11 @@
     --terracotta: #e67e22;
 }
 
+/* Anti-flash Utilities */
+.user-logged-in #home-portal { display: none !important; }
+.user-logged-in #nn-portals-root { display: block !important; }
+
+
 
 [data-theme='light'] {
     --bg-main: #f0fdf4; /* Light Emerald Tint */
