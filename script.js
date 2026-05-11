@@ -1704,10 +1704,25 @@ document.addEventListener('DOMContentLoaded', () => {
             // Re-render both parts
             renderCommunityWall();
             renderReviewsSlider();
-            renderPortalComments();
+
+            // Jump to the newest slide (last one added) in Voices of Impact
+            const slides = document.querySelectorAll('.review-slide');
+            const dots = document.querySelectorAll('.dot');
+            if (slides.length > 0) {
+                slides.forEach(s => s.classList.remove('active'));
+                dots.forEach(d => d.classList.remove('active'));
+                slides[slides.length - 1].classList.add('active');
+                if (dots[dots.length - 1]) dots[dots.length - 1].classList.add('active');
+            }
+
+            // Smooth scroll to Voices of Impact
+            const voicesSection = document.getElementById('reviews');
+            if (voicesSection) {
+                voicesSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
             
             commentText.value = '';
-            showToast("Your thoughts have been shared with the community!", "success");
+            showToast("Your voice is now live in 'Voices of Impact'! 🌱", "success");
         });
     }
     
