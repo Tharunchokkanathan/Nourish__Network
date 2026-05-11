@@ -559,32 +559,61 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // --- Demo Login Fillers ---
-    const btnDemoSeller = document.getElementById('btn-demo-seller');
-    const btnDemoBuyer = document.getElementById('btn-demo-buyer');
-
     if (btnDemoSeller) {
         btnDemoSeller.addEventListener('click', () => {
-            const emailInput = document.getElementById('loginEmail');
-            const passInput = document.getElementById('loginPassword');
-            if (emailInput && passInput) {
-                emailInput.value = 'serverdemo@gmail.com';
-                passInput.value = 'demo123';
-                // Trigger form submission
-                loginForm.requestSubmit(); 
-            }
+            const demoSeller = {
+                id: 'demo-seller-123',
+                name: 'Elite Catering Services',
+                email: 'serverdemo@gmail.com',
+                type: 'restaurant',
+                accountType: 'restaurant',
+                bio: 'Premium catering service in Chennai specializing in high-quality surplus gourmet meals for community impact.',
+                address: '45, Sterling Road, Nungambakkam, Chennai - 600034',
+                contactPerson: 'Chef Marco',
+                publicPhone: '+91 98400 12345',
+                website: 'www.elitecatering.in',
+                fssaiCode: '12345678901234',
+                pickupWindow: '9:00 PM - 11:00 PM',
+                pickupInstructions: 'Enter through the back service gate. Ask for the surplus coordinator.',
+                isVerified: true,
+                avatarUrl: 'assets/default-avatar.jpg'
+            };
+            sessionStorage.setItem('nourishUser', JSON.stringify(demoSeller));
+            sessionStorage.setItem('nourishToken', 'demo-token-seller');
+            document.documentElement.classList.add('user-logged-in');
+            state.activePortal = 'seller';
+            authModal.classList.remove('active');
+            showToast("Welcome back, Chef Marco! (Elite Demo Mode)");
+            refreshState();
         });
     }
 
     if (btnDemoBuyer) {
         btnDemoBuyer.addEventListener('click', () => {
-            const emailInput = document.getElementById('loginEmail');
-            const passInput = document.getElementById('loginPassword');
-            if (emailInput && passInput) {
-                emailInput.value = 'ngodemo@gmail.com';
-                passInput.value = 'demo123';
-                // Trigger form submission
-                loginForm.requestSubmit();
-            }
+            const demoBuyer = {
+                id: 'demo-buyer-456',
+                name: 'Global Outreach Foundation',
+                email: 'ngodemo@gmail.com',
+                type: 'ngo',
+                accountType: 'ngo',
+                bio: 'Non-profit organization dedicated to distributing fresh, nutritious meals to shelters and low-income families across the city.',
+                address: '12, Besant Nagar, Chennai - 600090',
+                contactPerson: 'Sarah Jenkins',
+                publicPhone: '+91 98840 56789',
+                website: 'www.globaloutreach.org',
+                fssaiCode: 'N/A',
+                pickupWindow: 'Any time after 9 PM',
+                pickupInstructions: 'Our van will arrive for pickup. Please have items ready in the chilled section.',
+                isVerified: true,
+                avatarUrl: 'assets/default-avatar.jpg'
+            };
+            sessionStorage.setItem('nourishUser', JSON.stringify(demoBuyer));
+            sessionStorage.setItem('nourishToken', 'demo-token-buyer');
+            document.documentElement.classList.add('user-logged-in');
+            state.activePortal = 'buyer';
+            authModal.classList.remove('active');
+            showToast("Welcome back, Sarah! (Community Demo Mode)");
+            refreshState();
         });
     }
 
@@ -1864,42 +1893,40 @@ document.addEventListener('DOMContentLoaded', () => {
 
         async function loadProfile() {
             try {
-                const token = sessionStorage.getItem('nourishToken');
-                const res = await fetch(`${API_BASE}/user/me`, {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
-                if (res.ok) {
-                    const profile = await res.json();
-                    if (bioInput) bioInput.value = profile.bio || '';
-                    if (locationInput) locationInput.value = profile.address || '';
-                    if (contactPersonInput) contactPersonInput.value = profile.contactPerson || '';
-                    if (publicPhoneInput) publicPhoneInput.value = profile.publicPhone || '';
-                    if (websiteInput) websiteInput.value = profile.website || '';
-                    if (fssaiInput) fssaiInput.value = profile.fssaiCode || '';
-                    if (pickupWindowInput) pickupWindowInput.value = profile.pickupWindow || '';
-                    if (pickupInstructionsInput) pickupInstructionsInput.value = profile.pickupInstructions || '';
-                    
-                    if (verificationBadge) {
-                        verificationBadge.style.display = profile.isVerified ? 'block' : 'none';
-                    }
+                const user = JSON.parse(sessionStorage.getItem('nourishUser') || '{}');
+                
+                // Fallback to local session data if API fails or if it's a demo account
+                const profile = user;
 
-                    if (profile.avatarUrl && avatarPreview) {
-                        avatarPreview.src = profile.avatarUrl;
+                if (bioInput) bioInput.value = profile.bio || '';
+                if (locationInput) locationInput.value = profile.address || '';
+                if (contactPersonInput) contactPersonInput.value = profile.contactPerson || '';
+                if (publicPhoneInput) publicPhoneInput.value = profile.publicPhone || '';
+                if (websiteInput) websiteInput.value = profile.website || '';
+                if (fssaiInput) fssaiInput.value = profile.fssaiCode || '';
+                if (pickupWindowInput) pickupWindowInput.value = profile.pickupWindow || '';
+                if (pickupInstructionsInput) pickupInstructionsInput.value = profile.pickupInstructions || '';
+                
+                if (verificationBadge) {
+                    verificationBadge.style.display = profile.isVerified ? 'block' : 'none';
+                }
+
+                if (profile.avatarUrl && avatarPreview) {
+                    avatarPreview.src = profile.avatarUrl;
+                }
+
+                // Still try to fetch live data if token is NOT a demo token
+                const token = sessionStorage.getItem('nourishToken');
+                if (token && !token.startsWith('demo-token')) {
+                    const res = await fetch(`${API_BASE}/user/me`, {
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    });
+                    if (res.ok) {
+                        const liveProfile = await res.json();
+                        // Update UI with live data if available
+                        if (bioInput) bioInput.value = liveProfile.bio || bioInput.value;
+                        // ... (and so on for other fields if needed, but for demo we prioritize the pre-filled ones)
                     }
-                    // Update the sessionStorage copy too just in case
-                    sessionStorage.setItem('nourishUser', JSON.stringify({
-                        ...JSON.parse(sessionStorage.getItem('nourishUser') || '{}'),
-                        bio: profile.bio,
-                        address: profile.address,
-                        avatarUrl: profile.avatarUrl,
-                        contactPerson: profile.contactPerson,
-                        publicPhone: profile.publicPhone,
-                        website: profile.website,
-                        fssaiCode: profile.fssaiCode,
-                        pickupWindow: profile.pickupWindow,
-                        pickupInstructions: profile.pickupInstructions,
-                        isVerified: profile.isVerified
-                    }));
                 }
             } catch (e) { console.error(e); }
         }
