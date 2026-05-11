@@ -209,7 +209,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 actionBtn = `<button class="btn btn-outline w-100 btn-delete" data-id="${item.id}" style="margin-top: 10px; color: #dc2626; border-color: #dc2626;">Delete Listing <i class="fa-solid fa-trash"></i></button>`;
             }
 
-            const avatarImg = item.vendorAvatar ? item.vendorAvatar : `https://i.pravatar.cc/150?u=${item.vendorId}`;
+            const avatarImg = item.vendorAvatar ? item.vendorAvatar : `assets/default-avatar.png`;
             const bioText = item.vendorBio ? `<div style="font-size: 0.8rem; color: #94a3b8; margin-top: 2px;">${item.vendorBio}</div>` : '';
 
             card.innerHTML = `
@@ -412,7 +412,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const bio = bioInput.value.trim();
             const address = locationInput.value.trim();
             let avatarUrl = avatarPreview.dataset.uploadedUrl;
-            if (!avatarUrl && !avatarPreview.src.includes('pravatar')) {
+            if (!avatarUrl && !avatarPreview.src.includes('default-avatar')) {
                 avatarUrl = avatarPreview.src; // Keep existing if not changing
             }
 

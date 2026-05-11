@@ -929,7 +929,7 @@ document.addEventListener('DOMContentLoaded', () => {
             // Update avatar src from session
             const user = JSON.parse(sessionStorage.getItem('nourishUser') || '{}');
             if (navAvatarImg && user.avatarUrl) navAvatarImg.src = user.avatarUrl;
-            else if (navAvatarImg && user.id) navAvatarImg.src = `https://i.pravatar.cc/150?u=${user.id}`;
+            else if (navAvatarImg && user.id) navAvatarImg.src = `assets/default-avatar.png`;
         } else {
             if (loginTextDock) loginTextDock.innerText = 'Login';
             if (loginIconDock) { loginIconDock.classList.remove('fa-right-from-bracket'); loginIconDock.classList.add('fa-user'); }
@@ -1225,7 +1225,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!grid) return;
 
         grid.innerHTML = state.listings.map((item, idx) => {
-            const avatarImg = item.vendorAvatar ? item.vendorAvatar : `https://i.pravatar.cc/150?u=${item.vendorId || item.id}`;
+            const avatarImg = item.vendorAvatar ? item.vendorAvatar : `assets/default-avatar.png`;
             const bioText = item.vendorBio ? `<div style="font-size: 0.75rem; color: #cbd5e1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 150px;">${item.vendorBio}</div>` : '';
 
             return `
@@ -2014,7 +2014,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const pickupInstructions = pickupInstructionsInput ? pickupInstructionsInput.value.trim() : '';
                 
                 let avatarUrl = avatarPreview.dataset.uploadedUrl;
-                if (!avatarUrl && avatarPreview.src && !avatarPreview.src.includes('pravatar')) {
+                if (!avatarUrl && avatarPreview.src && !avatarPreview.src.includes('default-avatar')) {
                     avatarUrl = avatarPreview.src;
                 }
 
