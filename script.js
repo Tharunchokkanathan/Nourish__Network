@@ -10,6 +10,7 @@ document.addEventListener('DOMContentLoaded', () => {
         listings: [],
         communityComments: JSON.parse(localStorage.getItem('nn_comments') || 'null') || [
             {
+                id: 'default-1',
                 name: "Chef Marco",
                 org: "Grand Hotel",
                 text: "Nourish Network has completely changed how we give back. We used to throw away kilos of premium food a day; now it feeds kids at the local orphanage within hours.",
@@ -19,6 +20,13 @@ document.addEventListener('DOMContentLoaded', () => {
         ],
         stats: { totalMealsSaved: 0, totalKgShared: 0, totalVendors: 0, totalNGOs: 0 }
     };
+
+    // Backfill IDs for any comments loaded from localStorage that were saved before IDs were added
+    let needsSave = false;
+    state.communityComments.forEach(c => {
+        if (!c.id) { c.id = 'legacy-' + Date.now() + '-' + Math.random().toString(36).slice(2); needsSave = true; }
+    });
+    if (needsSave) localStorage.setItem('nn_comments', JSON.stringify(state.communityComments));
 
     // --- GLOBAL DEMO ORDER HANDLER (THE NUCLEAR OPTION) ---
     window.placeOrderDemo = async function() {
