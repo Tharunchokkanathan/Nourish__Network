@@ -99,6 +99,30 @@ document.addEventListener('DOMContentLoaded', () => {
             // Success feedback
             if (typeof showToast === 'function') showToast("Order Confirmed! 🌱", "success");
 
+            // --- LOG PURCHASE FOR LIVE STATS ---
+            const user = JSON.parse(sessionStorage.getItem('nourishUser') || '{}');
+            const purchases = JSON.parse(localStorage.getItem('nn_purchases') || '[]');
+            const totalQty = state.cart.reduce((sum, item) => sum + (item.qty || 1), 0);
+            purchases.push({
+                id: Date.now().toString(),
+                buyerOrg: user.orgName || user.name || 'NGO Partner',
+                qty: totalQty,
+                ts: Date.now()
+            });
+            localStorage.setItem('nn_purchases', JSON.stringify(purchases));
+
+            // Fire live stat update with pulse
+            if (typeof updateLiveStats === 'function') {
+                updateLiveStats();
+                setTimeout(() => {
+                    if (typeof animateStatBump === 'function') {
+                        animateStatBump('listed');
+                        animateStatBump('fulfilled');
+                        animateStatBump('ngos');
+                    }
+                }, 100);
+            }
+
             // Cleanup
             state.cart = [];
             if (typeof updateCartBadge === 'function') updateCartBadge();
@@ -272,18 +296,59 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    function computeLocalStats() {
+        const purchases = JSON.parse(localStorage.getItem('nn_purchases') || '[]');
+        const demoListings = JSON.parse(localStorage.getItem('nn_demo_listings') || '[]');
+
+        // Meals Saved = total qty across all listings + purchased qty
+        const listingMeals = state.listings.reduce((sum, l) => sum + (parseInt(l.qty) || parseInt(l.quantity) || 0), 0);
+        const purchasedMeals = purchases.reduce((sum, p) => sum + (p.qty || 0), 0);
+        const totalMeals = listingMeals + purchasedMeals;
+
+        // KG Shared = ~0.35kg per portion (avg Indian meal weight)
+        const totalKg = Math.round(totalMeals * 0.35);
+
+        // Partner Restaurants = unique vendor IDs in listings
+        const vendorIds = new Set(state.listings.map(l => l.vendorId).filter(Boolean));
+        const totalVendors = Math.max(vendorIds.size, demoListings.length > 0 ? 1 : 0, state.listings.length > 0 ? 1 : 0);
+
+        // NGOs Helped = unique buyer orgs from purchases, min 1 if any purchase
+        const buyerOrgs = new Set(purchases.map(p => p.buyerOrg).filter(Boolean));
+        const totalNGOs = buyerOrgs.size + (purchases.length > 0 ? 1 : 0);
+
+        return { totalMeals, totalKg, totalVendors, totalNGOs };
+    }
+
     function updateLiveStats() {
-        const listedEl = document.querySelector('[data-target-stat="listed"]');
-        const fulfilledEl = document.querySelector('[data-target-stat="fulfilled"]');
-        const vendorsEl = document.querySelector('[data-target-stat="vendors"]');
-        const ngosEl = document.querySelector('[data-target-stat="ngos"]');
-        
-        if (listedEl) listedEl.setAttribute('data-target', Math.round(state.stats.totalMealsSaved || 0));
-        if (fulfilledEl) fulfilledEl.setAttribute('data-target', Math.round(state.stats.totalKgShared || 0));
-        if (vendorsEl) vendorsEl.setAttribute('data-target', state.stats.totalVendors || 0);
-        if (ngosEl) ngosEl.setAttribute('data-target', state.stats.totalNGOs || 0);
-        
+        const localStats = computeLocalStats();
+
+        // Merge with API stats (take whichever is higher)
+        const meals  = Math.max(localStats.totalMeals,   state.stats.totalMealsSaved || 0);
+        const kg     = Math.max(localStats.totalKg,      state.stats.totalKgShared   || 0);
+        const vendors= Math.max(localStats.totalVendors, state.stats.totalVendors    || 0);
+        const ngos   = Math.max(localStats.totalNGOs,    state.stats.totalNGOs       || 0);
+
+        const listedEl   = document.querySelector('[data-target-stat="listed"]');
+        const fulfilledEl= document.querySelector('[data-target-stat="fulfilled"]');
+        const vendorsEl  = document.querySelector('[data-target-stat="vendors"]');
+        const ngosEl     = document.querySelector('[data-target-stat="ngos"]');
+
+        if (listedEl)    listedEl.setAttribute('data-target', meals);
+        if (fulfilledEl) fulfilledEl.setAttribute('data-target', kg);
+        if (vendorsEl)   vendorsEl.setAttribute('data-target', vendors);
+        if (ngosEl)      ngosEl.setAttribute('data-target', ngos);
+
         startCounters();
+    }
+
+    // Pulse animation when a stat number jumps
+    function animateStatBump(statAttr) {
+        const el = document.querySelector(`[data-target-stat="${statAttr}"]`);
+        if (!el) return;
+        el.style.transition = 'transform 0.2s ease, color 0.2s ease';
+        el.style.transform = 'scale(1.4)';
+        el.style.color = 'var(--accent-primary)';
+        setTimeout(() => { el.style.transform = 'scale(1)'; el.style.color = ''; }, 300);
     }
 
 
@@ -1702,6 +1767,9 @@ document.addEventListener('DOMContentLoaded', () => {
                         saved.unshift(newItem);
                         localStorage.setItem('nn_demo_listings', JSON.stringify(saved));
                         showToast("Published successfully! 🌱", "success");
+                        // Live stat update
+                        updateLiveStats();
+                        setTimeout(() => { animateStatBump('listed'); animateStatBump('fulfilled'); animateStatBump('vendors'); }, 100);
                     }
                     form.reset();
                     document.getElementById('p-id').value = '';
@@ -1709,6 +1777,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (cancelBtn) cancelBtn.style.display = 'none';
                     renderSellerListings();
                     return;
+
                 }
 
                 try {
