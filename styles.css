@@ -41,16 +41,33 @@
 
 
 [data-theme='light'] {
-    --bg-main: #f0fdf4; /* Light Emerald Tint */
+    --bg-main: #f8faf9;
     --bg-surface: #ffffff;
-    --accent-primary: #10b981; /* The vibrant emerald from the image */
+    --accent-primary: #10b981;
     --accent-secondary: #059669;
-    --text-primary: #064e3b; /* Dark emerald text */
-    --text-secondary: #047857;
-    --border-glow: rgba(16, 185, 129, 0.2);
-    --glass-bg: rgba(255, 255, 255, 0.8);
-    --glass-border: 1px solid rgba(16, 185, 129, 0.15);
-    --glass-shadow: 0 12px 40px -10px rgba(16, 185, 129, 0.15);
+    --text-primary: #064e3b;
+    --text-secondary: #374151;
+    --text-muted: #6b7280;
+    --border-glow: rgba(16, 185, 129, 0.1);
+    --glass-bg: rgba(255, 255, 255, 0.85);
+    --glass-border: 1px solid rgba(16, 185, 129, 0.2);
+    --glass-shadow: 0 20px 40px rgba(16, 185, 129, 0.08);
+    --midnight-surface: #ffffff;
+}
+
+[data-theme='light'] .premium-title {
+    background: linear-gradient(135deg, #064e3b 0%, #10b981 100%);
+    -webkit-background-clip: text;
+}
+
+[data-theme='light'] .glass-card {
+    background: var(--glass-bg);
+    border: var(--glass-border);
+    box-shadow: var(--glass-shadow);
+}
+
+[data-theme='light'] .nav-item {
+    color: var(--text-primary);
 }
 
 * {
