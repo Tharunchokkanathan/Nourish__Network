@@ -1147,32 +1147,11 @@ document.addEventListener('DOMContentLoaded', () => {
                         </form>
                     </div>
 
-                    <!-- Community Feedback -->
-                    <div class="seller-form-card" style="margin-top: 4rem;">
-                        <div class="seller-form-header">
-                            <h3>COMMUNITY FEEDBACK</h3>
-                        </div>
-                        <div id="portal-comments-list" style="max-height: 400px; overflow-y: auto; margin-bottom: 2rem; padding-right: 10px;">
-                            <!-- Comments render here -->
-                        </div>
-                        <div class="seller-form-header" style="border-top: 1px solid var(--border-glow); padding-top: 1.5rem; margin-top: 1.5rem;">
-                            <h3>SHARE A THOUGHT</h3>
-                        </div>
-                        <form id="portal-comment-form" class="nn-form">
-                            <div class="form-group">
-                                <label>Your Experience</label>
-                                <textarea id="portal-comment-text" class="form-control" rows="2" placeholder="How was your experience today?" required></textarea>
-                            </div>
-                            <button type="submit" class="nn-publish-btn" style="width: 100%;">Share with Community <i class="fa-solid fa-paper-plane"></i></button>
-                        </form>
-                    </div>
-
                 </div>
             </div>
         `;
         renderSellerListings();
         attachSellerListeners();
-        attachPortalCommentListeners();
         initImpactChart();
     }
 
@@ -1289,30 +1268,10 @@ document.addEventListener('DOMContentLoaded', () => {
                         <!-- Cards will render here -->
                     </div>
 
-                    <!-- Community Feedback -->
-                    <div class="seller-form-card" style="margin-top: 4rem;">
-                        <div class="seller-form-header">
-                            <h3>COMMUNITY HUB</h3>
-                        </div>
-                        <div id="portal-comments-list" style="max-height: 400px; overflow-y: auto; margin-bottom: 2rem; padding-right: 10px;">
-                            <!-- Comments render here -->
-                        </div>
-                        <div class="seller-form-header" style="border-top: 1px solid var(--border-glow); padding-top: 1.5rem; margin-top: 1.5rem;">
-                            <h3>SHARE A THOUGHT</h3>
-                        </div>
-                        <form id="portal-comment-form" class="nn-form">
-                            <div class="form-group">
-                                <label>Your Experience</label>
-                                <textarea id="portal-comment-text" class="form-control" rows="2" placeholder="How was your experience today?" required></textarea>
-                            </div>
-                            <button type="submit" class="nn-publish-btn" style="width: 100%;">Share with Community <i class="fa-solid fa-paper-plane"></i></button>
-                        </form>
-                    </div>
                 </div>
             </div>
         `;
         renderExchangeGrid();
-        attachPortalCommentListeners();
     }
 
     function renderExchangeGrid() {
