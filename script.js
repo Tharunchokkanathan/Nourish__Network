@@ -1742,15 +1742,26 @@ document.addEventListener('DOMContentLoaded', () => {
         const wall = document.getElementById('comment-list');
         if (!wall) return;
         
-        // We only show the latest 10 comments in the wall
         wall.innerHTML = state.communityComments.slice().reverse().map((c, idx) => `
-            <div class="comment-bubble" style="animation-delay: ${idx * 0.1}s;">
-                <strong style="color: ${c.org.includes('Seller') || c.org.includes('Hotel') ? 'var(--accent-secondary)' : 'var(--accent-primary)'};">
+            <div class="comment-bubble" data-comment-id="${c.id}" style="animation-delay: ${idx * 0.1}s; position: relative;">
+                <button class="comment-delete-btn" onclick="window.deleteComment('${c.id}', this)" 
+                    aria-label="Delete comment" title="Delete this comment"
+                    style="position:absolute; top:10px; right:10px; background:rgba(239,68,68,0.1); border:1px solid rgba(239,68,68,0.3); color:#ef4444; border-radius:8px; width:32px; height:32px; cursor:pointer; display:flex; align-items:center; justify-content:center; opacity:0; transition:all 0.2s ease; font-size:0.85rem;">
+                    <i class="fa-solid fa-trash-can"></i>
+                </button>
+                <strong style="color: ${(c.org || '').includes('Seller') || (c.org || '').includes('Hotel') ? 'var(--accent-secondary)' : 'var(--accent-primary)'}; padding-right: 2rem; display:block;">
                     ${c.name} <span style="font-weight: 400; opacity: 0.6; font-size: 0.8rem;">• ${c.org}</span>
                 </strong>
                 <p>"${c.text}"</p>
             </div>
         `).join('');
+
+        // Hover show/hide delete button
+        wall.querySelectorAll('.comment-bubble').forEach(bubble => {
+            const btn = bubble.querySelector('.comment-delete-btn');
+            bubble.addEventListener('mouseenter', () => { if(btn) btn.style.opacity = '1'; });
+            bubble.addEventListener('mouseleave', () => { if(btn) btn.style.opacity = '0'; });
+        });
     }
 
     // Portal Specific Comments
@@ -1804,6 +1815,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const org = user.orgName || user.name || (state.activePortal === 'seller' ? 'Gourmet Provider' : 'NGO Partner');
 
             const newComment = {
+                id: Date.now().toString(),
                 name,
                 org,
                 text,
@@ -1849,12 +1861,51 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
         wall.innerHTML = state.communityComments.slice().reverse().map(c => `
-            <div class="comment-bubble" style="margin-bottom: 1rem;">
-                <strong style="color: var(--accent-primary);">${c.name} <span style="font-weight:400; opacity:0.6; font-size:0.8rem;">• ${c.org}</span></strong>
-                <p style="margin-top:0.5rem; color: var(--text-secondary);">"${c.text}"</p>
+            <div class="comment-bubble" data-comment-id="${c.id}" 
+                style="margin-bottom: 1rem; position: relative; padding: 1.25rem 1.5rem; border-radius: 16px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06); transition: border-color 0.2s;">
+                <button class="comment-delete-btn" onclick="window.deleteComment('${c.id}', this)"
+                    aria-label="Delete comment" title="Delete this comment"
+                    style="position:absolute; top:12px; right:12px; background:rgba(239,68,68,0.1); border:1px solid rgba(239,68,68,0.3); color:#ef4444; border-radius:8px; width:34px; height:34px; cursor:pointer; display:flex; align-items:center; justify-content:center; opacity:0; transition:all 0.2s ease; font-size:0.85rem;">
+                    <i class="fa-solid fa-trash-can"></i>
+                </button>
+                <strong style="color: var(--accent-primary); display:block; padding-right: 2.5rem;">${c.name} 
+                    <span style="font-weight:400; opacity:0.6; font-size:0.8rem;">• ${c.org}</span>
+                </strong>
+                <p style="margin-top:0.5rem; color: var(--text-secondary); font-size: 0.95rem;">"${c.text}"</p>
             </div>
         `).join('');
+
+        // Hover show/hide delete button
+        wall.querySelectorAll('.comment-bubble').forEach(bubble => {
+            const btn = bubble.querySelector('.comment-delete-btn');
+            bubble.addEventListener('mouseenter', () => { if(btn) btn.style.opacity = '1'; bubble.style.borderColor = 'rgba(239,68,68,0.3)'; });
+            bubble.addEventListener('mouseleave', () => { if(btn) btn.style.opacity = '0'; bubble.style.borderColor = 'rgba(255,255,255,0.06)'; });
+        });
     }
+
+    // ---- GLOBAL DELETE COMMENT ----
+    window.deleteComment = function(commentId, btnEl) {
+        const bubble = btnEl.closest('.comment-bubble');
+        
+        // Animate out
+        if (bubble) {
+            bubble.style.transition = 'all 0.3s ease';
+            bubble.style.opacity = '0';
+            bubble.style.transform = 'translateX(30px) scale(0.95)';
+        }
+
+        setTimeout(() => {
+            // Remove from state
+            state.communityComments = state.communityComments.filter(c => String(c.id) !== String(commentId));
+            // Persist
+            localStorage.setItem('nn_comments', JSON.stringify(state.communityComments));
+            // Re-render all comment surfaces
+            renderCommunityWall();
+            renderPortalCommentList();
+            renderReviewsSlider();
+            showToast('Comment deleted.', 'info');
+        }, 280);
+    };
 
 
     const commentForm = document.getElementById('comment-form');
@@ -1872,11 +1923,13 @@ document.addEventListener('DOMContentLoaded', () => {
             
             // Add to state
             state.communityComments.push({
+                id: Date.now().toString(),
                 name: name,
                 org: org,
                 text: text,
                 stars: 5,
                 img: user.avatarUrl || `https://i.pravatar.cc/100?img=${Math.floor(Math.random() * 70)}`
+
             });
             localStorage.setItem('nn_comments', JSON.stringify(state.communityComments));
 
