@@ -979,6 +979,9 @@ document.addEventListener('DOMContentLoaded', () => {
         if (state.activePortal === 'home') {
             if (homePortal) homePortal.style.display = 'block';
             if (portalsRoot) portalsRoot.style.display = 'none';
+            // Re-render slider + wall so any new comments from portals show up instantly
+            renderReviewsSlider();
+            renderCommunityWall();
         } else {
             if (homePortal) homePortal.style.display = 'none';
             if (portalsRoot) {
