@@ -8,7 +8,7 @@ document.addEventListener('DOMContentLoaded', () => {
         activePortal: 'home', 
         cart: [],
         listings: [],
-        communityComments: [
+        communityComments: JSON.parse(sessionStorage.getItem('nn_comments') || 'null') || [
             {
                 name: "Chef Marco",
                 org: "Grand Hotel",
@@ -77,10 +77,11 @@ document.addEventListener('DOMContentLoaded', () => {
         if (loginDock) {
             loginDock.onclick = (e) => {
                 e.preventDefault();
+                e.stopPropagation();
                 console.log("Dock: Login/Logout Clicked");
                 const token = sessionStorage.getItem('nourishToken');
                 if (token) {
-                    if (confirm("Are you sure you want to logout?")) logout();
+                    logout(); // No confirm() — it blocks on GitHub Pages
                 } else {
                     showLoginForm();
                 }
@@ -1748,6 +1749,9 @@ document.addEventListener('DOMContentLoaded', () => {
             };
 
             state.communityComments.push(newComment);
+            // Persist so comments survive page navigation
+            sessionStorage.setItem('nn_comments', JSON.stringify(state.communityComments));
+
 
             // Sync to home page Voices of Impact slider
             renderCommunityWall();
@@ -1811,6 +1815,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 stars: 5,
                 img: user.avatarUrl || `https://i.pravatar.cc/100?img=${Math.floor(Math.random() * 70)}`
             });
+            sessionStorage.setItem('nn_comments', JSON.stringify(state.communityComments));
 
             // Re-render both parts
             renderCommunityWall();
