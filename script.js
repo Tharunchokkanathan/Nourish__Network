@@ -1008,7 +1008,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
                     <h1 class="seller-page-title" style="display: flex; align-items: center; gap: 20px;">
                         <span class="premium-title">SELLER'S DASHBOARD</span>
-                        <span class="badge ${badgeClass}" style="font-size: 0.9rem; padding: 8px 15px; animation: badge-glow 2s infinite alternate;">${badgeName} <i class="fa-solid fa-medal"></i></span>
                     </h1>
 
                     <!-- Zone B: My Listed Foods -->

@@ -113,7 +113,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 else if (totalMealsDonated >= 100) { badgeName = 'Gold'; badgeClass = 'badge-gold'; }
                 else if (totalMealsDonated >= 50) { badgeName = 'Silver Partner'; badgeClass = 'badge-silver'; }
                 
-                vendorTypeBadge.innerHTML = `Food Vendor <span class="badge ${badgeClass}" style="margin-left: 10px; margin-bottom: 0; animation: badge-glow 2s infinite alternate;">${badgeName} <i class="fa-solid fa-medal"></i></span>`;
+                vendorTypeBadge.innerHTML = `Food Vendor`;
             }
 
             // --- Analytics Dashboard Logic ---
