@@ -128,13 +128,14 @@ const db = new sqlite3.Database(dbPath, (err) => {
             } else if (!err && row.count > 0) {
     // ─── MIGRATIONS ─────────────────────────────────────────────────────────────
     db.serialize(() => {
-        db.run("ALTER TABLE users ADD COLUMN bio TEXT", (err) => { 
-            if (err && !err.message.includes('duplicate column name')) console.error("Migration error (bio):", err.message);
-        });
-        db.run("ALTER TABLE users ADD COLUMN fssaiCode TEXT");
-        db.run("ALTER TABLE users ADD COLUMN pickupWindow TEXT");
-        db.run("ALTER TABLE users ADD COLUMN pickupInstructions TEXT");
-        db.run("ALTER TABLE users ADD COLUMN isVerified INTEGER DEFAULT 0");
+        const ignoreDup = (err) => { 
+            if (err && !err.message.includes('duplicate column name')) console.error("Migration error:", err.message);
+        };
+        db.run("ALTER TABLE users ADD COLUMN bio TEXT", ignoreDup);
+        db.run("ALTER TABLE users ADD COLUMN fssaiCode TEXT", ignoreDup);
+        db.run("ALTER TABLE users ADD COLUMN pickupWindow TEXT", ignoreDup);
+        db.run("ALTER TABLE users ADD COLUMN pickupInstructions TEXT", ignoreDup);
+        db.run("ALTER TABLE users ADD COLUMN isVerified INTEGER DEFAULT 0", ignoreDup);
     });
 
     // ─── SEED INITIAL DATA ──────────────────────────────────────────────────────
