@@ -1087,64 +1087,90 @@ document.addEventListener('DOMContentLoaded', () => {
 
         portalsRoot.innerHTML = `
             <div class="portal-wrapper" style="padding-top: 80px; min-height: 100vh;">
-
                 <div class="container" style="max-width: 1300px; margin: 0 auto; padding: 1.5rem 2rem 3rem;">
 
                     <h1 class="seller-page-title" style="display: flex; align-items: center; gap: 20px;">
                         <span class="premium-title">SELLER'S DASHBOARD</span>
                     </h1>
 
-                    <!-- Zone B: My Listed Foods -->
-
-                    <!-- Zone B: My Listed Foods -->
-                    <div class="seller-listings-header">
-                        <h2>LISTINGS</h2>
-                        <span class="listings-count-badge">${state.listings.length} items</span>
+                    <!-- Portal Tabs -->
+                    <div class="portal-tabs" style="display:flex; gap: 0.5rem; margin-bottom: 2.5rem; border-bottom: 1px solid var(--border-glow); padding-bottom: 0;">
+                        <button class="portal-tab-btn active" data-tab="listings" style="padding: 0.75rem 1.75rem; background: none; border: none; border-bottom: 2px solid var(--accent-primary); color: var(--accent-primary); font-weight: 700; font-size: 0.95rem; cursor: pointer; letter-spacing: 1px;">
+                            <i class="fa-solid fa-utensils"></i> LISTINGS
+                        </button>
+                        <button class="portal-tab-btn" data-tab="comments" style="padding: 0.75rem 1.75rem; background: none; border: none; border-bottom: 2px solid transparent; color: var(--text-muted); font-weight: 700; font-size: 0.95rem; cursor: pointer; letter-spacing: 1px;">
+                            <i class="fa-solid fa-comments"></i> COMMENTS
+                        </button>
                     </div>
-                    <div class="items-grid" id="my-listings-container" style="margin-bottom: 4rem;">
-                        <!-- Listings will render here -->
-                    </div>
 
-                    <!-- Zone A: Add Food Panel -->
-                    <div class="seller-form-card" id="add-listing-section">
-                        <div class="seller-form-header">
-                            <h3>NEW LISTING</h3>
+                    <!-- Tab: Listings -->
+                    <div id="tab-listings" class="portal-tab-content">
+                        <div class="seller-listings-header">
+                            <h2>LISTINGS</h2>
+                            <span class="listings-count-badge">${state.listings.length} items</span>
                         </div>
-                        <form id="add-food-form" class="add-food-grid">
-                            <input type="hidden" id="p-id" value="">
-                            <div class="form-group">
-                                <label>Food Name</label>
-                                <input type="text" id="p-name" class="form-control" placeholder="e.g. Idli & Sambar" required>
-                            </div>
-                            <div class="form-group">
-                                <label>Category</label>
-                                <select id="p-cat" class="form-control">
-                                    <option>Cooked</option><option>Packaged</option><option>Produce</option>
-                                    <option>Bakery</option><option>Beverages</option><option>Desserts</option>
-                                </select>
-                            </div>
-                            <div class="form-group">
-                                <label>Quantity (Portions)</label>
-                                <input type="number" id="p-qty" class="form-control" value="10" min="1" required>
-                            </div>
-                            <div class="form-group">
-                                <label>Price per Portion (₹)</label>
-                                <input type="number" id="p-price" class="form-control" value="20" min="0" required>
-                            </div>
-                            <div class="form-group">
-                                <label>Expiry Date & Time</label>
-                                <input type="datetime-local" id="p-expiry" class="form-control" required>
-                            </div>
-                            <div class="form-group full-width">
-                                <label>Short Description</label>
-                                <textarea id="p-desc" class="form-control" rows="2" placeholder="Describe the food freshness, ingredients, etc..."></textarea>
-                            </div>
+                        <div class="items-grid" id="my-listings-container" style="margin-bottom: 4rem;">
+                            <!-- Listings will render here -->
+                        </div>
 
-                            <div class="full-width" style="display:flex; gap: 10px;">
-                                <button type="submit" id="submit-btn" class="nn-publish-btn"><i class="fa-solid fa-leaf"></i> Publish Listing</button>
-                                <button type="button" id="cancel-edit-btn" class="nn-cancel-btn" style="display:none;"><i class="fa-solid fa-xmark"></i> Cancel Edit</button>
+                        <!-- Zone A: Add Food Panel -->
+                        <div class="seller-form-card" id="add-listing-section">
+                            <div class="seller-form-header">
+                                <h3>NEW LISTING</h3>
                             </div>
-                        </form>
+                            <form id="add-food-form" class="add-food-grid">
+                                <input type="hidden" id="p-id" value="">
+                                <div class="form-group">
+                                    <label>Food Name</label>
+                                    <input type="text" id="p-name" class="form-control" placeholder="e.g. Idli & Sambar" required>
+                                </div>
+                                <div class="form-group">
+                                    <label>Category</label>
+                                    <select id="p-cat" class="form-control">
+                                        <option>Cooked</option><option>Packaged</option><option>Produce</option>
+                                        <option>Bakery</option><option>Beverages</option><option>Desserts</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label>Quantity (Portions)</label>
+                                    <input type="number" id="p-qty" class="form-control" value="10" min="1" required>
+                                </div>
+                                <div class="form-group">
+                                    <label>Price per Portion (₹)</label>
+                                    <input type="number" id="p-price" class="form-control" value="20" min="0" required>
+                                </div>
+                                <div class="form-group">
+                                    <label>Expiry Date & Time</label>
+                                    <input type="datetime-local" id="p-expiry" class="form-control" required>
+                                </div>
+                                <div class="form-group full-width">
+                                    <label>Short Description</label>
+                                    <textarea id="p-desc" class="form-control" rows="2" placeholder="Describe the food freshness, ingredients, etc..."></textarea>
+                                </div>
+                                <div class="full-width" style="display:flex; gap: 10px;">
+                                    <button type="submit" id="submit-btn" class="nn-publish-btn"><i class="fa-solid fa-leaf"></i> Publish Listing</button>
+                                    <button type="button" id="cancel-edit-btn" class="nn-cancel-btn" style="display:none;"><i class="fa-solid fa-xmark"></i> Cancel Edit</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+
+                    <!-- Tab: Comments -->
+                    <div id="tab-comments" class="portal-tab-content" style="display:none;">
+                        <div class="seller-form-card">
+                            <div class="seller-form-header">
+                                <h3><i class="fa-solid fa-comments" style="color:var(--accent-primary);"></i> &nbsp;SHARE YOUR VOICE</h3>
+                            </div>
+                            <p style="color:var(--text-muted); margin-bottom:2rem; font-size:0.95rem;">Your comment will appear live in the <strong style="color:var(--accent-primary);">Voices of Impact</strong> section on the home page.</p>
+                            <form id="portal-comment-form" class="nn-form">
+                                <div class="form-group">
+                                    <label>Your Experience</label>
+                                    <textarea id="portal-comment-text" class="form-control" rows="3" placeholder="Share your experience with Nourish Network..." required></textarea>
+                                </div>
+                                <button type="submit" class="nn-publish-btn" style="width:100%;">Broadcast to Voices of Impact &nbsp;<i class="fa-solid fa-paper-plane"></i></button>
+                            </form>
+                            <div id="portal-comments-list" style="margin-top:2.5rem;"></div>
+                        </div>
                     </div>
 
                 </div>
@@ -1152,6 +1178,7 @@ document.addEventListener('DOMContentLoaded', () => {
         `;
         renderSellerListings();
         attachSellerListeners();
+        attachPortalCommentTab();
         initImpactChart();
     }
 
@@ -1262,16 +1289,48 @@ document.addEventListener('DOMContentLoaded', () => {
             <div class="buyer-portal-layout animate-reveal" style="padding-top: 120px;">
                 <div class="container" style="max-width: 1300px; margin: 0 auto;">
                     <h1 class="seller-page-title"><span class="premium-title">BUYER'S DASHBOARD</span></h1>
-                    <p style="margin-bottom: 3rem; color: var(--text-muted); font-size: 1.1rem;">Fresh, freshly prepared meals from local restaurants — ready for you to claim.</p>
+                    <p style="margin-bottom: 2rem; color: var(--text-muted); font-size: 1.1rem;">Fresh, freshly prepared meals from local restaurants — ready for you to claim.</p>
 
-                    <div class="items-grid" id="exchange-grid">
-                        <!-- Cards will render here -->
+                    <!-- Portal Tabs -->
+                    <div class="portal-tabs" style="display:flex; gap: 0.5rem; margin-bottom: 2.5rem; border-bottom: 1px solid var(--border-glow); padding-bottom: 0;">
+                        <button class="portal-tab-btn active" data-tab="listings" style="padding: 0.75rem 1.75rem; background: none; border: none; border-bottom: 2px solid var(--accent-primary); color: var(--accent-primary); font-weight: 700; font-size: 0.95rem; cursor: pointer; letter-spacing: 1px;">
+                            <i class="fa-solid fa-basket-shopping"></i> LISTINGS
+                        </button>
+                        <button class="portal-tab-btn" data-tab="comments" style="padding: 0.75rem 1.75rem; background: none; border: none; border-bottom: 2px solid transparent; color: var(--text-muted); font-weight: 700; font-size: 0.95rem; cursor: pointer; letter-spacing: 1px;">
+                            <i class="fa-solid fa-comments"></i> COMMENTS
+                        </button>
+                    </div>
+
+                    <!-- Tab: Listings -->
+                    <div id="tab-listings" class="portal-tab-content">
+                        <div class="items-grid" id="exchange-grid">
+                            <!-- Cards will render here -->
+                        </div>
+                    </div>
+
+                    <!-- Tab: Comments -->
+                    <div id="tab-comments" class="portal-tab-content" style="display:none;">
+                        <div class="seller-form-card">
+                            <div class="seller-form-header">
+                                <h3><i class="fa-solid fa-comments" style="color:var(--accent-primary);"></i> &nbsp;SHARE YOUR VOICE</h3>
+                            </div>
+                            <p style="color:var(--text-muted); margin-bottom:2rem; font-size:0.95rem;">Your comment will appear live in the <strong style="color:var(--accent-primary);">Voices of Impact</strong> section on the home page.</p>
+                            <form id="portal-comment-form" class="nn-form">
+                                <div class="form-group">
+                                    <label>Your Experience</label>
+                                    <textarea id="portal-comment-text" class="form-control" rows="3" placeholder="Share your experience with Nourish Network..." required></textarea>
+                                </div>
+                                <button type="submit" class="nn-publish-btn" style="width:100%;">Broadcast to Voices of Impact &nbsp;<i class="fa-solid fa-paper-plane"></i></button>
+                            </form>
+                            <div id="portal-comments-list" style="margin-top:2.5rem;"></div>
+                        </div>
                     </div>
 
                 </div>
             </div>
         `;
         renderExchangeGrid();
+        attachPortalCommentTab();
     }
 
     function renderExchangeGrid() {
@@ -1640,44 +1699,93 @@ document.addEventListener('DOMContentLoaded', () => {
         `).join('');
     }
 
-    function attachPortalCommentListeners() {
+    // ---- PORTAL TAB SWITCHER + COMMENT SYNC ----
+    function attachPortalCommentTab() {
+        // Tab switching
+        const tabBtns = document.querySelectorAll('.portal-tab-btn');
+        tabBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                const target = btn.dataset.tab;
+                // Update button styles
+                tabBtns.forEach(b => {
+                    b.style.borderBottomColor = 'transparent';
+                    b.style.color = 'var(--text-muted)';
+                });
+                btn.style.borderBottomColor = 'var(--accent-primary)';
+                btn.style.color = 'var(--accent-primary)';
+                // Show/hide tab content
+                document.querySelectorAll('.portal-tab-content').forEach(t => t.style.display = 'none');
+                const tab = document.getElementById(`tab-${target}`);
+                if (tab) tab.style.display = 'block';
+                // Render existing comments when switching to comments tab
+                if (target === 'comments') renderPortalCommentList();
+            });
+        });
+
+        // Comment form submission
         const form = document.getElementById('portal-comment-form');
         const input = document.getElementById('portal-comment-text');
         if (!form || !input) return;
 
         form.addEventListener('submit', (e) => {
             e.preventDefault();
-
-            const user = JSON.parse(sessionStorage.getItem('nourishUser') || '{}');
-            const token = sessionStorage.getItem('nourishToken');
-            if (!token) {
-                showToast("Please login to share your thoughts.", "info");
-                return;
-            }
-
             const text = input.value.trim();
             if (!text) return;
 
+            const user = JSON.parse(sessionStorage.getItem('nourishUser') || '{}');
             const name = user.name || (state.activePortal === 'seller' ? 'Elite Vendor' : 'Community Partner');
-            const org = user.orgName || (state.activePortal === 'seller' ? 'Gourmet Provider' : 'Food Recipient');
-            
-            state.communityComments.push({
-                name: name,
-                org: org,
-                text: text,
+            const org = user.orgName || user.name || (state.activePortal === 'seller' ? 'Gourmet Provider' : 'NGO Partner');
+
+            const newComment = {
+                name,
+                org,
+                text,
                 stars: 5,
                 img: user.avatarUrl || `https://i.pravatar.cc/100?img=${Math.floor(Math.random() * 70)}`
-            });
+            };
 
+            state.communityComments.push(newComment);
+
+            // Sync to home page Voices of Impact slider
             renderCommunityWall();
             renderReviewsSlider();
-            renderPortalComments();
-            
+
+            // Jump to newest slide in the slider
+            const slides = document.querySelectorAll('.review-slide');
+            const dots = document.querySelectorAll('.dot');
+            if (slides.length > 0) {
+                slides.forEach(s => s.classList.remove('active'));
+                dots.forEach(d => d.classList.remove('active'));
+                slides[slides.length - 1].classList.add('active');
+                if (dots[dots.length - 1]) dots[dots.length - 1].classList.add('active');
+            }
+
+            // Re-render the in-portal comment list
+            renderPortalCommentList();
+
             input.value = '';
-            showToast("Your thoughts have been shared with the community!", "success");
+            showToast("Your voice is now live in 'Voices of Impact'! 🌱", "success");
         });
-        renderPortalComments();
+
+        // Initial render of existing comments
+        renderPortalCommentList();
     }
+
+    function renderPortalCommentList() {
+        const wall = document.getElementById('portal-comments-list');
+        if (!wall) return;
+        if (state.communityComments.length === 0) {
+            wall.innerHTML = `<p style="color:var(--text-muted); text-align:center; padding: 2rem;">No comments yet. Be the first to share!</p>`;
+            return;
+        }
+        wall.innerHTML = state.communityComments.slice().reverse().map(c => `
+            <div class="comment-bubble" style="margin-bottom: 1rem;">
+                <strong style="color: var(--accent-primary);">${c.name} <span style="font-weight:400; opacity:0.6; font-size:0.8rem;">• ${c.org}</span></strong>
+                <p style="margin-top:0.5rem; color: var(--text-secondary);">"${c.text}"</p>
+            </div>
+        `).join('');
+    }
+
 
     const commentForm = document.getElementById('comment-form');
     const commentText = document.getElementById('comment-text');
