@@ -209,7 +209,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 actionBtn = `<button class="btn btn-outline w-100 btn-delete" data-id="${item.id}" style="margin-top: 10px; color: #dc2626; border-color: #dc2626;">Delete Listing <i class="fa-solid fa-trash"></i></button>`;
             }
 
-            const avatarImg = item.vendorAvatar ? item.vendorAvatar : `assets/default-avatar.png`;
+            const avatarImg = item.vendorAvatar ? item.vendorAvatar : `assets/default-avatar.jpg`;
             const bioText = item.vendorBio ? `<div style="font-size: 0.8rem; color: #94a3b8; margin-top: 2px;">${item.vendorBio}</div>` : '';
 
             card.innerHTML = `
