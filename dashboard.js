@@ -357,17 +357,18 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch (e) { console.error(e); }
     }
 
+    document.addEventListener('click', (e) => {
+        if (e.target.closest('#closeSettingsModal') && settingsModal) {
+            settingsModal.style.display = 'none';
+        }
+    });
+
     if (settingsBtn && settingsModal) {
         settingsBtn.addEventListener('click', () => {
             loadProfile();
             settingsModal.style.display = 'flex';
         });
 
-        closeSettingsModal.addEventListener('click', () => {
-            settingsModal.style.display = 'none';
-        });
-
-        // Close on overlay click
         settingsModal.addEventListener('click', (e) => {
             if (e.target === settingsModal) settingsModal.style.display = 'none';
         });

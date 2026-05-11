@@ -767,12 +767,13 @@ document.addEventListener('DOMContentLoaded', () => {
     const globalSearch = document.getElementById('global-search');
     const nearMeToggle = document.getElementById('near-me-toggle');
 
-    // Wire cart close button (X)
-    if (closeCart && cartDrawer) {
-        closeCart.addEventListener('click', () => {
+    // Use event delegation globally for modal close buttons to avoid attachment issues
+    document.addEventListener('click', (e) => {
+        // Cart Close
+        if (e.target.closest('#close-cart') && cartDrawer) {
             cartDrawer.classList.remove('active');
-        });
-    }
+        }
+    });
 
     // 3. Portal Switcher Logic
     function initSwitcher() {
@@ -1956,11 +1957,11 @@ document.addEventListener('DOMContentLoaded', () => {
             };
         }
 
-        if (closeSettingsModal) {
-            closeSettingsModal.addEventListener('click', () => {
+        document.addEventListener('click', (e) => {
+            if (e.target.closest('#closeSettingsModal') && settingsModal) {
                 settingsModal.style.display = 'none';
-            });
-        }
+            }
+        });
 
         settingsModal.addEventListener('click', (e) => {
             if (e.target === settingsModal) settingsModal.style.display = 'none';
