@@ -767,6 +767,13 @@ document.addEventListener('DOMContentLoaded', () => {
     const globalSearch = document.getElementById('global-search');
     const nearMeToggle = document.getElementById('near-me-toggle');
 
+    // Wire cart close button (X)
+    if (closeCart && cartDrawer) {
+        closeCart.addEventListener('click', () => {
+            cartDrawer.classList.remove('active');
+        });
+    }
+
     // 3. Portal Switcher Logic
     function initSwitcher() {
         // Wire up logo to go home
@@ -1883,6 +1890,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const pickupInstructionsInput = document.getElementById('pickupInstructionsInput');
         const verificationBadge = document.getElementById('verificationBadgeContainer');
         const avatarInput = document.getElementById('avatarInput');
+        const avatarPreview = document.getElementById('avatarPreview');
 
         if (!settingsModal) return;
 
