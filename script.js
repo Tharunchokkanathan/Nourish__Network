@@ -1716,7 +1716,7 @@ document.addEventListener('DOMContentLoaded', () => {
     renderReviewsSlider();
     renderCommunityWall();
     updateCartBadge();
-    initImpactMap();
+
     checkSession();
 
     // Real-time silent polling every 5 seconds
@@ -1726,89 +1726,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let impactMap = null;
     let impactLayer = null;
 
-    function initImpactMap() {
-        const mapContainer = document.getElementById('impact-map');
-        if (!mapContainer) return;
 
-        // Initialize map centered on a hub (e.g., Chennai)
-        impactMap = L.map('impact-map', {
-            scrollWheelZoom: false,
-            zoomControl: false
-        }).setView([13.0827, 80.2707], 12);
-
-        L.control.zoom({ position: 'bottomright' }).addTo(impactMap);
-
-        // Dark Mode Map Layer
-        L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-            attribution: '&copy; OpenStreetMap'
-        }).addTo(impactMap);
-
-        impactLayer = L.layerGroup().addTo(impactMap);
-    }
-
-    function getCoords(id, baseLat, baseLng, offset = 0.05) {
-        // pseudo-random but consistent coordinate generation based on ID
-        const seed = id * 12345.6789;
-        const latOff = (Math.sin(seed) * offset);
-        const lngOff = (Math.cos(seed) * offset);
-        return [baseLat + latOff, baseLng + lngOff];
-    }
-
-    window.renderImpactMap = function() {
-        if (!impactLayer) return;
-        impactLayer.clearLayers();
-
-        const baseCoords = [13.0827, 80.2707];
-        const drawnVendors = new Set();
-        const drawnBuyers = new Set();
-
-        // Main Hub
-        const hubIcon = L.divIcon({
-            className: 'custom-map-marker',
-            html: `<div style="background: #f1c40f; width: 14px; height: 14px; border-radius: 50%; box-shadow: 0 0 20px #f1c40f;"></div>`,
-            iconSize: [14, 14]
-        });
-        L.marker(baseCoords, { icon: hubIcon }).addTo(impactLayer).bindPopup(`<strong>Main Hub</strong><br>Chennai`);
-
-        state.listings.forEach(listing => {
-            const vendorId = listing.vendorId || 1;
-            const vendorPos = getCoords(vendorId, baseCoords[0], baseCoords[1], 0.08);
-
-            if (!drawnVendors.has(vendorId)) {
-                drawnVendors.add(vendorId);
-                const vIcon = L.divIcon({
-                    className: 'custom-map-marker',
-                    html: `<div style="background: #10b981; width: 12px; height: 12px; border-radius: 50%; box-shadow: 0 0 15px #10b981;"></div>`,
-                    iconSize: [12, 12]
-                });
-                L.marker(vendorPos, { icon: vIcon }).addTo(impactLayer).bindPopup(`<strong>${listing.vendorName || 'Food Vendor'}</strong><br>SELLER`);
-            }
-
-            if (listing.status === 'claimed' || listing.status === 'sold') {
-                const buyerId = listing.claimedBy || (vendorId + 100); // fallback
-                const buyerPos = getCoords(buyerId, baseCoords[0], baseCoords[1], 0.1);
-
-                if (!drawnBuyers.has(buyerId)) {
-                    drawnBuyers.add(buyerId);
-                    const bIcon = L.divIcon({
-                        className: 'custom-map-marker',
-                        html: `<div style="background: #3498db; width: 12px; height: 12px; border-radius: 50%; box-shadow: 0 0 15px #3498db;"></div>`,
-                        iconSize: [12, 12]
-                    });
-                    L.marker(buyerPos, { icon: bIcon }).addTo(impactLayer).bindPopup(`<strong>NGO Partner</strong><br>BUYER`);
-                }
-
-                // Draw path
-                L.polyline([vendorPos, buyerPos], {
-                    color: '#10b981',
-                    weight: 2,
-                    opacity: 0.5,
-                    dashArray: '5, 10',
-                    lineJoin: 'round'
-                }).addTo(impactLayer);
-            }
-        });
-    }
 
     function initImpactChart() {
         const ctx = document.getElementById('impactChart');
