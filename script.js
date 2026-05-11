@@ -420,6 +420,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const registerForm = document.getElementById('registerForm');
     const modalTitle = document.getElementById('modalTitle');
     const modalSubtitle = document.getElementById('modalSubtitle');
+    const btnDemoSeller = document.getElementById('btn-demo-seller');
+    const btnDemoBuyer = document.getElementById('btn-demo-buyer');
 
     // Open Modal from ALL "Join" / "Donate" buttons
     const joinButtons = document.querySelectorAll('a[href="#join"]');
