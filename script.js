@@ -1,4 +1,40 @@
+// ---- GLOBAL DELETE COMMENT (must be outside DOMContentLoaded so onclick can find it) ----
+window.deleteComment = function(commentId, btnEl) {
+    const bubble = btnEl ? btnEl.closest('.comment-bubble') : null;
+
+    // Animate out immediately
+    if (bubble) {
+        bubble.style.transition = 'opacity 0.25s ease, transform 0.25s ease';
+        bubble.style.opacity = '0';
+        bubble.style.transform = 'translateX(20px) scale(0.97)';
+    }
+
+    setTimeout(function() {
+        // Read from localStorage, remove the comment, save back
+        let comments = JSON.parse(localStorage.getItem('nn_comments') || '[]');
+        comments = comments.filter(function(c) { return String(c.id) !== String(commentId); });
+        localStorage.setItem('nn_comments', JSON.stringify(comments));
+
+        // If the main app state is loaded, update it too and re-render
+        if (window.__appState) {
+            window.__appState.communityComments = comments;
+            if (window.__renderCommunityWall) window.__renderCommunityWall();
+            if (window.__renderPortalCommentList) window.__renderPortalCommentList();
+            if (window.__renderReviewsSlider) window.__renderReviewsSlider();
+        } else {
+            // Fallback: just remove the bubble from DOM if state isn't ready
+            if (bubble && bubble.parentNode) bubble.parentNode.removeChild(bubble);
+        }
+
+        // Show feedback
+        if (window.__showToast) {
+            window.__showToast('Comment deleted.', 'info');
+        }
+    }, 250);
+};
+
 document.addEventListener('DOMContentLoaded', () => {
+
     // 1. Configuration - Dynamic API Detection
     const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
     const API_BASE = isLocal ? '/api' : 'https://nourish-network-4bit.onrender.com/api';
@@ -27,6 +63,11 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!c.id) { c.id = 'legacy-' + Date.now() + '-' + Math.random().toString(36).slice(2); needsSave = true; }
     });
     if (needsSave) localStorage.setItem('nn_comments', JSON.stringify(state.communityComments));
+
+    // Expose to global scope for window.deleteComment (defined outside DOMContentLoaded)
+    window.__appState = state;
+
+
 
     // --- GLOBAL DEMO ORDER HANDLER (THE NUCLEAR OPTION) ---
     window.placeOrderDemo = async function() {
@@ -547,6 +588,11 @@ document.addEventListener('DOMContentLoaded', () => {
             setTimeout(() => toast.remove(), 400); // wait for exit animation
         }, 3000);
     }
+    // Expose for global deleteComment handler
+    window.__showToast = showToast;
+    window.__renderCommunityWall = () => renderCommunityWall();
+    window.__renderPortalCommentList = () => renderPortalCommentList();
+    window.__renderReviewsSlider = () => renderReviewsSlider();
 
     // =========================================
     // API INTEGRATION & FORM HANDLING
