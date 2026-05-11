@@ -1669,59 +1669,6 @@ document.addEventListener('DOMContentLoaded', () => {
             cartDrawer.classList.remove('active');
         }
 
-        if (e.target.closest('#confirm-claim')) {
-            e.preventDefault();
-            console.log("Confirm Claim Clicked");
-
-            if (state.cart.length === 0) {
-                showToast("Basket is empty!", "error");
-                return;
-            }
-
-            const token = sessionStorage.getItem('nourishToken');
-            if (!token) {
-                showToast("Please login to place an order.", "info");
-                showLoginForm();
-                return;
-            }
-
-            const confirmBtn = e.target.closest('#confirm-claim');
-            const originalText = confirmBtn.innerText;
-            confirmBtn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Processing...';
-            confirmBtn.disabled = true;
-
-            try {
-                // Mock network delay for demo
-                await new Promise(resolve => setTimeout(resolve, 1000));
-
-                // Open the Success Modal
-                const successModal = document.getElementById('successModal');
-                if (successModal) {
-                    successModal.style.display = 'flex';
-                } else {
-                    console.error("Success Modal not found in DOM");
-                }
-
-                showToast("Order placed successfully! 🌱", "success");
-                
-                // Clear cart
-                state.cart = [];
-                updateCartBadge();
-                renderCartItems();
-                
-                // Close cart drawer
-                if (cartDrawer) cartDrawer.classList.remove('active');
-                
-                // Refresh background state
-                refreshState(true); // silent refresh to avoid full re-render while modal is up
-            } catch (error) {
-                console.error("Checkout error:", error);
-                showToast("Connection error during checkout.", "error");
-            } finally {
-                confirmBtn.innerText = originalText;
-                confirmBtn.disabled = false;
-            }
-        }
     });
 
     // --- BOOTSTRAP APP ---
@@ -1731,6 +1678,59 @@ document.addEventListener('DOMContentLoaded', () => {
     updateCartBadge();
 
     checkSession();
+
+    // --- Direct Listener for Confirm Order (Elite Demo Mode) ---
+    const confirmOrderBtn = document.getElementById('confirm-claim');
+    if (confirmOrderBtn) {
+        confirmOrderBtn.addEventListener('click', async (e) => {
+            e.preventDefault();
+            console.log("Confirm Order Logic Fired");
+
+            if (state.cart.length === 0) {
+                showToast("Basket is empty!", "error");
+                return;
+            }
+
+            const originalText = confirmOrderBtn.innerHTML;
+            confirmOrderBtn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Processing...';
+            confirmOrderBtn.disabled = true;
+
+            try {
+                // Simulated Processing Delay
+                await new Promise(r => setTimeout(r, 1000));
+
+                // 1. Show the Success Modal (The critical requirement)
+                const sModal = document.getElementById('successModal');
+                if (sModal) {
+                    sModal.style.setProperty('display', 'flex', 'important');
+                    console.log("Success Modal Displayed");
+                } else {
+                    alert("Order Placed Successfully!"); // Extreme fallback
+                }
+
+                // 2. Visual Toast
+                showToast("Order Placed! 🌱", "success");
+
+                // 3. Cleanup UI
+                state.cart = [];
+                if (typeof updateCartBadge === 'function') updateCartBadge();
+                if (typeof renderCartItems === 'function') renderCartItems();
+                
+                const cDrawer = document.getElementById('cart-drawer');
+                if (cDrawer) cDrawer.classList.remove('active');
+
+                // 4. Background state refresh
+                if (typeof refreshState === 'function') refreshState(true);
+
+            } catch (err) {
+                console.error("Confirm Order Error:", err);
+                showToast("Error processing order.", "error");
+            } finally {
+                confirmOrderBtn.innerHTML = originalText;
+                confirmOrderBtn.disabled = false;
+            }
+        });
+    }
 
     // Real-time silent polling every 5 seconds
     setInterval(() => refreshState(true), 5000);
