@@ -626,7 +626,7 @@
             </div>
             <h2 style="font-size: 2.2rem; font-weight: 800; margin-bottom: 15px; color: var(--text-primary);">Order Placed!</h2>
             <p style="font-size: 1.1rem; color: var(--text-muted); margin-bottom: 30px; line-height: 1.6;">Thank you for saving food and nourishing the community. The vendor has been notified.</p>
-            <button onclick="document.getElementById('successModal').style.display='none'" class="btn btn-primary w-100 btn-glow" style="height: 54px; font-size: 1.1rem; font-weight: 700; border-radius: 14px;">
+            <button onclick="document.getElementById('successModal').style.display='none'; if(typeof renderPortal === 'function') renderPortal();" class="btn btn-primary w-100 btn-glow" style="height: 54px; font-size: 1.1rem; font-weight: 700; border-radius: 14px;">
                 Return to Dashboard
             </button>
         </div>
@@ -640,7 +640,7 @@
     <nav class="bottom-nav">
 
         <div class="bottom-nav-container">
-            <a href="#home" class="nav-item active">
+            <a href="#home" class="nav-item active landing-only">
                 <i class="fa-solid fa-house"></i>
                 <span>Home</span>
             </a>
