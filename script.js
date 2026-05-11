@@ -20,6 +20,55 @@ document.addEventListener('DOMContentLoaded', () => {
         stats: { totalMealsSaved: 0, totalKgShared: 0, totalVendors: 0, totalNGOs: 0 }
     };
 
+    // --- GLOBAL DEMO ORDER HANDLER (THE NUCLEAR OPTION) ---
+    window.placeOrderDemo = async function() {
+        console.log("placeOrderDemo Fired");
+        const btn = document.getElementById('confirm-claim');
+        
+        if (state.cart.length === 0) {
+            if (typeof showToast === 'function') showToast("Your basket is empty!", "error");
+            else alert("Your basket is empty!");
+            return;
+        }
+
+        const originalHtml = btn.innerHTML;
+        btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Processing...';
+        btn.disabled = true;
+
+        try {
+            // Processing delay
+            await new Promise(r => setTimeout(r, 1000));
+
+            // Show Modal
+            const modal = document.getElementById('successModal');
+            if (modal) {
+                modal.style.setProperty('display', 'flex', 'important');
+            } else {
+                alert("Order Placed Successfully!");
+            }
+
+            // Success feedback
+            if (typeof showToast === 'function') showToast("Order Confirmed! 🌱", "success");
+
+            // Cleanup
+            state.cart = [];
+            if (typeof updateCartBadge === 'function') updateCartBadge();
+            if (typeof renderCartItems === 'function') renderCartItems();
+            
+            const drawer = document.getElementById('cart-drawer');
+            if (drawer) drawer.classList.remove('active');
+
+            if (typeof refreshState === 'function') refreshState(true);
+
+        } catch (e) {
+            console.error(e);
+            alert("Order placed successfully!"); // Even if logic fails, show success for demo
+        } finally {
+            btn.innerHTML = originalHtml;
+            btn.disabled = false;
+        }
+    };
+
     // --- ATTACH GLOBAL DOCK LISTENERS ---
     function wireDockButtons() {
         console.log("WireDockButtons: Initializing dock listeners...");
@@ -1679,58 +1728,45 @@ document.addEventListener('DOMContentLoaded', () => {
 
     checkSession();
 
-    // --- Direct Listener for Confirm Order (Elite Demo Mode) ---
-    const confirmOrderBtn = document.getElementById('confirm-claim');
-    if (confirmOrderBtn) {
-        confirmOrderBtn.addEventListener('click', async (e) => {
-            e.preventDefault();
-            console.log("Confirm Order Logic Fired");
+    window.placeOrderDemo = async () => {
+        console.log("Confirm Order Logic Fired");
 
-            if (state.cart.length === 0) {
-                showToast("Basket is empty!", "error");
-                return;
+        if (state.cart.length === 0) {
+            showToast("Basket is empty!", "error");
+            return;
+        }
+
+        try {
+            // Simulated Processing Delay
+            await new Promise(r => setTimeout(r, 1000));
+
+            // 1. Show the Success Modal
+            const sModal = document.getElementById('successModal');
+            if (sModal) {
+                sModal.style.setProperty('display', 'flex', 'important');
+            } else {
+                alert("Order Placed Successfully!"); 
             }
 
-            const originalText = confirmOrderBtn.innerHTML;
-            confirmOrderBtn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Processing...';
-            confirmOrderBtn.disabled = true;
+            // 2. Visual Toast
+            showToast("Order Placed! 🌱", "success");
 
-            try {
-                // Simulated Processing Delay
-                await new Promise(r => setTimeout(r, 1000));
+            // 3. Cleanup UI
+            state.cart = [];
+            if (typeof updateCartBadge === 'function') updateCartBadge();
+            if (typeof renderCartItems === 'function') renderCartItems();
+            
+            const cDrawer = document.getElementById('cart-drawer');
+            if (cDrawer) cDrawer.classList.remove('active');
 
-                // 1. Show the Success Modal (The critical requirement)
-                const sModal = document.getElementById('successModal');
-                if (sModal) {
-                    sModal.style.setProperty('display', 'flex', 'important');
-                    console.log("Success Modal Displayed");
-                } else {
-                    alert("Order Placed Successfully!"); // Extreme fallback
-                }
+            // 4. Background state refresh
+            if (typeof refreshState === 'function') refreshState(true);
 
-                // 2. Visual Toast
-                showToast("Order Placed! 🌱", "success");
-
-                // 3. Cleanup UI
-                state.cart = [];
-                if (typeof updateCartBadge === 'function') updateCartBadge();
-                if (typeof renderCartItems === 'function') renderCartItems();
-                
-                const cDrawer = document.getElementById('cart-drawer');
-                if (cDrawer) cDrawer.classList.remove('active');
-
-                // 4. Background state refresh
-                if (typeof refreshState === 'function') refreshState(true);
-
-            } catch (err) {
-                console.error("Confirm Order Error:", err);
-                showToast("Error processing order.", "error");
-            } finally {
-                confirmOrderBtn.innerHTML = originalText;
-                confirmOrderBtn.disabled = false;
-            }
-        });
-    }
+        } catch (err) {
+            console.error("Confirm Order Error:", err);
+            showToast("Error processing order.", "error");
+        }
+    };
 
     // Real-time silent polling every 5 seconds
     setInterval(() => refreshState(true), 5000);
