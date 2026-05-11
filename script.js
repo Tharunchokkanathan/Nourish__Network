@@ -1148,6 +1148,12 @@ document.addEventListener('DOMContentLoaded', () => {
                     <!-- Community Feedback -->
                     <div class="seller-form-card" style="margin-top: 4rem;">
                         <div class="seller-form-header">
+                            <h3>COMMUNITY FEEDBACK</h3>
+                        </div>
+                        <div id="portal-comments-list" style="max-height: 400px; overflow-y: auto; margin-bottom: 2rem; padding-right: 10px;">
+                            <!-- Comments render here -->
+                        </div>
+                        <div class="seller-form-header" style="border-top: 1px solid var(--border-glow); padding-top: 1.5rem; margin-top: 1.5rem;">
                             <h3>SHARE A THOUGHT</h3>
                         </div>
                         <form id="portal-comment-form" class="nn-form">
@@ -1284,6 +1290,12 @@ document.addEventListener('DOMContentLoaded', () => {
                     <!-- Community Feedback -->
                     <div class="seller-form-card" style="margin-top: 4rem;">
                         <div class="seller-form-header">
+                            <h3>COMMUNITY HUB</h3>
+                        </div>
+                        <div id="portal-comments-list" style="max-height: 400px; overflow-y: auto; margin-bottom: 2rem; padding-right: 10px;">
+                            <!-- Comments render here -->
+                        </div>
+                        <div class="seller-form-header" style="border-top: 1px solid var(--border-glow); padding-top: 1.5rem; margin-top: 1.5rem;">
                             <h3>SHARE A THOUGHT</h3>
                         </div>
                         <form id="portal-comment-form" class="nn-form">
@@ -1675,34 +1687,35 @@ document.addEventListener('DOMContentLoaded', () => {
         form.addEventListener('submit', (e) => {
             e.preventDefault();
 
+            const user = JSON.parse(sessionStorage.getItem('nourishUser') || '{}');
             const token = sessionStorage.getItem('nourishToken');
             if (!token) {
                 showToast("Please login to share your thoughts.", "info");
-                showLoginForm();
                 return;
             }
 
             const text = input.value.trim();
             if (!text) return;
 
-            const isSeller = state.activePortal === 'seller';
-            const role = isSeller ? 'Premium Vendor' : 'Community Partner';
-            const orgName = isSeller ? 'Seller Dashboard' : 'NGO / Recipient';
+            const name = user.name || (state.activePortal === 'seller' ? 'Elite Vendor' : 'Community Partner');
+            const org = user.orgName || (state.activePortal === 'seller' ? 'Gourmet Provider' : 'Food Recipient');
             
             state.communityComments.push({
-                name: role,
-                org: orgName,
+                name: name,
+                org: org,
                 text: text,
                 stars: 5,
-                img: `https://i.pravatar.cc/100?img=${Math.floor(Math.random() * 70)}`
+                img: user.avatarUrl || `https://i.pravatar.cc/100?img=${Math.floor(Math.random() * 70)}`
             });
 
             renderCommunityWall();
             renderReviewsSlider();
+            renderPortalComments();
             
             input.value = '';
             showToast("Your thoughts have been shared with the community!", "success");
         });
+        renderPortalComments();
     }
 
     const commentForm = document.getElementById('comment-form');
@@ -1714,22 +1727,23 @@ document.addEventListener('DOMContentLoaded', () => {
             const text = commentText.value.trim();
             if (!text) return;
 
-            const isSeller = state.activePortal === 'seller';
-            const role = isSeller ? 'Premium Vendor' : 'Community Partner';
-            const orgName = isSeller ? 'Seller Dashboard' : 'NGO / Recipient';
+            const user = JSON.parse(sessionStorage.getItem('nourishUser') || '{}');
+            const name = user.name || (state.activePortal === 'seller' ? 'Elite Vendor' : 'Community Partner');
+            const org = user.orgName || (state.activePortal === 'seller' ? 'Gourmet Provider' : 'Food Recipient');
             
             // Add to state
             state.communityComments.push({
-                name: role,
-                org: orgName,
+                name: name,
+                org: org,
                 text: text,
                 stars: 5,
-                img: `https://i.pravatar.cc/100?img=${Math.floor(Math.random() * 70)}`
+                img: user.avatarUrl || `https://i.pravatar.cc/100?img=${Math.floor(Math.random() * 70)}`
             });
 
             // Re-render both parts
             renderCommunityWall();
             renderReviewsSlider();
+            renderPortalComments();
             
             commentText.value = '';
             showToast("Your thoughts have been shared with the community!", "success");
