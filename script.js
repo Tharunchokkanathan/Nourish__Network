@@ -322,7 +322,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (state.communityComments.length === 0) return;
 
-        state.communityComments.forEach((comment, idx) => {
+        // Newest first so the latest comment is always slide 1
+        const commentsToShow = state.communityComments.slice().reverse();
+
+        commentsToShow.forEach((comment, idx) => {
+
             let starsMarkup = '';
             for (let i = 0; i < 5; i++) {
                 starsMarkup += `<i class="${i < Math.floor(comment.stars) ? 'fa-solid' : 'fa-regular'} fa-star"></i>`;
