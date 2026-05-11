@@ -155,14 +155,11 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             const user = JSON.parse(sessionStorage.getItem('nourishUser') || '{}');
             let url = `${API_BASE}/listings`;
-            if (state.activePortal === 'seller' && user.id) {
-                url += `?vendorId=${user.id}`;
-            }
 
             const listRes = await fetch(url);
             if (listRes.ok) {
                 const rawListings = await listRes.json();
-                state.listings = rawListings.map(item => ({
+                const apiListings = rawListings.map(item => ({
                     ...item,
                     qty: item.quantity || item.qty || 0,
                     expiry: item.expiryTime || item.expiry || null,
@@ -170,6 +167,14 @@ document.addEventListener('DOMContentLoaded', () => {
                         ? (isLocal ? '' : 'https://nourish-network-4bit.onrender.com') + (item.imageUrl || item.img)
                         : (item.imageUrl || item.img)
                 }));
+                // Merge in any demo listings saved to localStorage
+                const demoListings = JSON.parse(localStorage.getItem('nn_demo_listings') || '[]');
+                const apiIds = apiListings.map(l => l.id);
+                const uniqueDemoListings = demoListings.filter(d => !apiIds.includes(d.id));
+                state.listings = [...uniqueDemoListings, ...apiListings];
+            } else {
+                // API failed — still load demo listings
+                state.listings = JSON.parse(localStorage.getItem('nn_demo_listings') || '[]');
             }
 
             const statsRes = await fetch(`${API_BASE}/stats`);
@@ -193,6 +198,9 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         } catch (err) {
             console.error("Backend Sync Failed:", err);
+            // Even if everything fails, still show demo listings
+            state.listings = JSON.parse(localStorage.getItem('nn_demo_listings') || '[]');
+            renderPortal();
         }
     }
 
@@ -1635,6 +1643,10 @@ document.addEventListener('DOMContentLoaded', () => {
                             img: `https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=600&q=80`
                         };
                         state.listings.unshift(newItem);
+                        // Persist demo listing to localStorage so it survives refresh
+                        const saved = JSON.parse(localStorage.getItem('nn_demo_listings') || '[]');
+                        saved.unshift(newItem);
+                        localStorage.setItem('nn_demo_listings', JSON.stringify(saved));
                         showToast("Published successfully! 🌱", "success");
                     }
                     form.reset();
