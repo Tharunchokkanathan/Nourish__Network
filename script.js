@@ -1670,6 +1670,9 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         if (e.target.closest('#confirm-claim')) {
+            e.preventDefault();
+            console.log("Confirm Claim Clicked");
+
             if (state.cart.length === 0) {
                 showToast("Basket is empty!", "error");
                 return;
@@ -1689,23 +1692,30 @@ document.addEventListener('DOMContentLoaded', () => {
 
             try {
                 // Mock network delay for demo
-                await new Promise(resolve => setTimeout(resolve, 800));
+                await new Promise(resolve => setTimeout(resolve, 1000));
 
                 // Open the Success Modal
                 const successModal = document.getElementById('successModal');
                 if (successModal) {
                     successModal.style.display = 'flex';
+                } else {
+                    console.error("Success Modal not found in DOM");
                 }
 
                 showToast("Order placed successfully! 🌱", "success");
+                
+                // Clear cart
                 state.cart = [];
                 updateCartBadge();
                 renderCartItems();
-                cartDrawer.classList.remove('active');
                 
-                // Locally mock the items as sold so they disappear from the UI instantly
-                refreshState();
+                // Close cart drawer
+                if (cartDrawer) cartDrawer.classList.remove('active');
+                
+                // Refresh background state
+                refreshState(true); // silent refresh to avoid full re-render while modal is up
             } catch (error) {
+                console.error("Checkout error:", error);
                 showToast("Connection error during checkout.", "error");
             } finally {
                 confirmBtn.innerText = originalText;
