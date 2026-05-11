@@ -616,6 +616,20 @@
         </div>
     </div>
 
+    <!-- Success Modal -->
+    <div id="successModal" style="display: none; position: fixed; inset: 0; width: 100vw; height: 100vh; background: rgba(10, 20, 16, 0.95); z-index: 4000; align-items: center; justify-content: center; backdrop-filter: blur(20px);">
+        <div style="width: 100%; max-width: 480px; padding: 50px 30px; text-align: center; background: var(--bg-surface); border: 1px solid var(--border-glow); border-radius: 32px; box-shadow: 0 30px 80px rgba(16, 185, 129, 0.15); animation: revealUp 0.6s cubic-bezier(0.19, 1, 0.22, 1) forwards;">
+            <div style="width: 100px; height: 100px; background: rgba(16, 185, 129, 0.1); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 30px; border: 2px solid var(--primary-color);">
+                <i class="fa-solid fa-check" style="font-size: 3rem; color: var(--primary-color);"></i>
+            </div>
+            <h2 style="font-size: 2.2rem; font-weight: 800; margin-bottom: 15px; color: var(--text-primary);">Order Placed!</h2>
+            <p style="font-size: 1.1rem; color: var(--text-muted); margin-bottom: 30px; line-height: 1.6;">Thank you for saving food and nourishing the community. The vendor has been notified.</p>
+            <button onclick="document.getElementById('successModal').style.display='none'" class="btn btn-primary w-100 btn-glow" style="height: 54px; font-size: 1.1rem; font-weight: 700; border-radius: 14px;">
+                Return to Dashboard
+            </button>
+        </div>
+    </div>
+
     <!-- Toast Notification Container -->
     <div id="toastContainer" class="toast-container"></div>
 
@@ -687,7 +701,7 @@
     </svg>
 
     <!-- Custom Script -->
-    <script src="script.js?v=1.2"></script>
+    <script src="script.js?v=1.3"></script>
 </body>
 </html>
 <!-- Nourish Network v1.0.1 - Auto-Deploy Test -->

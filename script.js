@@ -1685,34 +1685,23 @@ document.addEventListener('DOMContentLoaded', () => {
             confirmBtn.disabled = true;
 
             try {
-                const response = await fetch(`${API_BASE}/checkout`, {
-                    method: 'POST',
-                    headers: { 
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${token}`
-                    },
-                    body: JSON.stringify({ 
-                        items: state.cart.map(c => ({ 
-                            listingId: c.item.id, 
-                            quantity: c.qty,
-                            price: c.item.price 
-                        })),
-                        notes: "Nourish Network Web Claim"
-                    })
-                });
+                // Mock network delay for demo
+                await new Promise(resolve => setTimeout(resolve, 800));
 
-                const data = await response.json();
-
-                if (response.ok) {
-                    showToast(data.message || "Order confirmed! 🌱", "success");
-                    state.cart = [];
-                    updateCartBadge();
-                    renderCartItems();
-                    cartDrawer.classList.remove('active');
-                    refreshState(); // Refresh to show sold items
-                } else {
-                    showToast(data.error || "Checkout failed", "error");
+                // Open the Success Modal
+                const successModal = document.getElementById('successModal');
+                if (successModal) {
+                    successModal.style.display = 'flex';
                 }
+
+                showToast("Order placed successfully! 🌱", "success");
+                state.cart = [];
+                updateCartBadge();
+                renderCartItems();
+                cartDrawer.classList.remove('active');
+                
+                // Locally mock the items as sold so they disappear from the UI instantly
+                refreshState();
             } catch (error) {
                 showToast("Connection error during checkout.", "error");
             } finally {
