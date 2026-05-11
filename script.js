@@ -1598,6 +1598,53 @@ document.addEventListener('DOMContentLoaded', () => {
                     expiryTime: expiry ? new Date(expiry).toISOString() : null
                 };
 
+                // ---- DEMO MODE: bypass API for demo tokens ----
+                const isDemoToken = token.startsWith('demo-token');
+                if (isDemoToken) {
+                    const user = JSON.parse(sessionStorage.getItem('nourishUser') || '{}');
+                    if (pId) {
+                        // UPDATE existing
+                        const idx = state.listings.findIndex(l => l.id == pId);
+                        if (idx !== -1) {
+                            state.listings[idx] = {
+                                ...state.listings[idx],
+                                name, category,
+                                qty: parseInt(qty),
+                                price: parseFloat(price),
+                                description,
+                                expiry: expiry ? new Date(expiry).toISOString() : null
+                            };
+                        }
+                        showToast("Listing updated! 🌱", "success");
+                    } else {
+                        // CREATE new
+                        const newItem = {
+                            id: 'demo-' + Date.now(),
+                            name, category,
+                            qty: parseInt(qty),
+                            quantity: parseInt(qty),
+                            price: parseFloat(price),
+                            description,
+                            expiry: expiry ? new Date(expiry).toISOString() : null,
+                            expiryTime: expiry ? new Date(expiry).toISOString() : null,
+                            vendorId: user.id,
+                            vendorName: user.name || 'Demo Seller',
+                            vendorAvatar: user.avatarUrl || 'assets/default-avatar.jpg',
+                            isVerified: true,
+                            fssaiCode: user.fssaiCode || '',
+                            img: `https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=600&q=80`
+                        };
+                        state.listings.unshift(newItem);
+                        showToast("Published successfully! 🌱", "success");
+                    }
+                    form.reset();
+                    document.getElementById('p-id').value = '';
+                    document.getElementById('submit-btn').innerHTML = '<i class="fa-solid fa-leaf"></i> Publish Listing';
+                    if (cancelBtn) cancelBtn.style.display = 'none';
+                    renderSellerListings();
+                    return;
+                }
+
                 try {
                     let response;
                     if (pId) {
