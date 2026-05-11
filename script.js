@@ -1660,53 +1660,65 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
     
-    closeCart.addEventListener('click', () => cartDrawer.classList.remove('active'));
-    document.querySelector('.cart-drawer-overlay').addEventListener('click', () => cartDrawer.classList.remove('active'));
-
-    document.getElementById('confirm-claim').addEventListener('click', async () => {
-        if (state.cart.length === 0) {
-            showToast("Basket is empty!", "error");
-            return;
+    document.addEventListener('click', async (e) => {
+        // Redundant cart overlay close (the button is handled at the top of the file)
+        if (e.target.classList.contains('cart-drawer-overlay')) {
+            cartDrawer.classList.remove('active');
         }
 
-        const token = sessionStorage.getItem('nourishToken');
-        if (!token) {
-            showToast("Please login to place an order.", "info");
-            showLoginForm();
-            return;
-        }
-
-        try {
-            const response = await fetch(`${API_BASE}/checkout`, {
-                method: 'POST',
-                headers: { 
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify({ 
-                    items: state.cart.map(c => ({ 
-                        listingId: c.item.id, 
-                        quantity: c.qty,
-                        price: c.item.price 
-                    })),
-                    notes: "Nourish Network Web Claim"
-                })
-            });
-
-            const data = await response.json();
-
-            if (response.ok) {
-                showToast(data.message || "Order confirmed! 🌱", "success");
-                state.cart = [];
-                updateCartBadge();
-                renderCartItems();
-                cartDrawer.classList.remove('active');
-                refreshState(); // Refresh to show sold items
-            } else {
-                showToast(data.error || "Checkout failed", "error");
+        if (e.target.closest('#confirm-claim')) {
+            if (state.cart.length === 0) {
+                showToast("Basket is empty!", "error");
+                return;
             }
-        } catch (error) {
-            showToast("Connection error during checkout.", "error");
+
+            const token = sessionStorage.getItem('nourishToken');
+            if (!token) {
+                showToast("Please login to place an order.", "info");
+                showLoginForm();
+                return;
+            }
+
+            const confirmBtn = e.target.closest('#confirm-claim');
+            const originalText = confirmBtn.innerText;
+            confirmBtn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Processing...';
+            confirmBtn.disabled = true;
+
+            try {
+                const response = await fetch(`${API_BASE}/checkout`, {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ 
+                        items: state.cart.map(c => ({ 
+                            listingId: c.item.id, 
+                            quantity: c.qty,
+                            price: c.item.price 
+                        })),
+                        notes: "Nourish Network Web Claim"
+                    })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    showToast(data.message || "Order confirmed! 🌱", "success");
+                    state.cart = [];
+                    updateCartBadge();
+                    renderCartItems();
+                    cartDrawer.classList.remove('active');
+                    refreshState(); // Refresh to show sold items
+                } else {
+                    showToast(data.error || "Checkout failed", "error");
+                }
+            } catch (error) {
+                showToast("Connection error during checkout.", "error");
+            } finally {
+                confirmBtn.innerText = originalText;
+                confirmBtn.disabled = false;
+            }
         }
     });
 
