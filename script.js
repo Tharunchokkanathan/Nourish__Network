@@ -1351,7 +1351,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!user) return;
 
         // Filter to show only THIS seller's items
-        const myItems = state.listings.filter(l => l.vendorId == user.id);
+        const myItems = state.listings.filter(l => String(l.vendorId) === String(user.id));
 
         if (myItems.length === 0) {
             container.innerHTML = `
