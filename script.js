@@ -1228,6 +1228,32 @@ document.addEventListener('DOMContentLoaded', () => {
                         <span class="premium-title">SELLER'S DASHBOARD</span>
                     </h1>
 
+                    <!-- Seller Bio / Profile Card -->
+                    <div class="seller-form-card" style="margin-bottom: 2rem; padding: 1.5rem 2rem;">
+                        <div style="display: flex; align-items: center; gap: 1.5rem; flex-wrap: wrap;">
+                            <img src="${user.avatarUrl || 'assets/default-avatar.jpg'}" alt="Seller Avatar"
+                                style="width: 72px; height: 72px; border-radius: 50%; object-fit: cover; border: 2px solid var(--accent-primary); flex-shrink: 0;">
+                            <div style="flex: 1; min-width: 200px;">
+                                <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 4px;">
+                                    <span style="font-size: 1.2rem; font-weight: 800; color: var(--text-primary);">${user.name || user.organizationName || 'Your Restaurant'}</span>
+                                    ${user.isVerified ? '<span style="background: linear-gradient(135deg,#f59e0b,#d97706); color:#fff; font-size:0.7rem; font-weight:700; padding:2px 10px; border-radius:20px; letter-spacing:1px;"><i class="fa-solid fa-certificate"></i> VERIFIED</span>' : ''}
+                                </div>
+                                ${user.bio ? `<p style="color:var(--text-muted); font-size:0.9rem; margin: 0 0 8px;">${user.bio}</p>` : ''}
+                                <div style="display: flex; flex-wrap: wrap; gap: 10px 20px; font-size: 0.82rem; color: var(--text-muted); margin-top: 6px;">
+                                    ${user.fssaiCode ? `<span title="FSSAI License"><i class="fa-solid fa-certificate" style="color:#10b981;"></i> <strong style="color:var(--text-primary); font-family:monospace; letter-spacing:1px;">${user.fssaiCode}</strong> <span style="font-size:0.72rem; color:#10b981; font-weight:600;">FSSAI</span></span>` : '<span style="color:#f59e0b;"><i class="fa-solid fa-triangle-exclamation"></i> FSSAI not set — update in Settings</span>'}
+                                    ${user.address ? `<span><i class="fa-solid fa-location-dot" style="color:var(--accent-primary);"></i> ${user.address}</span>` : ''}
+                                    ${user.publicPhone ? `<span><i class="fa-solid fa-phone" style="color:var(--accent-primary);"></i> ${user.publicPhone}</span>` : ''}
+                                    ${user.contactPerson ? `<span><i class="fa-solid fa-user-tie" style="color:var(--accent-primary);"></i> ${user.contactPerson}</span>` : ''}
+                                    ${user.website ? `<span><i class="fa-solid fa-globe" style="color:var(--accent-primary);"></i> ${user.website}</span>` : ''}
+                                    ${user.pickupWindow ? `<span><i class="fa-solid fa-clock" style="color:var(--accent-primary);"></i> Pickup: ${user.pickupWindow}</span>` : ''}
+                                </div>
+                            </div>
+                            <button onclick="window.openSettings()" style="background: none; border: 1px solid var(--border-glow); border-radius: 10px; padding: 8px 16px; color: var(--text-muted); font-size: 0.82rem; cursor: pointer; white-space: nowrap; flex-shrink: 0;">
+                                <i class="fa-solid fa-pen-to-square"></i> Edit Profile
+                            </button>
+                        </div>
+                    </div>
+
                     <!-- Portal Tabs -->
                     <div class="portal-tabs" style="display:flex; gap: 0.5rem; margin-bottom: 2.5rem; border-bottom: 1px solid var(--border-glow); padding-bottom: 0;">
                         <button class="portal-tab-btn active" data-tab="listings" style="padding: 0.75rem 1.75rem; background: none; border: none; border-bottom: 2px solid var(--accent-primary); color: var(--accent-primary); font-weight: 700; font-size: 0.95rem; cursor: pointer; letter-spacing: 1px;">
