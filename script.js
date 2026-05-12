@@ -1399,6 +1399,15 @@ document.addEventListener('DOMContentLoaded', () => {
                 const token = sessionStorage.getItem('nourishToken');
                 if (!token) return;
 
+                // Demo users have fake tokens — handle deletion locally
+                const isDemoToken = token === 'demo-token-seller' || token === 'demo-token-buyer';
+                if (isDemoToken) {
+                    state.listings = state.listings.filter(l => String(l.id) !== String(id));
+                    showToast("Listing removed. (Demo mode — changes are not saved to the server.)");
+                    refreshState();
+                    return;
+                }
+
                 try {
                     const response = await fetch(`${API_BASE}/listings/${id}`, {
                         method: 'DELETE',

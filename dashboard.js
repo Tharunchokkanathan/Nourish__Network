@@ -272,16 +272,30 @@ document.addEventListener('DOMContentLoaded', () => {
             btn.addEventListener('click', async () => {
                 if (!confirm("Are you sure you want to delete this listing?")) return;
                 const id = btn.dataset.id;
+                const token = sessionStorage.getItem('nourishToken');
+
+                // Demo users have fake tokens — inform and skip API call
+                const isDemoToken = token === 'demo-token-seller' || token === 'demo-token-buyer';
+                if (isDemoToken) {
+                    alert("Demo mode: listing removed locally. Log in with a real account to save changes.");
+                    renderDashboard();
+                    return;
+                }
+
                 try {
-                    const token = sessionStorage.getItem('nourishToken');
                     const res = await fetch(`${API_BASE}/listings/${id}`, {
                         method: 'DELETE',
                         headers: { 'Authorization': `Bearer ${token}` }
                     });
                     if (res.ok) {
                         renderDashboard();
+                    } else {
+                        const err = await res.json();
+                        alert(err.error || "Delete failed. Please try again.");
                     }
-                } catch (e) {}
+                } catch (e) {
+                    alert("Network error. Please try again.");
+                }
             });
         });
 
