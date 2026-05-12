@@ -694,60 +694,93 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- Demo Login Fillers ---
     if (btnDemoSeller) {
-        btnDemoSeller.addEventListener('click', () => {
-            const demoSeller = {
-                id: 'demo-seller-123',
-                name: 'Elite Catering Services',
-                email: 'serverdemo@gmail.com',
-                type: 'restaurant',
-                accountType: 'restaurant',
-                bio: 'Premium catering service in Chennai specializing in high-quality surplus gourmet meals for community impact.',
-                address: '45, Sterling Road, Nungambakkam, Chennai - 600034',
-                contactPerson: 'Chef Marco',
-                publicPhone: '+91 98400 12345',
-                website: 'www.elitecatering.in',
-                fssaiCode: '12345678901234',
-                pickupWindow: '9:00 PM - 11:00 PM',
-                pickupInstructions: 'Enter through the back service gate. Ask for the surplus coordinator.',
-                isVerified: true,
-                avatarUrl: 'assets/default-avatar.jpg'
-            };
-            sessionStorage.setItem('nourishUser', JSON.stringify(demoSeller));
-            sessionStorage.setItem('nourishToken', 'demo-token-seller');
-            document.documentElement.classList.add('user-logged-in');
-            state.activePortal = 'seller';
-            authModal.classList.remove('active');
-            showToast("Welcome back, Chef Marco! (Elite Demo Mode)");
-            refreshState();
+        btnDemoSeller.addEventListener('click', async () => {
+            btnDemoSeller.disabled = true;
+            btnDemoSeller.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Logging in...';
+            try {
+                const res = await fetch(`${API_BASE}/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email: 'serverdemo@gmail.com', password: 'demo123' })
+                });
+                const data = await res.json();
+                if (res.ok && data.token) {
+                    const demoSeller = {
+                        ...data.user,
+                        name: data.user.name || 'Elite Catering Services',
+                        type: 'restaurant',
+                        accountType: 'restaurant',
+                        bio: 'Premium catering service in Chennai specializing in high-quality surplus gourmet meals for community impact.',
+                        address: '45, Sterling Road, Nungambakkam, Chennai - 600034',
+                        contactPerson: 'Chef Marco',
+                        publicPhone: '+91 98400 12345',
+                        website: 'www.elitecatering.in',
+                        fssaiCode: '12345678901234',
+                        pickupWindow: '9:00 PM - 11:00 PM',
+                        isVerified: true,
+                        avatarUrl: 'assets/default-avatar.jpg'
+                    };
+                    sessionStorage.setItem('nourishUser', JSON.stringify(demoSeller));
+                    sessionStorage.setItem('nourishToken', data.token);
+                    document.documentElement.classList.add('user-logged-in');
+                    state.activePortal = 'seller';
+                    authModal.classList.remove('active');
+                    showToast("Welcome back, Chef Marco! 🍽️");
+                    refreshState();
+                } else {
+                    showToast(data.error || "Demo login failed", "error");
+                }
+            } catch (e) {
+                showToast("Network error. Please try again.", "error");
+            } finally {
+                btnDemoSeller.disabled = false;
+                btnDemoSeller.innerHTML = '🍽️ Demo: Food Vendor';
+            }
         });
     }
 
     if (btnDemoBuyer) {
-        btnDemoBuyer.addEventListener('click', () => {
-            const demoBuyer = {
-                id: 'demo-buyer-456',
-                name: 'Global Outreach Foundation',
-                email: 'ngodemo@gmail.com',
-                type: 'ngo',
-                accountType: 'ngo',
-                bio: 'Non-profit organization dedicated to distributing fresh, nutritious meals to shelters and low-income families across the city.',
-                address: '12, Besant Nagar, Chennai - 600090',
-                contactPerson: 'Sarah Jenkins',
-                publicPhone: '+91 98840 56789',
-                website: 'www.globaloutreach.org',
-                fssaiCode: 'N/A',
-                pickupWindow: 'Any time after 9 PM',
-                pickupInstructions: 'Our van will arrive for pickup. Please have items ready in the chilled section.',
-                isVerified: true,
-                avatarUrl: 'assets/default-avatar.jpg'
-            };
-            sessionStorage.setItem('nourishUser', JSON.stringify(demoBuyer));
-            sessionStorage.setItem('nourishToken', 'demo-token-buyer');
-            document.documentElement.classList.add('user-logged-in');
-            state.activePortal = 'buyer';
-            authModal.classList.remove('active');
-            showToast("Welcome back, Sarah! (Community Demo Mode)");
-            refreshState();
+        btnDemoBuyer.addEventListener('click', async () => {
+            btnDemoBuyer.disabled = true;
+            btnDemoBuyer.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Logging in...';
+            try {
+                const res = await fetch(`${API_BASE}/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email: 'ngodemo@gmail.com', password: 'demo123' })
+                });
+                const data = await res.json();
+                if (res.ok && data.token) {
+                    const demoBuyer = {
+                        ...data.user,
+                        name: data.user.name || 'Global Outreach Foundation',
+                        type: 'ngo',
+                        accountType: 'ngo',
+                        bio: 'Non-profit organization dedicated to distributing fresh, nutritious meals to shelters and low-income families across the city.',
+                        address: '12, Besant Nagar, Chennai - 600090',
+                        contactPerson: 'Sarah Jenkins',
+                        publicPhone: '+91 98840 56789',
+                        website: 'www.globaloutreach.org',
+                        pickupWindow: 'Any time after 9 PM',
+                        isVerified: true,
+                        avatarUrl: 'assets/default-avatar.jpg'
+                    };
+                    sessionStorage.setItem('nourishUser', JSON.stringify(demoBuyer));
+                    sessionStorage.setItem('nourishToken', data.token);
+                    document.documentElement.classList.add('user-logged-in');
+                    state.activePortal = 'buyer';
+                    authModal.classList.remove('active');
+                    showToast("Welcome back, Sarah! 🤝");
+                    refreshState();
+                } else {
+                    showToast(data.error || "Demo login failed", "error");
+                }
+            } catch (e) {
+                showToast("Network error. Please try again.", "error");
+            } finally {
+                btnDemoBuyer.disabled = false;
+                btnDemoBuyer.innerHTML = '🤝 Demo: NGO / Shelter';
+            }
         });
     }
 
