@@ -395,7 +395,7 @@ app.put('/api/listings/:id', authenticateToken, (req, res) => {
     db.get(`SELECT vendorId FROM food_listings WHERE id = ?`, [id], (err, row) => {
         if (err)   return res.status(500).json({ error: err.message });
         if (!row)  return res.status(404).json({ error: 'Listing not found.' });
-        if (row.vendorId !== req.user.id) {
+        if (Number(row.vendorId) !== Number(req.user.id)) {
             return res.status(403).json({ error: 'You can only edit your own listings.' });
         }
 
@@ -439,7 +439,7 @@ app.delete('/api/listings/:id', authenticateToken, (req, res) => {
     db.get(`SELECT vendorId FROM food_listings WHERE id = ?`, [id], (err, row) => {
         if (err)   return res.status(500).json({ error: err.message });
         if (!row)  return res.status(404).json({ error: 'Listing not found.' });
-        if (row.vendorId !== req.user.id) {
+        if (Number(row.vendorId) !== Number(req.user.id)) {
             return res.status(403).json({ error: 'You can only delete your own listings.' });
         }
 
