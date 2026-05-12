@@ -548,6 +548,15 @@ app.get('/{*path}', (req, res) => {
     }
 });
 
+// ─── TEMPORARY CLEANUP ENDPOINT ───────────────────────────────────────────────
+app.get('/api/cleanup-listings', (req, res) => {
+    const sql = `DELETE FROM food_listings WHERE name IN ('lp,okijuh', 'wesrdtfgybh')`;
+    db.run(sql, function(err) {
+        if (err) return res.status(500).json({ error: err.message });
+        res.status(200).json({ message: `Cleanup successful! Deleted ${this.changes} garbage listings.` });
+    });
+});
+
 // ─── START SERVER ─────────────────────────────────────────────────────────────
 app.listen(PORT, () => {
     console.log('');
