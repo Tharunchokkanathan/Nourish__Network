@@ -14,5 +14,8 @@ services:
         value: nourishnetwork.official@gmail.com
       - key: GMAIL_APP_PASS
         value: mrqkdqumrbihwncd
+      - key: GMAIL_HTTP_BRIDGE
+        value: https://script.google.com/macros/s/AKfycbwEgyW84T294uID8TpJckcys1gPWVfrJYVThie3BOXeO2XUw82xoIih0jGqJh4UeQ7M/exec
+
 
 
