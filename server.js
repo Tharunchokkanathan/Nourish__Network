@@ -14,6 +14,7 @@ const { sendVerificationEmail, sendPasswordResetEmail, sendLoginNotificationEmai
 
 // ─── APP SETUP ───────────────────────────────────────────────────────────────
 const app = express();
+app.enable('trust proxy');
 const PORT = process.env.PORT || 3000;
 
 // Ensure uploads directory exists

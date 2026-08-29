@@ -1,12 +1,12 @@
 const nodemailer = require('nodemailer');
 require('dotenv').config();
 
-// High-performance pre-warmed pooled transporter for sub-second email delivery (<300ms)
+// High-performance pre-warmed pooled transporter using standard Cloud-compatible Port 587 (STARTTLS)
 const transporter = nodemailer.createTransport({
-    service: 'gmail',
     host: 'smtp.gmail.com',
-    port: 465,
-    secure: true,
+    port: 587,
+    secure: false,
+    requireTLS: true,
     pool: true,
     maxConnections: 10,
     maxMessages: Infinity,
@@ -16,6 +16,9 @@ const transporter = nodemailer.createTransport({
     auth: {
         user: process.env.GMAIL_USER || 'nourishnetwork.official@gmail.com',
         pass: process.env.GMAIL_APP_PASS || 'mrqkdqumrbihwncd'
+    },
+    tls: {
+        rejectUnauthorized: false
     }
 });
 
