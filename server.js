@@ -95,7 +95,7 @@ app.post('/api/register', async (req, res) => {
         const verificationTokenExpires = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(); // 24 Hours
 
         const sql = `INSERT INTO users (accountType, organizationName, email, password, phone, address, isVerified, verificationToken, verificationTokenExpires, verificationOtp)
-                    VALUES (?, ?, ?, ?, ?, ?, 0, ?, ?, ?)`;
+                    VALUES (?, ?, ?, ?, ?, ?, 1, ?, ?, ?)`;
 
         db.run(sql, [
             accountType,
@@ -121,11 +121,11 @@ app.post('/api/register', async (req, res) => {
                 accountType,
                 organizationName,
                 email,
-                isVerified: 0
+                isVerified: 1
             };
             const token = makeToken(user);
 
-            // Trigger Verification Email
+            // Send registration welcome email in background
             const hostUrl = `${req.protocol}://${req.get('host')}`;
             sendVerificationEmail({
                 toEmail: email,
@@ -136,9 +136,9 @@ app.post('/api/register', async (req, res) => {
             }).catch(e => console.error("Async Email Error:", e));
 
             res.status(201).json({
-                message: 'Account created successfully! Please check your email to click the verification link.',
-                requiresVerification: true,
-                email
+                message: 'Account created successfully! Welcome to Nourish Network 🎉',
+                token,
+                user: { id: userId, email, name: organizationName, type: accountType, isVerified: 1 }
             });
         });
     } catch (err) {
@@ -212,12 +212,6 @@ app.post('/api/login', (req, res) => {
         try {
             const match = await bcrypt.compare(password, user.password);
             if (!match) return res.status(401).json({ error: 'Invalid email or password.' });
-
-            if (!user.isVerified) {
-                return res.status(403).json({
-                    error: 'Please verify your email address first before logging in. Check your Gmail inbox for the verification link.'
-                });
-            }
 
             const token = makeToken(user);
 
