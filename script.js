@@ -854,9 +854,50 @@ document.addEventListener('DOMContentLoaded', () => {
             e.preventDefault();
             authModal.classList.remove('active');
             const forgotModal = document.getElementById('forgotPasswordModal');
-            if (forgotModal) forgotModal.classList.add('active');
+            if (forgotModal) {
+                const loginEmailInput = document.getElementById('loginEmail');
+                const emailVal = (loginEmailInput ? loginEmailInput.value.trim() : '') || localStorage.getItem('last_login_email') || '';
+
+                const preFilledCard = document.getElementById('forgotEmailPreFilledCard');
+                const displayEl = document.getElementById('forgotTargetEmailDisplay');
+                const inputGroup = document.getElementById('forgotEmailInputGroup');
+                const emailInput = document.getElementById('forgotEmail');
+                const changeLink = document.getElementById('changeForgotEmailLink');
+
+                if (emailVal) {
+                    if (displayEl) displayEl.innerText = emailVal;
+                    if (emailInput) emailInput.value = emailVal;
+                    if (preFilledCard) preFilledCard.style.display = 'block';
+                    if (inputGroup) inputGroup.style.display = 'none';
+                    if (changeLink) changeLink.style.display = 'inline-block';
+                } else {
+                    if (preFilledCard) preFilledCard.style.display = 'none';
+                    if (inputGroup) inputGroup.style.display = 'block';
+                    if (changeLink) changeLink.style.display = 'none';
+                    if (emailInput) {
+                        emailInput.value = '';
+                        setTimeout(() => emailInput.focus(), 150);
+                    }
+                }
+
+                forgotModal.classList.add('active');
+            }
         });
     });
+
+    const changeForgotEmailLink = document.getElementById('changeForgotEmailLink');
+    if (changeForgotEmailLink) {
+        changeForgotEmailLink.addEventListener('click', (e) => {
+            e.preventDefault();
+            const preFilledCard = document.getElementById('forgotEmailPreFilledCard');
+            const inputGroup = document.getElementById('forgotEmailInputGroup');
+            const emailInput = document.getElementById('forgotEmail');
+            if (preFilledCard) preFilledCard.style.display = 'none';
+            if (inputGroup) inputGroup.style.display = 'block';
+            changeForgotEmailLink.style.display = 'none';
+            if (emailInput) emailInput.focus();
+        });
+    }
 
     // 1. Login Form Submit
     loginForm.addEventListener('submit', async (e) => {
@@ -889,7 +930,8 @@ document.addEventListener('DOMContentLoaded', () => {
             if (response.ok) {
                 showToast(`Welcome back, ${data.user.name || email}!`);
 
-                // Save user and JWT token to localStorage
+                // Save user, email and JWT token
+                localStorage.setItem('last_login_email', email);
                 sessionStorage.setItem('nourishUser', JSON.stringify(data.user));
                 if (data.token) sessionStorage.setItem('nourishToken', data.token);
                 document.documentElement.classList.add('user-logged-in');
