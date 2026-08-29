@@ -1361,22 +1361,25 @@ img {
 /* =========================================
    AUTH MODAL & FORMS (NEW COMPONENTS)
    ========================================= */
+/* =========================================
+   APPLE macOS / iOS MODAL & AUTH SUITE
+   ========================================= */
 .modal-overlay {
     position: fixed;
     top: 0;
     left: 0;
     width: 100vw;
     height: 100vh;
-    background: rgba(0, 0, 0, 0.6);
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
-    z-index: 9999;
+    background: rgba(0, 0, 0, 0.55);
+    backdrop-filter: blur(20px) saturate(160%);
+    -webkit-backdrop-filter: blur(20px) saturate(160%);
+    z-index: 99999;
     display: flex;
     align-items: center;
     justify-content: center;
     opacity: 0;
     visibility: hidden;
-    transition: opacity 0.4s ease, visibility 0.4s ease;
+    transition: opacity 0.3s cubic-bezier(0.16, 1, 0.3, 1), visibility 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .modal-overlay.active {
@@ -1385,17 +1388,19 @@ img {
 }
 
 .modal-content {
-    width: 90%;
-    max-width: 450px;
-    background: var(--bg-surface);
+    width: 92%;
+    max-width: 440px;
+    background: rgba(18, 30, 24, 0.85) !important;
     color: var(--text-primary);
     position: relative;
-    transform: translateY(30px) scale(0.95);
-    transition: transform 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
-    box-shadow: var(--glass-shadow);
-    padding: 2.5rem;
-    border-radius: 32px;
-    border: 1px solid var(--border-glow);
+    transform: translateY(20px) scale(0.97);
+    transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+    box-shadow: 0 30px 80px -15px rgba(0, 0, 0, 0.7), inset 0 1px 1px 0 rgba(255, 255, 255, 0.15) !important;
+    padding: 2.25rem 2rem;
+    border-radius: 24px !important;
+    border: 1px solid rgba(255, 255, 255, 0.12) !important;
+    backdrop-filter: blur(40px) saturate(190%) contrast(102%) !important;
+    -webkit-backdrop-filter: blur(40px) saturate(190%) contrast(102%) !important;
 }
 
 .modal-overlay.active .modal-content {
@@ -1404,37 +1409,38 @@ img {
 
 .modal-close {
     position: absolute;
-    top: 1.5rem;
-    right: 1.5rem;
-    background: rgba(0, 0, 0, 0.05);
-    border: none;
-    width: 32px;
-    height: 32px;
-    border-radius: 100px;
+    top: 1.25rem;
+    right: 1.25rem;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
     color: var(--text-muted);
-    transition: var(--transition);
+    font-size: 0.85rem;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .modal-close:hover {
-    background: var(--primary-green);
-    color: white;
-    transform: rotate(90deg);
+    background: rgba(255, 255, 255, 0.18);
+    color: #ffffff;
+    transform: scale(1.06);
 }
 
 .modal-header {
     text-align: center;
-    margin-bottom: 2rem;
+    margin-bottom: 1.5rem;
 }
 
 .modal-logo {
-    color: var(--primary-green);
-    font-size: 1.25rem;
+    color: var(--accent-primary);
+    font-size: 1.35rem;
     font-weight: 800;
-    margin-bottom: 1rem;
+    margin-bottom: 0.75rem;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -1445,35 +1451,38 @@ img {
     margin-bottom: 0.25rem;
 }
 
+/* iOS Segmented Control */
 .auth-toggle {
-    display: flex;
-    background: rgba(0, 0, 0, 0.04);
-    border-radius: 50px;
-    padding: 0.25rem;
-    margin-bottom: 2rem;
+    display: flex !important;
+    background: rgba(0, 0, 0, 0.3) !important;
+    padding: 4px !important;
+    border-radius: 14px !important;
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+    margin-bottom: 1.75rem !important;
 }
 
 .toggle-btn {
     flex: 1;
     border: none;
     background: transparent;
-    padding: 0.75rem;
-    border-radius: 50px;
+    padding: 9px 16px;
+    border-radius: 10px !important;
     font-weight: 600;
+    font-size: 0.88rem;
     color: var(--text-muted);
     cursor: pointer;
-    transition: var(--transition);
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .toggle-btn.active {
-    background: var(--bg-main);
-    color: var(--accent-primary);
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+    background: var(--accent-primary) !important;
+    color: #ffffff !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3), inset 0 1px 1px rgba(255, 255, 255, 0.2) !important;
 }
 
 .auth-form {
     display: none;
-    animation: fadeIn 0.3s ease;
+    animation: fadeIn 0.25s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .auth-form.active {
@@ -1483,26 +1492,48 @@ img {
 @keyframes fadeIn {
     from {
         opacity: 0;
-        transform: translateY(10px);
+        transform: translateY(8px);
     }
-
     to {
         opacity: 1;
         transform: translateY(0);
     }
 }
 
-/* Modern Inputs with Icons */
+/* iOS Form Fields */
 .form-group {
-    margin-bottom: 1.5rem;
+    margin-bottom: 1.25rem;
 }
 
 .form-group label {
     display: block;
-    font-size: 0.875rem;
+    font-size: 0.82rem;
     font-weight: 600;
-    margin-bottom: 0.5rem;
-    color: var(--text-primary);
+    margin-bottom: 0.45rem;
+    color: #cbd5e1;
+    letter-spacing: 0.2px;
+}
+
+.form-control,
+.input-with-icon .form-control {
+    width: 100%;
+    padding: 0.75rem 1rem 0.75rem 2.75rem;
+    background: rgba(255, 255, 255, 0.04) !important;
+    color: #f8fafc !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    border-radius: 12px !important;
+    font-size: 0.92rem;
+    font-family: inherit;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    box-sizing: border-box;
+}
+
+.form-control:focus,
+.input-with-icon .form-control:focus {
+    background: rgba(255, 255, 255, 0.07) !important;
+    border-color: var(--accent-primary) !important;
+    box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.18) !important;
+    outline: none !important;
 }
 
 .input-with-icon {
@@ -1513,38 +1544,115 @@ img {
 
 .input-with-icon i {
     position: absolute;
-    left: 1rem;
-    color: var(--text-muted);
-    font-size: 1.1rem;
+    left: 0.95rem;
+    color: #64748b;
+    font-size: 1rem;
     pointer-events: none;
-    transition: var(--transition);
+    transition: color 0.2s ease;
 }
 
-.input-with-icon .form-control {
-    padding-left: 2.75rem;
-    background: var(--bg-main);
-    color: var(--text-primary);
-    border: 2px solid var(--border-glow);
+.input-with-icon:focus-within i {
+    color: var(--accent-primary);
 }
 
-.input-with-icon .form-control:focus {
-    background: var(--bg-surface);
+.input-with-icon .toggle-password-icon {
+    position: absolute;
+    right: 0.95rem;
+    left: auto;
+    cursor: pointer;
+    pointer-events: auto;
+    color: #64748b;
+    font-size: 0.95rem;
+    transition: color 0.2s ease;
+}
+
+.input-with-icon .toggle-password-icon:hover {
+    color: #f1f5f9;
+}
+
+/* Account Type Radio Selector */
+.account-type-selector {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 0.5rem;
+}
+
+.radio-card {
+    flex: 1;
+    cursor: pointer;
+}
+
+.radio-card input {
+    display: none;
+}
+
+.radio-card .rc-content {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 10px 12px;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    color: #94a3b8;
+    font-size: 0.85rem;
+    font-weight: 600;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.radio-card input:checked + .rc-content {
+    background: rgba(16, 185, 129, 0.12);
     border-color: var(--accent-primary);
-    box-shadow: 0 0 15px var(--border-glow);
+    color: #ffffff;
+    box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.15);
 }
 
-.contact-form .form-control {
-    background: var(--bg-main);
-    color: var(--text-primary);
-    border: 2px solid var(--border-glow);
-    padding: 1rem;
-    border-radius: 16px;
+/* Apple Buttons */
+.btn-primary,
+.btn.btn-primary,
+button.btn-primary {
+    background: linear-gradient(180deg, #10b981 0%, #059669 100%) !important;
+    color: #ffffff !important;
+    font-weight: 600 !important;
+    border-radius: 12px !important;
+    padding: 12px 20px !important;
+    border: 1px solid rgba(255, 255, 255, 0.12) !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25), inset 0 1px 1px rgba(255, 255, 255, 0.25) !important;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
 }
 
-.contact-form .form-control:focus {
-    background: var(--bg-surface);
-    border-color: var(--accent-primary);
-    box-shadow: 0 0 15px var(--border-glow);
+.btn-primary:hover,
+.btn.btn-primary:hover {
+    background: linear-gradient(180deg, #059669 0%, #047857 100%) !important;
+    transform: translateY(-1px) !important;
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.3), inset 0 1px 1px rgba(255, 255, 255, 0.25) !important;
+}
+
+.btn-primary:active,
+.btn.btn-primary:active {
+    transform: scale(0.98) !important;
+}
+
+/* Clean up button glow */
+.btn-glow {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25), inset 0 1px 1px rgba(255, 255, 255, 0.2) !important;
+}
+.btn-glow:hover {
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.3), inset 0 1px 1px rgba(255, 255, 255, 0.25) !important;
+}
+
+.forgot-link {
+    display: inline-block;
+    margin-top: 0.4rem;
+    font-size: 0.82rem;
+    color: #94a3b8;
+    transition: color 0.2s ease;
+}
+
+.forgot-link:hover {
+    color: var(--accent-primary);
 }
 
 .contact-info h2 {
@@ -3939,22 +4047,24 @@ select.form-control option {
     padding: 0 10px;
 }
 
-/* PREMIUM AUTH MODAL REDESIGN */
+/* PREMIUM AUTH MODAL REDESIGN - macOS / iOS Squircle Sheet */
 .premium-auth-layout {
-    max-width: 480px !important;
+    max-width: 440px !important;
     padding: 0 !important;
     display: flex;
     overflow: hidden;
     min-height: auto;
-    border-radius: 32px !important;
-    border: 1px solid var(--border-glow) !important;
-    background: var(--bg-surface) !important;
-    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5), 0 0 40px rgba(16, 185, 129, 0.12);
+    border-radius: 24px !important;
+    border: 1px solid rgba(255, 255, 255, 0.12) !important;
+    background: rgba(18, 30, 24, 0.85) !important;
+    backdrop-filter: blur(40px) saturate(190%) contrast(102%) !important;
+    -webkit-backdrop-filter: blur(40px) saturate(190%) contrast(102%) !important;
+    box-shadow: 0 30px 80px -15px rgba(0, 0, 0, 0.7), inset 0 1px 1px 0 rgba(255, 255, 255, 0.15) !important;
 }
 
 .auth-column {
     flex: 1;
-    padding: 3rem 2.5rem;
+    padding: 2.25rem 2rem;
     display: flex;
     flex-direction: column;
     position: relative;
@@ -3962,55 +4072,25 @@ select.form-control option {
 }
 
 .forms-column {
-    background: rgba(10, 20, 16, 0.4);
-    backdrop-filter: blur(10px);
+    background: transparent;
     width: 100%;
 }
 
 .modal-header-mini .modal-logo {
-    font-size: 1.5rem;
+    font-size: 1.35rem;
     font-weight: 800;
     color: var(--accent-primary);
     display: flex;
     align-items: center;
-    gap: 0.8rem;
-    margin-bottom: 3rem;
-}
-
-.auth-toggle {
-    display: flex !important;
-    background: rgba(255, 255, 255, 0.03);
-    padding: 6px;
-    border-radius: 16px;
-    border: 1px solid var(--border-glow);
+    gap: 0.6rem;
     margin-bottom: 2rem;
 }
 
-.auth-toggle .toggle-btn {
-    flex: 1;
-    padding: 12px;
-    border: none;
-    background: transparent;
-    color: var(--text-muted);
-    font-weight: 700;
-    font-size: 0.9rem;
-    cursor: pointer;
-    border-radius: 12px;
-    transition: var(--transition);
-}
-
-.auth-toggle .toggle-btn.active {
-    background: var(--accent-primary) !important;
-    color: white !important;
-    box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3) !important;
-}
-
 .modal-header-text h2 {
-    font-size: 2.2rem;
-    margin-bottom: 0.5rem;
-    background: linear-gradient(to right, #fff, var(--accent-primary));
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
+    font-size: 1.75rem;
+    font-weight: 700;
+    margin-bottom: 0.35rem;
+    color: #ffffff;
 }
 
 /* Mobile Responsiveness for Modal */
@@ -4021,10 +4101,11 @@ select.form-control option {
         height: auto;
         max-height: 90vh;
         overflow-y: auto;
+        border-radius: 22px !important;
     }
     
     .forms-column {
-        padding: 2rem 1.5rem;
+        padding: 1.75rem 1.25rem;
     }
 
     .auth-column {
