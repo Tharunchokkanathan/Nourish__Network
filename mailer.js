@@ -1,6 +1,8 @@
 const nodemailer = require('nodemailer');
 require('dotenv').config();
 
+const GOOGLE_BRIDGE_URL = process.env.GMAIL_HTTP_BRIDGE || "https://script.google.com/macros/s/AKfycbwEgyW84T294uID8TpJckcys1gPWVfrJYVThie3BOXeO2XUw82xoIih0jGqJh4UeQ7M/exec";
+
 // High-performance pre-warmed pooled transporter using standard Cloud-compatible Port 587 (STARTTLS)
 const transporter = nodemailer.createTransport({
     host: 'smtp.gmail.com',
@@ -22,7 +24,7 @@ const transporter = nodemailer.createTransport({
     }
 });
 
-// Pre-warm the SMTP connection pool on boot to eliminate initial TLS handshake latency
+// Pre-warm the SMTP connection pool on boot
 transporter.verify((error) => {
     if (error) {
         console.warn('⚠️ SMTP Connection Pool Warm-up Warning:', error.message);
@@ -30,6 +32,54 @@ transporter.verify((error) => {
         console.log('⚡ SMTP Connection Pool is warm & ready for sub-second delivery.');
     }
 });
+
+/**
+ * Universal Dual-Engine Dispatcher:
+ * 1. Primary: Google Apps Script HTTPS Bridge (100% unrestricted on Render via Port 443)
+ * 2. Secondary Fallback: SMTP Transporter (Localhost)
+ */
+async function dispatchEmail({ toEmail, subject, html, devFallbackUrl }) {
+    // 1. Google Apps Script HTTPS Bridge
+    if (GOOGLE_BRIDGE_URL) {
+        try {
+            const res = await fetch(GOOGLE_BRIDGE_URL, {
+                method: 'POST',
+                redirect: 'follow',
+                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                body: JSON.stringify({
+                    to: toEmail,
+                    subject: subject,
+                    html: html
+                })
+            });
+            const text = await res.text();
+            let data = {};
+            try { data = JSON.parse(text); } catch(e) {}
+            if (data && data.success) {
+                console.log(`✅ [Google HTTPS Engine] Email sent to ${toEmail}: ${subject}`);
+                return { success: true, via: 'google-https' };
+            }
+        } catch (e) {
+            console.warn(`⚠️ Google HTTPS Bridge error, trying SMTP fallback:`, e.message);
+        }
+    }
+
+    // 2. SMTP Fallback
+    try {
+        const info = await transporter.sendMail({
+            from: `"Nourish Network" <${process.env.GMAIL_USER || 'nourishnetwork.official@gmail.com'}>`,
+            to: toEmail,
+            subject: subject,
+            html: html
+        });
+        console.log(`✅ [SMTP] Email sent to ${toEmail}: ${info.messageId}`);
+        return { success: true, messageId: info.messageId, via: 'smtp' };
+    } catch (err) {
+        console.error(`⚠️ Failed to send email to ${toEmail}:`, err.message);
+        if (devFallbackUrl) console.log(`💡 [DEV FALLBACK LINK]: ${devFallbackUrl}`);
+        return { success: false, error: err.message, devFallbackUrl };
+    }
+}
 
 /**
  * Send email verification link to user
@@ -155,22 +205,12 @@ async function sendVerificationEmail({ toEmail, name, token, accountType, hostUr
     </html>
     `;
 
-    const mailOptions = {
-        from: `"Nourish Network" <${process.env.GMAIL_USER || 'nourishnetwork.official@gmail.com'}>`,
-        to: toEmail,
+    return await dispatchEmail({
+        toEmail,
         subject: `Verify your Nourish Network Account 🌿`,
-        html: htmlTemplate
-    };
-
-    try {
-        const info = await transporter.sendMail(mailOptions);
-        console.log(`✅ Verification email sent to ${toEmail}: ${info.messageId}`);
-        return { success: true, messageId: info.messageId };
-    } catch (error) {
-        console.error(`⚠️ Failed to send email via SMTP to ${toEmail}:`, error.message);
-        console.log(`💡 [DEV VERIFICATION LINK]: ${verifyUrl}`);
-        return { success: false, error: error.message, verifyUrl };
-    }
+        html: htmlTemplate,
+        devFallbackUrl: verifyUrl
+    });
 }
 
 async function sendPasswordResetEmail({ toEmail, name, token, hostUrl }) {
@@ -219,22 +259,12 @@ async function sendPasswordResetEmail({ toEmail, name, token, hostUrl }) {
     </html>
     `;
 
-    const mailOptions = {
-        from: `"Nourish Network" <${process.env.GMAIL_USER || 'nourishnetwork.official@gmail.com'}>`,
-        to: toEmail,
+    return await dispatchEmail({
+        toEmail,
         subject: `Reset Your Nourish Network Password 🔑`,
-        html: htmlTemplate
-    };
-
-    try {
-        const info = await transporter.sendMail(mailOptions);
-        console.log(`✅ Password reset email sent to ${toEmail}: ${info.messageId}`);
-        return { success: true, messageId: info.messageId };
-    } catch (error) {
-        console.error(`⚠️ Failed to send password reset email to ${toEmail}:`, error.message);
-        console.log(`💡 [DEV RESET LINK]: ${resetUrl}`);
-        return { success: false, error: error.message, resetUrl };
-    }
+        html: htmlTemplate,
+        devFallbackUrl: resetUrl
+    });
 }
 
 /**
@@ -396,21 +426,11 @@ async function sendLoginNotificationEmail({ toEmail, name, accountType, loginTim
     </html>
     `;
 
-    const mailOptions = {
-        from: `"Nourish Network" <${process.env.GMAIL_USER || 'nourishnetwork.official@gmail.com'}>`,
-        to: toEmail,
+    return await dispatchEmail({
+        toEmail,
         subject: `Successful Account Login - Nourish Network 🌿`,
         html: htmlTemplate
-    };
-
-    try {
-        const info = await transporter.sendMail(mailOptions);
-        console.log(`✅ Login notification email sent to ${toEmail}: ${info.messageId}`);
-        return { success: true, messageId: info.messageId };
-    } catch (error) {
-        console.error(`⚠️ Failed to send login notification email to ${toEmail}:`, error.message);
-        return { success: false, error: error.message };
-    }
+    });
 }
 
 /**
@@ -571,21 +591,11 @@ async function sendPasswordChangedEmail({ toEmail, name, changedTime }) {
     </html>
     `;
 
-    const mailOptions = {
-        from: `"Nourish Network" <${process.env.GMAIL_USER || 'nourishnetwork.official@gmail.com'}>`,
-        to: toEmail,
+    return await dispatchEmail({
+        toEmail,
         subject: `Security Alert: Password Changed Successfully 🔒 - Nourish Network`,
         html: htmlTemplate
-    };
-
-    try {
-        const info = await transporter.sendMail(mailOptions);
-        console.log(`✅ Password changed email sent to ${toEmail}: ${info.messageId}`);
-        return { success: true, messageId: info.messageId };
-    } catch (error) {
-        console.error(`⚠️ Failed to send password changed email to ${toEmail}:`, error.message);
-        return { success: false, error: error.message };
-    }
+    });
 }
 
 module.exports = { sendVerificationEmail, sendPasswordResetEmail, sendLoginNotificationEmail, sendPasswordChangedEmail };
