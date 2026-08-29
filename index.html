@@ -492,106 +492,80 @@
         </div>
     </div>
 
-    <!-- Email Verification Sent Modal -->
+    <!-- Email Verification Sent Modal (Minimal Liquid Glass) -->
     <div id="emailVerifyModal" class="modal-overlay">
-        <div class="modal-content glass-card" style="text-align: center;">
-            <button class="modal-close" onclick="document.getElementById('emailVerifyModal').classList.remove('active')"><i
+        <div class="modal-content glass-card minimal-auth-card">
+            <button class="modal-close" onclick="document.getElementById('emailVerifyModal').classList.remove('active')" title="Close"><i
                     class="fa-solid fa-xmark"></i></button>
-            <div
-                style="width: 60px; height: 60px; margin: 0 auto 1.25rem; background: rgba(16, 185, 129, 0.12); border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 1px solid var(--accent-primary);">
-                <i class="fa-regular fa-envelope-open" style="font-size: 1.6rem; color: var(--accent-primary);"></i>
+            
+            <h2 class="minimal-auth-heading">Check Email</h2>
+            
+            <div class="minimal-info-card">
+                <p class="minimal-info-label">We sent a verification link to:</p>
+                <div class="minimal-info-email" id="verifySentEmail">you@domain.com</div>
             </div>
-            <h2 style="font-size: 1.6rem; font-weight: 800; margin-bottom: 0.5rem; color: #fff;">Check Your Email</h2>
-            <p style="color: var(--text-muted); font-size: 0.92rem; line-height: 1.6; margin-bottom: 1.5rem;">
-                We sent a verification email to <strong id="verifySentEmail"
-                    style="color: var(--accent-primary);">you@domain.com</strong>.<br>
-                Please open your Gmail inbox and click <strong style="color: #fff;">"Verify Email Address & Activate"</strong> to access your portal.
+            
+            <p style="color: rgba(255,255,255,0.6); font-size: 0.88rem; line-height: 1.6; margin-bottom: 1.5rem;">
+                Open your Gmail inbox and click the verification link to activate your portal.
             </p>
-            <div
-                style="background: rgba(255, 255, 255, 0.03); border: 1px dashed var(--border-glow); padding: 0.9rem; border-radius: 14px; margin-bottom: 1.5rem; font-size: 0.82rem; color: var(--text-muted);">
-                <i class="fa-solid fa-circle-info" style="color: var(--accent-primary);"></i> Clicking the link in your email will instantly verify your account and launch your portal.
-            </div>
-            <button class="btn btn-primary w-100"
-                onclick="document.getElementById('emailVerifyModal').classList.remove('active')">
-                Got it, Check Inbox <i class="fa-solid fa-arrow-right"></i>
+            
+            <button class="minimal-pill-btn" onclick="document.getElementById('emailVerifyModal').classList.remove('active')">
+                Got it, Check Inbox
             </button>
         </div>
     </div>
 
-    <!-- Forgot Password Modal -->
+    <!-- Forgot Password Modal (Minimal Liquid Glass) -->
     <div id="forgotPasswordModal" class="modal-overlay">
-        <div class="modal-content glass-card">
-            <button class="modal-close" onclick="document.getElementById('forgotPasswordModal').classList.remove('active')"><i
+        <div class="modal-content glass-card minimal-auth-card">
+            <button class="modal-close" onclick="document.getElementById('forgotPasswordModal').classList.remove('active')" title="Close"><i
                     class="fa-solid fa-xmark"></i></button>
-            <div
-                style="width: 54px; height: 54px; margin: 0 auto 1.2rem; background: rgba(16, 185, 129, 0.12); border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 1px solid var(--accent-primary);">
-                <i class="fa-solid fa-key" style="font-size: 1.4rem; color: var(--accent-primary);"></i>
-            </div>
-            <h2 style="font-size: 1.6rem; font-weight: 800; text-align: center; margin-bottom: 0.5rem; color: #fff;">Reset Password</h2>
             
-            <form id="forgotPasswordForm">
+            <h2 class="minimal-auth-heading">Reset Password</h2>
+            
+            <form id="forgotPasswordForm" class="minimal-auth-form">
                 <!-- Pre-filled Email Display Card -->
-                <div id="forgotEmailPreFilledCard" style="background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.2); border-radius: 14px; padding: 1rem; margin-bottom: 1.25rem; text-align: center;">
-                    <p style="color: var(--text-muted); font-size: 0.82rem; margin-bottom: 0.35rem;">Send secure password reset link to:</p>
-                    <div style="font-size: 1rem; font-weight: 700; color: var(--accent-primary); word-break: break-all; display: flex; align-items: center; justify-content: center; gap: 8px;">
-                        <i class="fa-regular fa-envelope"></i> <span id="forgotTargetEmailDisplay">you@domain.com</span>
-                    </div>
+                <div id="forgotEmailPreFilledCard" class="minimal-info-card">
+                    <p class="minimal-info-label">Send secure password reset link to:</p>
+                    <div class="minimal-info-email" id="forgotTargetEmailDisplay">you@domain.com</div>
                 </div>
 
                 <!-- Input fallback (shown if no email was entered in login) -->
-                <div id="forgotEmailInputGroup" class="form-group" style="margin-bottom: 1.25rem; display: none;">
-                    <label for="forgotEmail" style="display: block; margin-bottom: 0.45rem; font-weight: 600;">Email Address</label>
-                    <div class="input-with-icon">
-                        <i class="fa-regular fa-envelope"></i>
-                        <input type="email" id="forgotEmail" class="form-control" placeholder="you@domain.com">
-                    </div>
+                <div id="forgotEmailInputGroup" class="minimal-input-wrap" style="display: none;">
+                    <input type="email" id="forgotEmail" class="minimal-input" placeholder="Email Address" autocomplete="email">
                 </div>
 
-                <button type="submit" class="btn btn-primary w-100 btn-glow">
-                    Send Reset Link <i class="fa-solid fa-paper-plane"></i>
-                </button>
+                <button type="submit" class="minimal-pill-btn">Send Reset Link</button>
 
-                <div style="text-align: center; margin-top: 1rem;">
-                    <a href="#" id="changeForgotEmailLink" style="font-size: 0.82rem; color: var(--text-muted); text-decoration: underline;">Use different email</a>
+                <div class="minimal-auth-footer">
+                    <a href="#" id="changeForgotEmailLink" class="minimal-switch-link">Use different email</a>
                 </div>
             </form>
         </div>
     </div>
 
-    <!-- Reset Password Modal (Triggered by Email Link) -->
+    <!-- Reset Password Modal (Triggered by Email Link - Minimal Liquid Glass) -->
     <div id="resetPasswordModal" class="modal-overlay">
-        <div class="modal-content glass-card">
-            <button class="modal-close" onclick="document.getElementById('resetPasswordModal').classList.remove('active')"><i
+        <div class="modal-content glass-card minimal-auth-card">
+            <button class="modal-close" onclick="document.getElementById('resetPasswordModal').classList.remove('active')" title="Close"><i
                     class="fa-solid fa-xmark"></i></button>
-            <div
-                style="width: 60px; height: 60px; margin: 0 auto 1.25rem; background: rgba(16, 185, 129, 0.12); border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 1px solid var(--accent-primary);">
-                <i class="fa-solid fa-lock-open" style="font-size: 1.6rem; color: var(--accent-primary);"></i>
-            </div>
-            <h2 style="font-size: 1.6rem; font-weight: 800; text-align: center; margin-bottom: 0.5rem; color: #fff;">Set New Password</h2>
-            <p style="color: var(--text-muted); font-size: 0.9rem; text-align: center; margin-bottom: 1.5rem;" id="resetPasswordSubtitle">
+            
+            <h2 class="minimal-auth-heading">New Password</h2>
+            <p style="color: rgba(255,255,255,0.6); font-size: 0.88rem; margin: -1.25rem 0 1.5rem;" id="resetPasswordSubtitle">
                 Create a new secure password for your account.
             </p>
-            <form id="resetPasswordForm">
+            
+            <form id="resetPasswordForm" class="minimal-auth-form">
                 <input type="hidden" id="resetTokenInput">
-                <div class="form-group" style="margin-bottom: 1.25rem;">
-                    <label for="newPassword" style="display: block; margin-bottom: 0.5rem; font-weight: 600;">New Password</label>
-                    <div class="input-with-icon">
-                        <i class="fa-solid fa-lock"></i>
-                        <input type="password" id="newPassword" class="form-control" placeholder="••••••••" required style="padding-right: 2.75rem;">
-                        <i class="fa-regular fa-eye toggle-password-icon" data-target="newPassword" title="Show/Hide Password"></i>
-                    </div>
+                <div class="minimal-input-wrap">
+                    <input type="password" id="newPassword" class="minimal-input" placeholder="New Password" required autocomplete="new-password">
+                    <i class="fa-regular fa-eye-slash toggle-password-icon minimal-eye-icon" data-target="newPassword" title="Show/Hide Password"></i>
                 </div>
-                <div class="form-group" style="margin-bottom: 1.5rem;">
-                    <label for="confirmNewPassword" style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Confirm New Password</label>
-                    <div class="input-with-icon">
-                        <i class="fa-solid fa-lock"></i>
-                        <input type="password" id="confirmNewPassword" class="form-control" placeholder="••••••••" required style="padding-right: 2.75rem;">
-                        <i class="fa-regular fa-eye toggle-password-icon" data-target="confirmNewPassword" title="Show/Hide Password"></i>
-                    </div>
+                <div class="minimal-input-wrap">
+                    <input type="password" id="confirmNewPassword" class="minimal-input" placeholder="Confirm Password" required autocomplete="new-password">
+                    <i class="fa-regular fa-eye-slash toggle-password-icon minimal-eye-icon" data-target="confirmNewPassword" title="Show/Hide Password"></i>
                 </div>
-                <button type="submit" class="btn btn-primary w-100 btn-glow" style="border-radius: 14px; padding: 12px; font-weight: 700;">
-                    Update Password & Login <i class="fa-solid fa-check"></i>
-                </button>
+                <button type="submit" class="minimal-pill-btn">Update Password</button>
             </form>
         </div>
     </div>
