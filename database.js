@@ -17,23 +17,28 @@ const db = new sqlite3.Database(dbPath, (err) => {
     // ─── USERS TABLE ────────────────────────────────────────────────────────────
     db.run(`
         CREATE TABLE IF NOT EXISTS users (
-            id              INTEGER  PRIMARY KEY AUTOINCREMENT,
-            accountType     TEXT     NOT NULL CHECK(accountType IN ('restaurant','vendor','ngo','shelter')),
-            organizationName TEXT    NOT NULL,
-            email           TEXT     NOT NULL UNIQUE,
-            password        TEXT     NOT NULL,
-            phone           TEXT,
-            address         TEXT,
-            bio             TEXT,
-            avatarUrl       TEXT,
-            contactPerson   TEXT,
-            publicPhone     TEXT,
-            website         TEXT,
-            fssaiCode       TEXT,
-            pickupWindow    TEXT,
-            pickupInstructions TEXT,
-            isVerified      INTEGER  DEFAULT 0,
-            createdAt       TEXT     NOT NULL DEFAULT (datetime('now'))
+            id                      INTEGER  PRIMARY KEY AUTOINCREMENT,
+            accountType             TEXT     NOT NULL CHECK(accountType IN ('restaurant','vendor','ngo','shelter')),
+            organizationName        TEXT    NOT NULL,
+            email                   TEXT     NOT NULL UNIQUE,
+            password                TEXT     NOT NULL,
+            phone                   TEXT,
+            address                 TEXT,
+            bio                     TEXT,
+            avatarUrl               TEXT,
+            contactPerson           TEXT,
+            publicPhone             TEXT,
+            website                 TEXT,
+            fssaiCode               TEXT,
+            pickupWindow            TEXT,
+            pickupInstructions     TEXT,
+            isVerified              INTEGER  DEFAULT 0,
+            verificationToken       TEXT,
+            verificationTokenExpires TEXT,
+            verificationOtp         TEXT,
+            resetToken              TEXT,
+            resetTokenExpires       TEXT,
+            createdAt               TEXT     NOT NULL DEFAULT (datetime('now'))
         )
     `, logErr('users'));
 
@@ -95,7 +100,7 @@ const db = new sqlite3.Database(dbPath, (err) => {
     `, logErr('orders'));
     // ─── MIGRATIONS ─────────────────────────────────────────────────────────────
     db.serialize(() => {
-        const ignoreDup = (err) => { 
+        const ignoreDup = (err) => {
             if (err && !err.message.includes('duplicate column name')) console.error("Migration error:", err.message);
         };
         db.run("ALTER TABLE users ADD COLUMN bio TEXT", ignoreDup);
@@ -103,13 +108,18 @@ const db = new sqlite3.Database(dbPath, (err) => {
         db.run("ALTER TABLE users ADD COLUMN pickupWindow TEXT", ignoreDup);
         db.run("ALTER TABLE users ADD COLUMN pickupInstructions TEXT", ignoreDup);
         db.run("ALTER TABLE users ADD COLUMN isVerified INTEGER DEFAULT 0", ignoreDup);
+        db.run("ALTER TABLE users ADD COLUMN verificationToken TEXT", ignoreDup);
+        db.run("ALTER TABLE users ADD COLUMN verificationTokenExpires TEXT", ignoreDup);
+        db.run("ALTER TABLE users ADD COLUMN verificationOtp TEXT", ignoreDup);
+        db.run("ALTER TABLE users ADD COLUMN resetToken TEXT", ignoreDup);
+        db.run("ALTER TABLE users ADD COLUMN resetTokenExpires TEXT", ignoreDup);
     });
 });
 
 function logErr(table) {
     return (err) => {
         if (err) console.error(`❌ Error creating table '${table}':`, err.message);
-        else      console.log(`  ✓ Table '${table}' ready.`);
+        else console.log(`  ✓ Table '${table}' ready.`);
     };
 }
 

@@ -1,5 +1,5 @@
 // ---- GLOBAL DELETE COMMENT (must be outside DOMContentLoaded so onclick can find it) ----
-window.deleteComment = function(commentId, btnEl) {
+window.deleteComment = function (commentId, btnEl) {
     const bubble = btnEl ? btnEl.closest('.comment-bubble') : null;
 
     // Animate out immediately
@@ -9,10 +9,10 @@ window.deleteComment = function(commentId, btnEl) {
         bubble.style.transform = 'translateX(20px) scale(0.97)';
     }
 
-    setTimeout(function() {
+    setTimeout(function () {
         // Read from localStorage, remove the comment, save back
         let comments = JSON.parse(localStorage.getItem('nn_comments') || '[]');
-        comments = comments.filter(function(c) { return String(c.id) !== String(commentId); });
+        comments = comments.filter(function (c) { return String(c.id) !== String(commentId); });
         localStorage.setItem('nn_comments', JSON.stringify(comments));
 
         // If the main app state is loaded, update it too and re-render
@@ -36,12 +36,12 @@ window.deleteComment = function(commentId, btnEl) {
 document.addEventListener('DOMContentLoaded', () => {
 
     // 1. Configuration - Dynamic API Detection
-    const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-    const API_BASE = isLocal ? '/api' : 'https://nourish-network-4bit.onrender.com/api';
+    const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.protocol === 'file:';
+    const API_BASE = window.location.protocol === 'file:' ? 'http://localhost:3000/api' : (isLocal ? '/api' : 'https://nourish-network-4bit.onrender.com/api');
 
     // 1. Initial State
     const state = {
-        activePortal: 'home', 
+        activePortal: 'home',
         cart: [],
         listings: [],
         communityComments: JSON.parse(localStorage.getItem('nn_comments') || 'null') || [
@@ -70,10 +70,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
     // --- GLOBAL DEMO ORDER HANDLER (THE NUCLEAR OPTION) ---
-    window.placeOrderDemo = async function() {
+    window.placeOrderDemo = async function () {
         console.log("placeOrderDemo Fired");
         const btn = document.getElementById('confirm-claim');
-        
+
         if (state.cart.length === 0) {
             if (typeof showToast === 'function') showToast("Your basket is empty!", "error");
             else alert("Your basket is empty!");
@@ -127,7 +127,7 @@ document.addEventListener('DOMContentLoaded', () => {
             state.cart = [];
             if (typeof updateCartBadge === 'function') updateCartBadge();
             if (typeof renderCartItems === 'function') renderCartItems();
-            
+
             const drawer = document.getElementById('cart-drawer');
             if (drawer) drawer.classList.remove('active');
 
@@ -145,7 +145,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- ATTACH GLOBAL DOCK LISTENERS ---
     function wireDockButtons() {
         console.log("WireDockButtons: Initializing dock listeners...");
-        
+
         const loginDock = document.getElementById('login-toggle-dock');
         if (loginDock) {
             loginDock.onclick = (e) => {
@@ -220,7 +220,7 @@ document.addEventListener('DOMContentLoaded', () => {
             };
         }
     }
-    
+
     wireDockButtons();
 
     // --- BACKEND SYNC ENGINE ---
@@ -236,7 +236,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     ...item,
                     qty: item.quantity || item.qty || 0,
                     expiry: item.expiryTime || item.expiry || null,
-                    img: (item.imageUrl || item.img || "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=600").startsWith('/uploads') 
+                    img: (item.imageUrl || item.img || "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=600").startsWith('/uploads')
                         ? (isLocal ? '' : 'https://nourish-network-4bit.onrender.com') + (item.imageUrl || item.img)
                         : (item.imageUrl || item.img)
                 }));
@@ -265,7 +265,7 @@ document.addEventListener('DOMContentLoaded', () => {
             } else {
                 renderPortal();
             }
-            
+
             if (typeof renderImpactMap === 'function') {
                 renderImpactMap();
             }
@@ -323,20 +323,20 @@ document.addEventListener('DOMContentLoaded', () => {
         const localStats = computeLocalStats();
 
         // Merge with API stats (take whichever is higher)
-        const meals  = Math.max(localStats.totalMeals,   state.stats.totalMealsSaved || 0);
-        const kg     = Math.max(localStats.totalKg,      state.stats.totalKgShared   || 0);
-        const vendors= Math.max(localStats.totalVendors, state.stats.totalVendors    || 0);
-        const ngos   = Math.max(localStats.totalNGOs,    state.stats.totalNGOs       || 0);
+        const meals = Math.max(localStats.totalMeals, state.stats.totalMealsSaved || 0);
+        const kg = Math.max(localStats.totalKg, state.stats.totalKgShared || 0);
+        const vendors = Math.max(localStats.totalVendors, state.stats.totalVendors || 0);
+        const ngos = Math.max(localStats.totalNGOs, state.stats.totalNGOs || 0);
 
-        const listedEl   = document.querySelector('[data-target-stat="listed"]');
-        const fulfilledEl= document.querySelector('[data-target-stat="fulfilled"]');
-        const vendorsEl  = document.querySelector('[data-target-stat="vendors"]');
-        const ngosEl     = document.querySelector('[data-target-stat="ngos"]');
+        const listedEl = document.querySelector('[data-target-stat="listed"]');
+        const fulfilledEl = document.querySelector('[data-target-stat="fulfilled"]');
+        const vendorsEl = document.querySelector('[data-target-stat="vendors"]');
+        const ngosEl = document.querySelector('[data-target-stat="ngos"]');
 
-        if (listedEl)    listedEl.setAttribute('data-target', meals);
+        if (listedEl) listedEl.setAttribute('data-target', meals);
         if (fulfilledEl) fulfilledEl.setAttribute('data-target', kg);
-        if (vendorsEl)   vendorsEl.setAttribute('data-target', vendors);
-        if (ngosEl)      ngosEl.setAttribute('data-target', ngos);
+        if (vendorsEl) vendorsEl.setAttribute('data-target', vendors);
+        if (ngosEl) ngosEl.setAttribute('data-target', ngos);
 
         startCounters();
     }
@@ -508,7 +508,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const nextBtn = document.getElementById('nextBtn');
         if (prevBtn) prevBtn.onclick = prevSlide;
         if (nextBtn) nextBtn.onclick = nextSlide;
-        
+
         if (slides.length > 1) {
             sliderInterval = setInterval(nextSlide, 5000);
         }
@@ -675,6 +675,47 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    // Check if coming from email verification link (?verified=true)
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('verified') === 'true') {
+        const storedUser = sessionStorage.getItem('nourishUser') || localStorage.getItem('nourishUser');
+        const storedToken = sessionStorage.getItem('nourishToken') || localStorage.getItem('nourishToken');
+        if (storedUser && storedToken) {
+            sessionStorage.setItem('nourishUser', storedUser);
+            sessionStorage.setItem('nourishToken', storedToken);
+            document.documentElement.classList.add('user-logged-in');
+
+            const parsedUser = JSON.parse(storedUser);
+            const t = (parsedUser.type || parsedUser.accountType || '').toLowerCase();
+            state.activePortal = (t === 'restaurant' || t === 'vendor' || t === 'seller') ? 'seller' : 'buyer';
+            showToast(`Email verified successfully! Welcome, ${parsedUser.name || 'Partner'} 🎉`, 'success');
+            window.history.replaceState({}, document.title, window.location.pathname);
+        }
+    }
+
+    // Check if coming from password reset link (?resetToken=...)
+    const resetToken = urlParams.get('resetToken');
+    if (resetToken) {
+        fetch(`${API_BASE}/verify-reset-token?token=${resetToken}`)
+            .then(res => res.json())
+            .then(data => {
+                if (data.valid) {
+                    const tokenInput = document.getElementById('resetTokenInput');
+                    const subtitle = document.getElementById('resetPasswordSubtitle');
+                    if (tokenInput) tokenInput.value = resetToken;
+                    if (subtitle) subtitle.innerHTML = `Resetting password for <strong style="color: var(--accent-primary);">${data.email}</strong>`;
+
+                    const resetModal = document.getElementById('resetPasswordModal');
+                    if (resetModal) resetModal.classList.add('active');
+                } else {
+                    showToast(data.error || "Invalid or expired password reset link.", "error");
+                }
+            })
+            .catch(() => showToast("Error validating password reset link.", "error"));
+
+        window.history.replaceState({}, document.title, window.location.pathname);
+    }
+
     // Check if user is already logged in
     const user = JSON.parse(sessionStorage.getItem('nourishUser'));
     if (user) {
@@ -784,7 +825,38 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // -------------------------
+    // --- Password Visibility Toggle ---
+    const togglePasswordIcons = document.querySelectorAll('.toggle-password-icon');
+    togglePasswordIcons.forEach(icon => {
+        icon.addEventListener('click', () => {
+            const targetId = icon.dataset.target;
+            const input = document.getElementById(targetId);
+            if (!input) return;
+
+            if (input.type === 'password') {
+                input.type = 'text';
+                icon.classList.remove('fa-eye');
+                icon.classList.add('fa-eye-slash');
+                icon.style.color = 'var(--accent-primary)';
+            } else {
+                input.type = 'password';
+                icon.classList.remove('fa-eye-slash');
+                icon.classList.add('fa-eye');
+                icon.style.color = 'var(--text-muted)';
+            }
+        });
+    });
+
+    // --- Forgot Password Link Click ---
+    const forgotLinks = document.querySelectorAll('.forgot-link');
+    forgotLinks.forEach(link => {
+        link.addEventListener('click', (e) => {
+            e.preventDefault();
+            authModal.classList.remove('active');
+            const forgotModal = document.getElementById('forgotPasswordModal');
+            if (forgotModal) forgotModal.classList.add('active');
+        });
+    });
 
     // 1. Login Form Submit
     loginForm.addEventListener('submit', async (e) => {
@@ -816,12 +888,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (response.ok) {
                 showToast(`Welcome back, ${data.user.name || email}!`);
-                
+
                 // Save user and JWT token to localStorage
                 sessionStorage.setItem('nourishUser', JSON.stringify(data.user));
                 if (data.token) sessionStorage.setItem('nourishToken', data.token);
                 document.documentElement.classList.add('user-logged-in');
-                
+
                 setTimeout(() => {
                     authModal.classList.remove('active');
                     if (data.user) {
@@ -869,21 +941,16 @@ document.addEventListener('DOMContentLoaded', () => {
             const data = await response.json();
 
             if (response.ok) {
-                showToast("Account created! Logging you in...");
-                
-                // Server auto-logs in on register — save user + token
-                if (data.user) sessionStorage.setItem('nourishUser', JSON.stringify(data.user));
-                if (data.token) sessionStorage.setItem('nourishToken', data.token);
-                document.documentElement.classList.add('user-logged-in');
+                // Close auth modal & show "Check Your Email" notice
+                authModal.classList.remove('active');
 
-                setTimeout(() => {
-                    authModal.classList.remove('active');
-                    if (data.user) {
-                        const t = (data.user.type || data.user.accountType || data.user.role || '').toLowerCase();
-                        state.activePortal = (t === 'restaurant' || t === 'vendor' || t === 'seller') ? 'seller' : 'buyer';
-                    }
-                    refreshState();
-                }, 1000);
+                const sentEmailEl = document.getElementById('verifySentEmail');
+                if (sentEmailEl) sentEmailEl.innerText = email;
+
+                const emailModal = document.getElementById('emailVerifyModal');
+                if (emailModal) emailModal.classList.add('active');
+
+                showToast("Account created! Please check your email to activate.", "success");
             } else {
                 showToast(data.error || "Registration failed", "error");
             }
@@ -893,6 +960,96 @@ document.addEventListener('DOMContentLoaded', () => {
             setLoading(submitBtn, false, originalText);
         }
     });
+
+    // 2b. Forgot Password Form Submit
+    const forgotPasswordForm = document.getElementById('forgotPasswordForm');
+    if (forgotPasswordForm) {
+        forgotPasswordForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('forgotEmail').value.trim();
+            if (!email) {
+                showToast("Please enter your email address.", "error");
+                return;
+            }
+
+            const submitBtn = forgotPasswordForm.querySelector('button[type="submit"]');
+            const originalText = submitBtn.innerHTML;
+            setLoading(submitBtn, true, originalText);
+
+            try {
+                const res = await fetch(`${API_BASE}/forgot-password`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email })
+                });
+                const data = await res.json();
+                if (res.ok) {
+                    document.getElementById('forgotPasswordModal').classList.remove('active');
+                    showToast(data.message || "Reset link sent! Please check your email.", "success");
+                } else {
+                    showToast(data.error || "Failed to send reset link.", "error");
+                }
+            } catch (err) {
+                showToast("Network error. Please try again.", "error");
+            } finally {
+                setLoading(submitBtn, false, originalText);
+            }
+        });
+    }
+
+    // 2c. Reset Password Form Submit
+    const resetPasswordForm = document.getElementById('resetPasswordForm');
+    if (resetPasswordForm) {
+        resetPasswordForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const token = document.getElementById('resetTokenInput').value;
+            const newPassword = document.getElementById('newPassword').value.trim();
+            const confirmNewPassword = document.getElementById('confirmNewPassword').value.trim();
+
+            if (!newPassword || !confirmNewPassword) {
+                showToast("Please enter and confirm your new password.", "error");
+                return;
+            }
+
+            if (newPassword !== confirmNewPassword) {
+                showToast("Passwords do not match. Please re-enter.", "error");
+                return;
+            }
+
+            const submitBtn = resetPasswordForm.querySelector('button[type="submit"]');
+            const originalText = submitBtn.innerHTML;
+            setLoading(submitBtn, true, originalText);
+
+            try {
+                const res = await fetch(`${API_BASE}/reset-password`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ token, newPassword })
+                });
+                const data = await res.json();
+                if (res.ok) {
+                    document.getElementById('resetPasswordModal').classList.remove('active');
+
+                    if (data.user) sessionStorage.setItem('nourishUser', JSON.stringify(data.user));
+                    if (data.token) sessionStorage.setItem('nourishToken', data.token);
+                    document.documentElement.classList.add('user-logged-in');
+
+                    if (data.user) {
+                        const t = (data.user.type || data.user.accountType || '').toLowerCase();
+                        state.activePortal = (t === 'restaurant' || t === 'vendor' || t === 'seller') ? 'seller' : 'buyer';
+                    }
+                    showToast("Password updated successfully! Welcome back 🎉", "success");
+                    refreshState();
+                } else {
+                    showToast(data.error || "Failed to update password.", "error");
+                }
+            } catch (err) {
+                showToast("Network error. Please try again.", "error");
+            } finally {
+                setLoading(submitBtn, false, originalText);
+            }
+        });
+    }
 
     // 3. Contact Form Submit
     const contactForm = document.getElementById('contactForm');
@@ -949,7 +1106,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (entry.isIntersecting) {
                 const id = entry.target.getAttribute('id');
                 if (!id) return;
-                
+
                 bottomNavItems.forEach(item => {
                     item.classList.remove('active');
                     if (item.getAttribute('href') === `#${id}`) {
@@ -979,11 +1136,11 @@ document.addEventListener('DOMContentLoaded', () => {
         themeToggle.addEventListener('click', () => {
             const currentTheme = htmlElement.getAttribute('data-theme');
             const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
-            
+
             htmlElement.setAttribute('data-theme', newTheme);
             localStorage.setItem('nourishTheme', newTheme);
             updateThemeIcon(newTheme, themeIcon);
-            
+
             // Visual feedback
             showToast(`Switched to ${newTheme.charAt(0).toUpperCase() + newTheme.slice(1)} Mode`, 'info');
         });
@@ -1034,7 +1191,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 window.scrollTo({ top: 0, behavior: 'smooth' });
             });
         }
-        
+
         // Wire up Dock Home button
         const dockHome = document.querySelector('.bottom-nav .nav-item[href="#home"]');
         if (dockHome) {
@@ -1097,8 +1254,9 @@ document.addEventListener('DOMContentLoaded', () => {
             const distance = new Date(expiry).getTime() - now;
 
             if (distance < 0) {
-                el.innerHTML = "00:00:00";
-                el.className = "nn-expiry-timer timer-expired";
+                const pastMs = Math.abs(distance);
+                const twoMinsMs = 2 * 60 * 1000; // 120,000 ms
+
                 const card = el.closest('.nn-food-card');
                 if (card && !card.classList.contains('is-expired')) {
                     card.classList.add('is-expired');
@@ -1108,6 +1266,48 @@ document.addEventListener('DOMContentLoaded', () => {
                         btn.innerText = "EXPIRED";
                     }
                 }
+
+                // Check if 2 minutes have passed since expiration -> Auto-Delete
+                if (pastMs >= twoMinsMs) {
+                    if (card && card.dataset.deleting !== 'true') {
+                        card.dataset.deleting = 'true';
+                        card.style.transition = 'all 0.5s ease';
+                        card.style.opacity = '0';
+                        card.style.transform = 'scale(0.9)';
+
+                        setTimeout(async () => {
+                            // Remove from local state & storage
+                            let demoListings = JSON.parse(localStorage.getItem('nn_demo_listings') || '[]');
+                            demoListings = demoListings.filter(l => String(l.id) !== String(itemId));
+                            localStorage.setItem('nn_demo_listings', JSON.stringify(demoListings));
+                            state.listings = state.listings.filter(l => String(l.id) !== String(itemId));
+
+                            // Try API delete if logged in
+                            const token = sessionStorage.getItem('nourishToken');
+                            if (token && token !== 'demo-token-seller' && token !== 'demo-token-buyer') {
+                                try {
+                                    await fetch(`${API_BASE}/listings/${itemId}`, {
+                                        method: 'DELETE',
+                                        headers: { 'Authorization': `Bearer ${token}` }
+                                    });
+                                } catch (e) { }
+                            }
+
+                            showToast(`Expired listing automatically removed (2 mins post-expiry).`, 'info');
+                            refreshState();
+                        }, 500);
+                    }
+                    return;
+                }
+
+                // Countdown until auto-purge during the 2-min grace period
+                const remainingPurgeSecs = Math.ceil((twoMinsMs - pastMs) / 1000);
+                const purgeMins = Math.floor(remainingPurgeSecs / 60);
+                const purgeSecs = remainingPurgeSecs % 60;
+                const timeStr = `${String(purgeMins).padStart(2, '0')}:${String(purgeSecs).padStart(2, '0')}`;
+
+                el.innerHTML = `EXPIRED (${timeStr})`;
+                el.className = "nn-expiry-timer timer-expired";
                 return;
             }
 
@@ -1115,9 +1315,9 @@ document.addEventListener('DOMContentLoaded', () => {
             const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
             const seconds = Math.floor((distance % (1000 * 60)) / 1000);
 
-            const timeStr = 
-                String(hours).padStart(2, '0') + ":" + 
-                String(minutes).padStart(2, '0') + ":" + 
+            const timeStr =
+                String(hours).padStart(2, '0') + ":" +
+                String(minutes).padStart(2, '0') + ":" +
                 String(seconds).padStart(2, '0');
 
             el.innerHTML = timeStr;
@@ -1195,29 +1395,29 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // --- Show/hide dock items based on portal ---
         // IDs from index.html: cart-toggle-dock (buyer), add-listing-dock (seller)
-        const cartDockItem  = document.getElementById('cart-toggle-dock');
-        const addDockItem   = document.getElementById('add-listing-dock');
+        const cartDockItem = document.getElementById('cart-toggle-dock');
+        const addDockItem = document.getElementById('add-listing-dock');
         const loginDockItem = document.getElementById('login-toggle-dock');
         const settingsDockItem = document.getElementById('settings-toggle-dock');
         const settingsNavItem = document.getElementById('settings-toggle-nav');
-        const landingItems  = document.querySelectorAll('.landing-only');
+        const landingItems = document.querySelectorAll('.landing-only');
 
         if (state.activePortal === 'buyer') {
             landingItems.forEach(el => el.style.setProperty('display', 'none', 'important'));
-            if (cartDockItem)  cartDockItem.style.setProperty('display', 'flex', 'important');
-            if (addDockItem)   addDockItem.style.setProperty('display', 'none', 'important');
+            if (cartDockItem) cartDockItem.style.setProperty('display', 'flex', 'important');
+            if (addDockItem) addDockItem.style.setProperty('display', 'none', 'important');
             if (settingsDockItem) settingsDockItem.style.setProperty('display', 'flex', 'important');
             if (loginDockItem) loginDockItem.style.setProperty('display', 'flex', 'important');
         } else if (state.activePortal === 'seller') {
             landingItems.forEach(el => el.style.setProperty('display', 'none', 'important'));
-            if (cartDockItem)  cartDockItem.style.setProperty('display', 'none', 'important');
-            if (addDockItem)   addDockItem.style.setProperty('display', 'flex', 'important');
+            if (cartDockItem) cartDockItem.style.setProperty('display', 'none', 'important');
+            if (addDockItem) addDockItem.style.setProperty('display', 'flex', 'important');
             if (settingsDockItem) settingsDockItem.style.setProperty('display', 'flex', 'important');
             if (loginDockItem) loginDockItem.style.setProperty('display', 'flex', 'important');
         } else {
             landingItems.forEach(el => el.style.setProperty('display', 'flex', 'important'));
-            if (cartDockItem)  cartDockItem.style.setProperty('display', 'none', 'important');
-            if (addDockItem)   addDockItem.style.setProperty('display', 'none', 'important');
+            if (cartDockItem) cartDockItem.style.setProperty('display', 'none', 'important');
+            if (addDockItem) addDockItem.style.setProperty('display', 'none', 'important');
             if (settingsDockItem) settingsDockItem.style.setProperty('display', 'none', 'important');
             if (loginDockItem) loginDockItem.style.setProperty('display', 'flex', 'important');
         }
@@ -1246,7 +1446,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         let totalMealsDonated = 0;
         sellerListings.forEach(item => { totalMealsDonated += parseFloat(item.qty) || 0; });
-        
+
         let badgeName = 'Member';
         let badgeClass = 'badge-member';
         if (totalMealsDonated >= 500) { badgeName = 'Platinum Elite'; badgeClass = 'badge-platinum'; }
@@ -1395,7 +1595,7 @@ document.addEventListener('DOMContentLoaded', () => {
             `;
             return;
         }
-        
+
         container.innerHTML = myItems.map((item, idx) => `
             <div class="nn-food-card stagger-item ${item.qty <= 0 ? 'is-sold-out' : ''} ${new Date(item.expiry) < new Date() ? 'is-expired' : ''}" data-id="${item.id}" style="animation-delay: ${idx * 0.05}s">
                 <div class="nn-card-img-wrap">
@@ -1416,7 +1616,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     <p class="nn-card-desc">${item.description || 'No description provided.'}</p>
                     <div class="nn-card-meta">
                         <div class="nn-card-price">₹${item.price}<span>/portion</span></div>
-                        <div class="nn-card-expiry"><i class="fa-regular fa-clock"></i> ${new Date(item.expiry).toLocaleDateString('en-IN', {day:'numeric', month:'short', hour:'2-digit', minute:'2-digit'})}</div>
+                        <div class="nn-card-expiry"><i class="fa-regular fa-clock"></i> ${new Date(item.expiry).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</div>
                     </div>
                 </div>
                 <div class="nn-card-footer">
@@ -1441,7 +1641,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         try {
                             const d = new Date(item.expiry);
                             document.getElementById('p-expiry').value = d.toISOString().slice(0, 16);
-                        } catch(e) {}
+                        } catch (e) { }
                     }
                     document.getElementById('submit-btn').innerHTML = '💾 Save Changes';
                     document.getElementById('cancel-edit-btn').style.display = 'block';
@@ -1456,14 +1656,20 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (!confirm("Are you sure you want to delete this listing?")) return;
 
                 const token = sessionStorage.getItem('nourishToken');
-                if (!token) return;
-
-                // Demo users have fake tokens — handle deletion locally
-                const isDemoToken = token === 'demo-token-seller' || token === 'demo-token-buyer';
-                if (isDemoToken) {
+                
+                // Helper to remove locally
+                const removeLocally = () => {
+                    let demoListings = JSON.parse(localStorage.getItem('nn_demo_listings') || '[]');
+                    demoListings = demoListings.filter(l => String(l.id) !== String(id));
+                    localStorage.setItem('nn_demo_listings', JSON.stringify(demoListings));
                     state.listings = state.listings.filter(l => String(l.id) !== String(id));
-                    showToast("Listing removed. (Demo mode — changes are not saved to the server.)");
+                    showToast("Listing deleted successfully.");
                     refreshState();
+                };
+
+                const isDemoToken = !token || token === 'demo-token-seller' || token === 'demo-token-buyer';
+                if (isDemoToken) {
+                    removeLocally();
                     return;
                 }
 
@@ -1474,14 +1680,18 @@ document.addEventListener('DOMContentLoaded', () => {
                     });
 
                     if (response.ok) {
-                        showToast("Listing deleted successfully.");
-                        refreshState();
+                        removeLocally();
                     } else {
+                        let demoListings = JSON.parse(localStorage.getItem('nn_demo_listings') || '[]');
+                        if (demoListings.some(l => String(l.id) === String(id))) {
+                            removeLocally();
+                            return;
+                        }
                         const data = await response.json();
                         showToast(data.error || "Delete failed", "error");
                     }
                 } catch (err) {
-                    showToast("Network error.", "error");
+                    removeLocally();
                 }
             });
         });
@@ -1574,7 +1784,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     <p class="nn-card-desc">${item.description || ''}</p>
                     <div class="nn-card-meta">
                         <div class="nn-card-price">₹${item.price}<span>/portion</span></div>
-                        <div class="nn-card-expiry"><i class="fa-regular fa-clock"></i> ${new Date(item.expiry).toLocaleDateString('en-IN', {day:'numeric', month:'short', hour:'2-digit', minute:'2-digit'})}</div>
+                        <div class="nn-card-expiry"><i class="fa-regular fa-clock"></i> ${new Date(item.expiry).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</div>
                     </div>
                 </div>
                 <div class="nn-card-footer nn-card-footer-buyer">
@@ -1590,7 +1800,7 @@ document.addEventListener('DOMContentLoaded', () => {
             </div>
             `;
         }).join('');
-        
+
         attachBuyerListeners();
     }
 
@@ -1616,7 +1826,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const id = btn.dataset.id;
                 const item = state.listings.find(l => l.id == id);
                 const qtyToAdd = parseInt(document.getElementById(`stepper-${id}`).innerText);
-                
+
                 if (item && item.qty >= qtyToAdd) {
                     addToCart(item, qtyToAdd, e);
                 }
@@ -1626,17 +1836,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function addToCart(item, qtyToAdd, e) {
         item.qty -= qtyToAdd; // reduce live portions
-        
+
         const existingCartItem = state.cart.find(c => c.item.id === item.id);
         if (existingCartItem) {
             existingCartItem.qty += qtyToAdd;
         } else {
             state.cart.push({ item: item, qty: qtyToAdd });
         }
-        
+
         updateCartBadge();
         renderExchangeGrid();
-        
+
         // Fly Animation
         const rect = e.target.getBoundingClientRect();
         const flyItem = document.createElement('div');
@@ -1647,7 +1857,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const flyTarget = cartToggle || document.getElementById('cart-toggle-dock') || document.body;
         const target = flyTarget.getBoundingClientRect();
-        
+
         flyItem.animate([
             { left: rect.left + 'px', top: rect.top + 'px', transform: 'scale(1)' },
             { left: target.left + 'px', top: target.top + 'px', transform: 'scale(0.1)' }
@@ -1738,7 +1948,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (originalListing) {
                     originalListing.qty += removedCartItem.qty;
                 }
-                
+
                 renderCartItems();
                 updateCartBadge();
                 renderExchangeGrid();
@@ -1758,7 +1968,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function attachSellerListeners() {
         const form = document.getElementById('add-food-form');
         const cancelBtn = document.getElementById('cancel-edit-btn');
-        
+
         if (cancelBtn) {
             cancelBtn.addEventListener('click', () => {
                 form.reset();
@@ -1788,7 +1998,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
 
                 const payload = {
-                    name, category, quantity: parseInt(qty), 
+                    name, category, quantity: parseInt(qty),
                     price: parseFloat(price), description,
                     expiryTime: expiry ? new Date(expiry).toISOString() : null
                 };
@@ -1854,7 +2064,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         // UPDATE
                         response = await fetch(`${API_BASE}/listings/${pId}`, {
                             method: 'PUT',
-                            headers: { 
+                            headers: {
                                 'Content-Type': 'application/json',
                                 'Authorization': `Bearer ${token}`
                             },
@@ -1864,7 +2074,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         // CREATE
                         response = await fetch(`${API_BASE}/listings`, {
                             method: 'POST',
-                            headers: { 
+                            headers: {
                                 'Content-Type': 'application/json',
                                 'Authorization': `Bearer ${token}`
                             },
@@ -1878,7 +2088,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         form.reset();
                         document.getElementById('p-id').value = '';
                         document.getElementById('submit-btn').innerHTML = '<i class="fa-solid fa-leaf"></i> Publish Listing';
-                        if(cancelBtn) cancelBtn.style.display = 'none';
+                        if (cancelBtn) cancelBtn.style.display = 'none';
                         refreshState(); // Refresh everything
                     } else {
                         showToast(data.error || "Operation failed", "error");
@@ -1895,9 +2105,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // 7. Initialize Everything
 
-    
+
     const openCart = () => cartDrawer.classList.add('active');
-    
+
     cartToggle.addEventListener('click', openCart);
     // Dock Portal-Specific Listeners
     const cartToggleDock = document.getElementById('cart-toggle-dock');
@@ -1927,12 +2137,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
 
-    
+
     // Community Hub / Comments Logic
     function renderCommunityWall() {
         const wall = document.getElementById('comment-list');
         if (!wall) return;
-        
+
         wall.innerHTML = state.communityComments.slice().reverse().map((c, idx) => `
             <div class="comment-bubble" data-comment-id="${c.id}" style="animation-delay: ${idx * 0.1}s; position: relative;">
                 <button class="comment-delete-btn" onclick="window.deleteComment('${c.id}', this)" 
@@ -1950,8 +2160,8 @@ document.addEventListener('DOMContentLoaded', () => {
         // Hover show/hide delete button
         wall.querySelectorAll('.comment-bubble').forEach(bubble => {
             const btn = bubble.querySelector('.comment-delete-btn');
-            bubble.addEventListener('mouseenter', () => { if(btn) btn.style.opacity = '1'; });
-            bubble.addEventListener('mouseleave', () => { if(btn) btn.style.opacity = '0'; });
+            bubble.addEventListener('mouseenter', () => { if (btn) btn.style.opacity = '1'; });
+            bubble.addEventListener('mouseleave', () => { if (btn) btn.style.opacity = '0'; });
         });
     }
 
@@ -1959,7 +2169,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function renderPortalComments() {
         const wall = document.getElementById('portal-comments-list');
         if (!wall) return;
-        
+
         wall.innerHTML = state.communityComments.slice().reverse().map(c => `
             <div class="comment-item" style="border-bottom: 1px solid var(--border-glow); padding-bottom: 1rem; margin-bottom: 1rem;">
                 <strong style="color: ${c.org.includes('Seller') || c.org.includes('Hotel') ? 'var(--accent-secondary)' : 'var(--accent-primary)'};">${c.name} (${c.org})</strong>
@@ -2069,15 +2279,15 @@ document.addEventListener('DOMContentLoaded', () => {
         // Hover show/hide delete button
         wall.querySelectorAll('.comment-bubble').forEach(bubble => {
             const btn = bubble.querySelector('.comment-delete-btn');
-            bubble.addEventListener('mouseenter', () => { if(btn) btn.style.opacity = '1'; bubble.style.borderColor = 'rgba(239,68,68,0.3)'; });
-            bubble.addEventListener('mouseleave', () => { if(btn) btn.style.opacity = '0'; bubble.style.borderColor = 'rgba(255,255,255,0.06)'; });
+            bubble.addEventListener('mouseenter', () => { if (btn) btn.style.opacity = '1'; bubble.style.borderColor = 'rgba(239,68,68,0.3)'; });
+            bubble.addEventListener('mouseleave', () => { if (btn) btn.style.opacity = '0'; bubble.style.borderColor = 'rgba(255,255,255,0.06)'; });
         });
     }
 
     // ---- GLOBAL DELETE COMMENT ----
-    window.deleteComment = function(commentId, btnEl) {
+    window.deleteComment = function (commentId, btnEl) {
         const bubble = btnEl.closest('.comment-bubble');
-        
+
         // Animate out
         if (bubble) {
             bubble.style.transition = 'all 0.3s ease';
@@ -2111,7 +2321,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const user = JSON.parse(sessionStorage.getItem('nourishUser') || '{}');
             const name = user.name || (state.activePortal === 'seller' ? 'Elite Vendor' : 'Community Partner');
             const org = user.orgName || (state.activePortal === 'seller' ? 'Gourmet Provider' : 'Food Recipient');
-            
+
             // Add to state
             state.communityComments.push({
                 id: Date.now().toString(),
@@ -2143,17 +2353,17 @@ document.addEventListener('DOMContentLoaded', () => {
             if (voicesSection) {
                 voicesSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
             }
-            
+
             commentText.value = '';
             showToast("Your voice is now live in 'Voices of Impact'! 🌱", "success");
         });
     }
-    
+
     // Initial render for the wall if it exists
     renderCommunityWall();
 
 
-    
+
     document.addEventListener('click', async (e) => {
         // Redundant cart overlay close (the button is handled at the top of the file)
         if (e.target.classList.contains('cart-drawer-overlay')) {
@@ -2187,7 +2397,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (sModal) {
                 sModal.style.setProperty('display', 'flex', 'important');
             } else {
-                alert("Order Placed Successfully!"); 
+                alert("Order Placed Successfully!");
             }
 
             // 2. Visual Toast
@@ -2197,7 +2407,7 @@ document.addEventListener('DOMContentLoaded', () => {
             state.cart = [];
             if (typeof updateCartBadge === 'function') updateCartBadge();
             if (typeof renderCartItems === 'function') renderCartItems();
-            
+
             const cDrawer = document.getElementById('cart-drawer');
             if (cDrawer) cDrawer.classList.remove('active');
 
@@ -2228,14 +2438,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Group data by date
         const dateData = {};
-        const chronListings = [...sellerListings].reverse(); 
+        const chronListings = [...sellerListings].reverse();
         chronListings.forEach(item => {
             const dateObj = new Date(item.datePosted || Date.now());
             const dateStr = dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
             const qty = parseFloat(item.qty) || 0;
             dateData[dateStr] = (dateData[dateStr] || 0) + qty;
         });
-        
+
         const labels = Object.keys(dateData);
         const data = Object.values(dateData);
 
@@ -2269,7 +2479,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // =========================================
     // SETTINGS / PROFILE MODAL LOGIC
     // =========================================
-    window.openSettings = function() {
+    window.openSettings = function () {
         const modal = document.getElementById('settingsModal');
         if (modal) {
             modal.style.display = 'flex';
@@ -2278,7 +2488,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const subtitle = modal.querySelector('p');
             const isSeller = state.activePortal === 'seller';
             if (fssaiWrap) fssaiWrap.style.display = isSeller ? 'block' : 'none';
-            if (subtitle) subtitle.textContent = isSeller 
+            if (subtitle) subtitle.textContent = isSeller
                 ? "Manage your restaurant's profile, compliance & pickup details"
                 : "Manage your NGO's profile and pickup details";
             document.dispatchEvent(new CustomEvent('load-profile-data'));
@@ -2307,7 +2517,7 @@ document.addEventListener('DOMContentLoaded', () => {
         async function loadProfile() {
             try {
                 const user = JSON.parse(sessionStorage.getItem('nourishUser') || '{}');
-                
+
                 // Fallback to local session data if API fails or if it's a demo account
                 const profile = user;
 
@@ -2319,7 +2529,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (fssaiInput) fssaiInput.value = profile.fssaiCode || '';
                 if (pickupWindowInput) pickupWindowInput.value = profile.pickupWindow || '';
                 if (pickupInstructionsInput) pickupInstructionsInput.value = profile.pickupInstructions || '';
-                
+
                 if (verificationBadge) {
                     verificationBadge.style.display = profile.isVerified ? 'block' : 'none';
                 }
@@ -2382,7 +2592,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     const reader = new FileReader();
                     reader.onload = (ev) => { avatarPreview.src = ev.target.result; };
                     reader.readAsDataURL(file);
-                    
+
                     const formData = new FormData();
                     formData.append('image', file);
                     try {
@@ -2396,7 +2606,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             const data = await uploadRes.json();
                             avatarPreview.dataset.uploadedUrl = data.imageUrl;
                         }
-                    } catch(err) {
+                    } catch (err) {
                         showToast('Avatar upload failed.', 'error');
                     }
                 }
@@ -2419,7 +2629,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const fssaiCode = fssaiInput ? fssaiInput.value.trim() : '';
                 const pickupWindow = pickupWindowInput ? pickupWindowInput.value.trim() : '';
                 const pickupInstructions = pickupInstructionsInput ? pickupInstructionsInput.value.trim() : '';
-                
+
                 let avatarUrl = avatarPreview.dataset.uploadedUrl;
                 if (!avatarUrl && avatarPreview.src && !avatarPreview.src.includes('default-avatar.jpg')) {
                     avatarUrl = avatarPreview.src;
@@ -2429,14 +2639,14 @@ document.addEventListener('DOMContentLoaded', () => {
                     const token = sessionStorage.getItem('nourishToken');
                     const res = await fetch(`${API_BASE}/user/me`, {
                         method: 'PUT',
-                        headers: { 
+                        headers: {
                             'Content-Type': 'application/json',
-                            'Authorization': `Bearer ${token}` 
+                            'Authorization': `Bearer ${token}`
                         },
-                        body: JSON.stringify({ 
-                            bio, address, avatarUrl, contactPerson, 
-                            publicPhone, website, fssaiCode, 
-                            pickupWindow, pickupInstructions 
+                        body: JSON.stringify({
+                            bio, address, avatarUrl, contactPerson,
+                            publicPhone, website, fssaiCode,
+                            pickupWindow, pickupInstructions
                         })
                     });
 
@@ -2460,7 +2670,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         // Listen for the custom event to load data
         document.addEventListener('load-profile-data', loadProfile);
-        
+
         const settingsNavBtn = document.getElementById('settings-toggle-nav');
         if (settingsNavBtn) {
             settingsNavBtn.onclick = (e) => {
