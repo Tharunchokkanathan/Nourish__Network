@@ -109,8 +109,8 @@ app.post('/api/register', async (req, res) => {
             verificationOtp
         ], async function (err) {
             if (err) {
-                if (err.message.includes('UNIQUE constraint failed')) {
-                    return res.status(409).json({ error: 'An account with this email already exists.' });
+                if (err.message.includes('UNIQUE constraint failed') || err.message.includes('unique constraint') || err.message.includes('duplicate key')) {
+                    return res.status(409).json({ error: 'An account with this email already exists. Please log in.' });
                 }
                 return res.status(500).json({ error: err.message });
             }
