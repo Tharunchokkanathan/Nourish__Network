@@ -33,12 +33,38 @@ transporter.verify((error) => {
     }
 });
 
+function sanitizeHtmlForEmail(html) {
+    if (!html) return '';
+    return html
+        .replace(/🌿/g, '&#127807;')
+        .replace(/🔑/g, '&#128273;')
+        .replace(/🔒/g, '&#128274;')
+        .replace(/🛡️/g, '&#128737;')
+        .replace(/🛡/g, '&#128737;')
+        .replace(/✅/g, '&#9989;')
+        .replace(/⚠️/g, '&#9888;&#65039;')
+        .replace(/🎉/g, '&#127881;')
+        .replace(/🤝/g, '&#129309;')
+        .replace(/🌱/g, '&#127793;');
+}
+
+function sanitizeSubjectForEmail(subject) {
+    if (!subject) return '';
+    return subject
+        .replace(/🌿|🔑|🔒|🛡️|🛡|✅|⚠️|🎉|🤝|🌱/g, '')
+        .replace(/\s+/g, ' ')
+        .trim();
+}
+
 /**
  * Universal Dual-Engine Dispatcher:
  * 1. Primary: Google Apps Script HTTPS Bridge (100% unrestricted on Render via Port 443)
  * 2. Secondary Fallback: SMTP Transporter (Localhost)
  */
 async function dispatchEmail({ toEmail, subject, html, devFallbackUrl }) {
+    const cleanSubject = sanitizeSubjectForEmail(subject);
+    const cleanHtml = sanitizeHtmlForEmail(html);
+
     // 1. Google Apps Script HTTPS Bridge
     if (GOOGLE_BRIDGE_URL) {
         try {
@@ -48,15 +74,15 @@ async function dispatchEmail({ toEmail, subject, html, devFallbackUrl }) {
                 headers: { 'Content-Type': 'text/plain;charset=utf-8' },
                 body: JSON.stringify({
                     to: toEmail,
-                    subject: subject,
-                    html: html
+                    subject: cleanSubject,
+                    html: cleanHtml
                 })
             });
             const text = await res.text();
             let data = {};
             try { data = JSON.parse(text); } catch(e) {}
             if (data && data.success) {
-                console.log(`✅ [Google HTTPS Engine] Email sent to ${toEmail}: ${subject}`);
+                console.log(`✅ [Google HTTPS Engine] Email sent to ${toEmail}: ${cleanSubject}`);
                 return { success: true, via: 'google-https' };
             }
         } catch (e) {
@@ -69,8 +95,8 @@ async function dispatchEmail({ toEmail, subject, html, devFallbackUrl }) {
         const info = await transporter.sendMail({
             from: `"Nourish Network" <${process.env.GMAIL_USER || 'nourishnetwork.official@gmail.com'}>`,
             to: toEmail,
-            subject: subject,
-            html: html
+            subject: cleanSubject,
+            html: cleanHtml
         });
         console.log(`✅ [SMTP] Email sent to ${toEmail}: ${info.messageId}`);
         return { success: true, messageId: info.messageId, via: 'smtp' };
