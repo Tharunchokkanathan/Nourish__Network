@@ -10,4 +10,9 @@ services:
         value: 3000
       - key: DATABASE_URL
         value: postgresql://postgres.usxyaxkoyakhxwgcpdej:YOUDONTWANNAKNOWTHEPASSWORD@aws-0-ap-south-1.pooler.supabase.com:6543/postgres
+      - key: GMAIL_USER
+        value: nourishnetwork.official@gmail.com
+      - key: GMAIL_APP_PASS
+        value: mrqkdqumrbihwncd
+
 
