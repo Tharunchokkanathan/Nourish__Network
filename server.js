@@ -125,15 +125,17 @@ app.post('/api/register', async (req, res) => {
             };
             const token = makeToken(user);
 
-            // Send registration welcome email in background
+            // Send registration welcome email in background on immediate microtick
             const hostUrl = `${req.protocol}://${req.get('host')}`;
-            sendVerificationEmail({
-                toEmail: email,
-                name: organizationName,
-                token: verificationToken,
-                accountType,
-                hostUrl
-            }).catch(e => console.error("Async Email Error:", e));
+            setImmediate(() => {
+                sendVerificationEmail({
+                    toEmail: email,
+                    name: organizationName,
+                    token: verificationToken,
+                    accountType,
+                    hostUrl
+                }).catch(e => console.error("Async Email Error:", e));
+            });
 
             res.status(201).json({
                 message: 'Account created successfully! Welcome to Nourish Network 🎉',
