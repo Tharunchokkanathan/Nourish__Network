@@ -10,7 +10,14 @@ const crypto = require('crypto');
 
 const db = require('./database');
 const { authenticateToken, JWT_SECRET } = require('./middleware/auth');
-const { sendVerificationEmail, sendPasswordResetEmail, sendLoginNotificationEmail, sendPasswordChangedEmail } = require('./mailer');
+const { 
+    sendVerificationEmail, 
+    sendPasswordResetEmail, 
+    sendLoginNotificationEmail, 
+    sendPasswordChangedEmail,
+    sendFoodPublishedBroadcastEmail,
+    sendSellerOrderNotificationEmail
+} = require('./mailer');
 
 // ─── APP SETUP ───────────────────────────────────────────────────────────────
 const app = express();
@@ -749,9 +756,38 @@ app.post('/api/listings', authenticateToken, (req, res) => {
 
     db.run(sql, params, function (err) {
         if (err) return res.status(500).json({ error: err.message });
+        const listingId = this.lastID;
+
+        // Broadcast notification email to all registered buyers/NGOs in background
+        const hostUrl = `${req.protocol}://${req.get('host')}`;
+        setImmediate(() => {
+            db.all(
+                `SELECT email, organizationName FROM users WHERE accountType IN ('ngo', 'shelter', 'buyer') AND isVerified = 1`,
+                [],
+                (qErr, buyers) => {
+                    if (!qErr && buyers && buyers.length > 0) {
+                        sendFoodPublishedBroadcastEmail({
+                            buyers,
+                            sellerName: req.user.name || 'Local Food Partner',
+                            foodItem: {
+                                name,
+                                description,
+                                category,
+                                price,
+                                quantity,
+                                unit,
+                                expiryTime
+                            },
+                            hostUrl
+                        }).catch(e => console.error("Async Broadcast Email Error:", e));
+                    }
+                }
+            );
+        });
+
         res.status(201).json({
             message: 'Food listing published successfully! 🌱',
-            id: this.lastID
+            id: listingId
         });
     });
 });
@@ -846,6 +882,34 @@ app.post('/api/listings/claim', authenticateToken, (req, res) => {
     db.run(sql, [ngoId, listingId], function (err) {
         if (err) return res.status(500).json({ error: err.message });
         if (this.changes === 0) return res.status(400).json({ error: 'Listing not found or already claimed.' });
+
+        // Notify seller about claimed food in background
+        const hostUrl = `${req.protocol}://${req.get('host')}`;
+        setImmediate(() => {
+            db.get(
+                `SELECT f.name as foodName, f.price, f.quantity, u.email as sellerEmail, u.organizationName as sellerName 
+                 FROM food_listings f 
+                 JOIN users u ON f.vendorId = u.id 
+                 WHERE f.id = ?`,
+                [listingId],
+                (sErr, row) => {
+                    if (!sErr && row && row.sellerEmail) {
+                        sendSellerOrderNotificationEmail({
+                            sellerEmail: row.sellerEmail,
+                            sellerName: row.sellerName,
+                            buyerName: req.user.name || 'Community Partner',
+                            buyerEmail: req.user.email,
+                            foodName: row.foodName,
+                            quantity: row.quantity || 1,
+                            totalPrice: 0,
+                            notes: 'Claimed by NGO Partner',
+                            hostUrl
+                        }).catch(e => console.error("Async Claim Seller Email Error:", e));
+                    }
+                }
+            );
+        });
+
         res.status(200).json({ message: 'Food successfully claimed! 🤝' });
     });
 });
@@ -888,6 +952,35 @@ app.post('/api/checkout', authenticateToken, (req, res) => {
                 const ids = items.map(i => i.listingId).join(',');
                 db.run(`UPDATE food_listings SET status = 'sold' WHERE id IN (${ids})`, (err) => {
                     if (err) console.error('Status update error:', err.message);
+                });
+
+                // Notify each seller via email asynchronously
+                const hostUrl = `${req.protocol}://${req.get('host')}`;
+                setImmediate(() => {
+                    items.forEach(({ listingId, quantity, price }) => {
+                        db.get(
+                            `SELECT f.name as foodName, f.price, u.email as sellerEmail, u.organizationName as sellerName 
+                             FROM food_listings f 
+                             JOIN users u ON f.vendorId = u.id 
+                             WHERE f.id = ?`,
+                            [listingId],
+                            (sErr, row) => {
+                                if (!sErr && row && row.sellerEmail) {
+                                    sendSellerOrderNotificationEmail({
+                                        sellerEmail: row.sellerEmail,
+                                        sellerName: row.sellerName,
+                                        buyerName: req.user.name || 'Community Partner',
+                                        buyerEmail: req.user.email,
+                                        foodName: row.foodName,
+                                        quantity: quantity || 1,
+                                        totalPrice: (parseFloat(price || row.price) * (parseInt(quantity) || 1)) || 0,
+                                        notes,
+                                        hostUrl
+                                    }).catch(e => console.error("Async Seller Order Email Error:", e));
+                                }
+                            }
+                        );
+                    });
                 });
 
                 res.status(201).json({

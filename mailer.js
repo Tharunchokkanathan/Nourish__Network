@@ -624,4 +624,355 @@ async function sendPasswordChangedEmail({ toEmail, name, changedTime }) {
     });
 }
 
-module.exports = { sendVerificationEmail, sendPasswordResetEmail, sendLoginNotificationEmail, sendPasswordChangedEmail };
+/**
+ * Broadcast notification to buyers when a seller lists new surplus food
+ */
+async function sendFoodPublishedBroadcastEmail({ buyers, sellerName, foodItem, hostUrl }) {
+    if (!buyers || !Array.isArray(buyers) || buyers.length === 0) return { success: true, count: 0 };
+
+    const dashboardUrl = `${hostUrl || 'https://nourish-network-4bit.onrender.com'}/?portal=buyer`;
+    const formattedExpiry = foodItem.expiryTime 
+        ? new Date(foodItem.expiryTime).toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' })
+        : 'Available Today';
+    const priceDisplay = (parseFloat(foodItem.price) === 0 || !foodItem.price) ? 'Free Donation (₹0)' : `₹${foodItem.price} / portion`;
+
+    const results = [];
+    for (const buyer of buyers) {
+        const htmlTemplate = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="utf-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>Fresh Food Alert - Nourish Network</title>
+            <style>
+                body {
+                    font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+                    background-color: #0d1612;
+                    color: #e2e8f0;
+                    margin: 0;
+                    padding: 0;
+                }
+                .email-container {
+                    max-width: 580px;
+                    margin: 40px auto;
+                    background: #13221b;
+                    border: 1px solid rgba(16, 185, 129, 0.3);
+                    border-radius: 20px;
+                    overflow: hidden;
+                    box-shadow: 0 20px 50px rgba(0,0,0,0.6);
+                }
+                .header {
+                    background: linear-gradient(135deg, #064e3b 0%, #047857 100%);
+                    padding: 30px 25px;
+                    text-align: center;
+                }
+                .header h1 {
+                    margin: 0;
+                    color: #ffffff;
+                    font-size: 24px;
+                    font-weight: 700;
+                    letter-spacing: 0.5px;
+                }
+                .content {
+                    padding: 35px 30px;
+                    text-align: center;
+                }
+                .welcome-title {
+                    font-size: 21px;
+                    color: #10b981;
+                    margin-top: 0;
+                    margin-bottom: 12px;
+                    font-weight: 700;
+                }
+                .message-text {
+                    font-size: 15px;
+                    color: #cbd5e1;
+                    line-height: 1.65;
+                    margin-bottom: 25px;
+                }
+                .details-card {
+                    background: rgba(16, 185, 129, 0.06);
+                    border: 1px solid rgba(16, 185, 129, 0.2);
+                    border-radius: 12px;
+                    padding: 18px 22px;
+                    margin: 20px 0;
+                    text-align: left;
+                }
+                .detail-row {
+                    display: flex;
+                    justify-content: space-between;
+                    padding: 7px 0;
+                    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+                    font-size: 14px;
+                }
+                .detail-row:last-child {
+                    border-bottom: none;
+                }
+                .detail-label {
+                    color: #94a3b8;
+                    font-weight: 500;
+                }
+                .detail-value {
+                    color: #f1f5f9;
+                    font-weight: 600;
+                }
+                .btn-cta {
+                    display: inline-block;
+                    padding: 14px 34px;
+                    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+                    color: #ffffff !important;
+                    text-decoration: none;
+                    font-weight: 700;
+                    border-radius: 12px;
+                    font-size: 15px;
+                    margin: 20px 0 10px;
+                    box-shadow: 0 10px 20px rgba(16, 185, 129, 0.35);
+                }
+                .footer {
+                    background-color: #0b130f;
+                    padding: 20px 30px;
+                    text-align: center;
+                    font-size: 13px;
+                    color: #64748b;
+                    border-top: 1px solid rgba(255,255,255,0.05);
+                }
+            </style>
+        </head>
+        <body>
+            <div class="email-container">
+                <div class="header">
+                    <h1>🌿 Nourish Network</h1>
+                </div>
+                <div class="content">
+                    <h2 class="welcome-title">Fresh Surplus Food Available! 🍲</h2>
+                    <p class="message-text">
+                        Hello <strong>${buyer.organizationName || 'Partner'}</strong>,<br><br>
+                        <strong>${sellerName || 'A local partner'}</strong> has just listed fresh surplus food on Nourish Network ready to be claimed and distributed.
+                    </p>
+
+                    <div class="details-card">
+                        <div class="detail-row">
+                            <span class="detail-label">Food Item:</span>
+                            <span class="detail-value" style="color: #10b981;">${foodItem.name}</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="detail-label">Provider:</span>
+                            <span class="detail-value">${sellerName}</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="detail-label">Category:</span>
+                            <span class="detail-value">${foodItem.category || 'Cooked'}</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="detail-label">Quantity Available:</span>
+                            <span class="detail-value">${foodItem.quantity} ${foodItem.unit || 'Portions'}</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="detail-label">Pricing:</span>
+                            <span class="detail-value">${priceDisplay}</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="detail-label">Expiry / Best Before:</span>
+                            <span class="detail-value">${formattedExpiry}</span>
+                        </div>
+                    </div>
+
+                    <a href="${dashboardUrl}" class="btn-cta" target="_blank">Check Food & Claim in Dashboard 🚀</a>
+                </div>
+                <div class="footer">
+                    &copy; ${new Date().getFullYear()} Nourish Network. Connecting fresh food with communities in need.
+                </div>
+            </div>
+        </body>
+        </html>
+        `;
+
+        const res = await dispatchEmail({
+            toEmail: buyer.email,
+            subject: `Fresh Food Alert: ${foodItem.name} from ${sellerName} - Nourish Network`,
+            html: htmlTemplate
+        });
+        results.push(res);
+    }
+    return { success: true, count: results.length };
+}
+
+/**
+ * Order received notification to seller when a buyer places an order
+ */
+async function sendSellerOrderNotificationEmail({ sellerEmail, sellerName, buyerName, buyerEmail, foodName, quantity, totalPrice, notes, hostUrl }) {
+    const dashboardUrl = `${hostUrl || 'https://nourish-network-4bit.onrender.com'}/?portal=seller`;
+    const formattedTime = new Date().toLocaleString('en-US', { dateStyle: 'full', timeStyle: 'short' });
+
+    const htmlTemplate = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>New Order Received - Nourish Network</title>
+        <style>
+            body {
+                font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+                background-color: #0d1612;
+                color: #e2e8f0;
+                margin: 0;
+                padding: 0;
+            }
+            .email-container {
+                max-width: 580px;
+                margin: 40px auto;
+                background: #13221b;
+                border: 1px solid rgba(16, 185, 129, 0.3);
+                border-radius: 20px;
+                overflow: hidden;
+                box-shadow: 0 20px 50px rgba(0,0,0,0.6);
+            }
+            .header {
+                background: linear-gradient(135deg, #064e3b 0%, #047857 100%);
+                padding: 30px 25px;
+                text-align: center;
+            }
+            .header h1 {
+                margin: 0;
+                color: #ffffff;
+                font-size: 24px;
+                font-weight: 700;
+                letter-spacing: 0.5px;
+            }
+            .content {
+                padding: 35px 30px;
+                text-align: center;
+            }
+            .welcome-title {
+                font-size: 21px;
+                color: #10b981;
+                margin-top: 0;
+                margin-bottom: 12px;
+                font-weight: 700;
+            }
+            .message-text {
+                font-size: 15px;
+                color: #cbd5e1;
+                line-height: 1.65;
+                margin-bottom: 25px;
+            }
+            .details-card {
+                background: rgba(16, 185, 129, 0.06);
+                border: 1px solid rgba(16, 185, 129, 0.2);
+                border-radius: 12px;
+                padding: 18px 22px;
+                margin: 20px 0;
+                text-align: left;
+            }
+            .detail-row {
+                display: flex;
+                justify-content: space-between;
+                padding: 7px 0;
+                border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+                font-size: 14px;
+            }
+            .detail-row:last-child {
+                border-bottom: none;
+            }
+            .detail-label {
+                color: #94a3b8;
+                font-weight: 500;
+            }
+            .detail-value {
+                color: #f1f5f9;
+                font-weight: 600;
+            }
+            .btn-cta {
+                display: inline-block;
+                padding: 14px 34px;
+                background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+                color: #ffffff !important;
+                text-decoration: none;
+                font-weight: 700;
+                border-radius: 12px;
+                font-size: 15px;
+                margin: 20px 0 10px;
+                box-shadow: 0 10px 20px rgba(16, 185, 129, 0.35);
+            }
+            .footer {
+                background-color: #0b130f;
+                padding: 20px 30px;
+                text-align: center;
+                font-size: 13px;
+                color: #64748b;
+                border-top: 1px solid rgba(255,255,255,0.05);
+            }
+        </style>
+    </head>
+    <body>
+        <div class="email-container">
+            <div class="header">
+                <h1>🌿 Nourish Network</h1>
+            </div>
+            <div class="content">
+                <h2 class="welcome-title">New Food Order Received! 🎉</h2>
+                <p class="message-text">
+                    Hello <strong>${sellerName || 'Partner'}</strong>,<br><br>
+                    <strong>${buyerName || 'A Community Partner'}</strong> has just placed an order / claimed meals from your food listing!
+                </p>
+
+                <div class="details-card">
+                    <div class="detail-row">
+                        <span class="detail-label">Buyer Organization:</span>
+                        <span class="detail-value" style="color: #10b981;">${buyerName}</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Buyer Contact:</span>
+                        <span class="detail-value">${buyerEmail}</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Food Item:</span>
+                        <span class="detail-value">${foodName}</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Quantity Claimed:</span>
+                        <span class="detail-value">${quantity} portions</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Total Amount:</span>
+                        <span class="detail-value">${parseFloat(totalPrice) === 0 ? 'Free Donation (₹0)' : '₹' + totalPrice}</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Order Timestamp:</span>
+                        <span class="detail-value">${formattedTime}</span>
+                    </div>
+                    ${notes ? `
+                    <div class="detail-row">
+                        <span class="detail-label">Buyer Notes:</span>
+                        <span class="detail-value">${notes}</span>
+                    </div>` : ''}
+                </div>
+
+                <a href="${dashboardUrl}" class="btn-cta" target="_blank">View Orders in Seller Dashboard 📋</a>
+            </div>
+            <div class="footer">
+                &copy; ${new Date().getFullYear()} Nourish Network. Connecting fresh food with communities in need.
+            </div>
+        </div>
+    </body>
+    </html>
+    `;
+
+    return await dispatchEmail({
+        toEmail: sellerEmail,
+        subject: `New Order Received from ${buyerName} - Nourish Network`,
+        html: htmlTemplate
+    });
+}
+
+module.exports = { 
+    sendVerificationEmail, 
+    sendPasswordResetEmail, 
+    sendLoginNotificationEmail, 
+    sendPasswordChangedEmail,
+    sendFoodPublishedBroadcastEmail,
+    sendSellerOrderNotificationEmail
+};
+

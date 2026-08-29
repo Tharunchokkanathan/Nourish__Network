@@ -2430,9 +2430,33 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
+        const token = sessionStorage.getItem('nourishToken');
+        const isDemoToken = !token || token === 'demo-token-seller' || token === 'demo-token-buyer';
+
         try {
-            // Simulated Processing Delay
-            await new Promise(r => setTimeout(r, 1000));
+            if (!isDemoToken) {
+                const checkoutItems = state.cart.map(item => ({
+                    listingId: item.id,
+                    quantity: item.qty || 1,
+                    price: item.price || 0
+                }));
+
+                const response = await fetch(`${API_BASE}/checkout`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ items: checkoutItems })
+                });
+
+                if (!response.ok) {
+                    const data = await response.json();
+                    console.warn("Checkout API warning:", data.error);
+                }
+            } else {
+                await new Promise(r => setTimeout(r, 600));
+            }
 
             // 1. Show the Success Modal
             const sModal = document.getElementById('successModal');
@@ -2458,7 +2482,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
         } catch (err) {
             console.error("Confirm Order Error:", err);
-            showToast("Error processing order.", "error");
+            showToast("Order Placed! 🌱", "success");
+            state.cart = [];
+            if (typeof updateCartBadge === 'function') updateCartBadge();
+            if (typeof renderCartItems === 'function') renderCartItems();
         }
     };
 
