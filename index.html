@@ -565,20 +565,32 @@
                 <i class="fa-solid fa-key" style="font-size: 1.6rem; color: var(--accent-primary);"></i>
             </div>
             <h2 style="font-size: 1.6rem; font-weight: 800; text-align: center; margin-bottom: 0.5rem; color: #fff;">Reset Password</h2>
-            <p style="color: var(--text-muted); font-size: 0.9rem; text-align: center; margin-bottom: 1.5rem;">
-                Enter your registered email address below. We'll send you a secure link to reset your password.
-            </p>
+            
             <form id="forgotPasswordForm">
-                <div class="form-group" style="margin-bottom: 1.5rem;">
+                <!-- Pre-filled Email Display Card -->
+                <div id="forgotEmailPreFilledCard" style="background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.25); border-radius: 16px; padding: 1.2rem; margin-bottom: 1.5rem; text-align: center;">
+                    <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 0.4rem;">Send secure password reset link to:</p>
+                    <div style="font-size: 1.05rem; font-weight: 700; color: var(--accent-primary); word-break: break-all; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                        <i class="fa-regular fa-envelope"></i> <span id="forgotTargetEmailDisplay">you@domain.com</span>
+                    </div>
+                </div>
+
+                <!-- Input fallback (shown if no email was entered in login) -->
+                <div id="forgotEmailInputGroup" class="form-group" style="margin-bottom: 1.5rem; display: none;">
                     <label for="forgotEmail" style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Email Address</label>
                     <div class="input-with-icon">
                         <i class="fa-regular fa-envelope"></i>
-                        <input type="email" id="forgotEmail" class="form-control" placeholder="you@domain.com" required>
+                        <input type="email" id="forgotEmail" class="form-control" placeholder="you@domain.com">
                     </div>
                 </div>
-                <button type="submit" class="btn btn-primary w-100 btn-glow" style="border-radius: 14px; padding: 12px; font-weight: 700;">
+
+                <button type="submit" class="btn btn-primary w-100 btn-glow" style="border-radius: 14px; padding: 14px; font-weight: 700; font-size: 1rem;">
                     Send Reset Link <i class="fa-solid fa-paper-plane"></i>
                 </button>
+
+                <div style="text-align: center; margin-top: 1rem;">
+                    <a href="#" id="changeForgotEmailLink" style="font-size: 0.85rem; color: var(--text-muted); text-decoration: underline;">Use different email</a>
+                </div>
             </form>
         </div>
     </div>
