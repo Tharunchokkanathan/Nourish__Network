@@ -43,11 +43,19 @@ function normalizeRow(row) {
 }
 
 // ─── POSTGRESQL (SUPABASE) ENGINE ───────────────────────────────────────────
-if (process.env.DATABASE_URL) {
+let dbUrl = process.env.DATABASE_URL || "postgresql://postgres.usxyaxkoyakhxwgcpdej:YOUDONTWANNAKNOWTHEPASSWORD@aws-0-ap-south-1.pooler.supabase.com:6543/postgres";
+
+if (dbUrl) {
+    // Automatically convert direct IPv6 Supabase host to IPv4 Pooler host to fix Render network ENETUNREACH
+    if (dbUrl.includes('db.usxyaxkoyakhxwgcpdej.supabase.co')) {
+        dbUrl = dbUrl.replace('db.usxyaxkoyakhxwgcpdej.supabase.co:5432', 'aws-0-ap-south-1.pooler.supabase.com:6543')
+                     .replace('postgres:', 'postgres.usxyaxkoyakhxwgcpdej:');
+    }
+
     const { Pool } = require('pg');
 
     const pool = new Pool({
-        connectionString: process.env.DATABASE_URL,
+        connectionString: dbUrl,
         ssl: { rejectUnauthorized: false }
     });
 
