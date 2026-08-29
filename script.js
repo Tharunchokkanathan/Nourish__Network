@@ -537,16 +537,17 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // =========================================
-    // AUTH MODAL LOGIC
+    // =========================================
+    // AUTH MODAL LOGIC (MINIMAL LIQUID GLASS)
     // =========================================
     const authModal = document.getElementById('authModal');
     const closeModal = document.getElementById('closeModal');
-    const toggleLoginBtn = document.getElementById('toggleLogin');
-    const toggleRegisterBtn = document.getElementById('toggleRegister');
+    const loginView = document.getElementById('loginViewContainer');
+    const registerView = document.getElementById('registerViewContainer');
+    const toRegisterLink = document.getElementById('toRegisterLink');
+    const toLoginLink = document.getElementById('toLoginLink');
     const loginForm = document.getElementById('loginForm');
     const registerForm = document.getElementById('registerForm');
-    const modalTitle = document.getElementById('modalTitle');
-    const modalSubtitle = document.getElementById('modalSubtitle');
     const btnDemoSeller = document.getElementById('btn-demo-seller');
     const btnDemoBuyer = document.getElementById('btn-demo-buyer');
 
@@ -557,10 +558,8 @@ document.addEventListener('DOMContentLoaded', () => {
             e.preventDefault();
             authModal.classList.add('active');
 
-            // Show modal
-
             const btnText = btn.innerText.toLowerCase();
-            if (btnText.includes('log in')) {
+            if (btnText.includes('log in') || btnText.includes('login') || btnText.includes('sign in')) {
                 showLoginForm();
             } else {
                 showRegisterForm();
@@ -571,11 +570,10 @@ document.addEventListener('DOMContentLoaded', () => {
     // Close Modal
     function closeAuthModal() {
         authModal.classList.remove('active');
-        // Show dock back if we are on home
         syncDock();
     }
 
-    closeModal.addEventListener('click', closeAuthModal);
+    if (closeModal) closeModal.addEventListener('click', closeAuthModal);
 
     // Close on overlay click
     authModal.addEventListener('click', (e) => {
@@ -594,29 +592,40 @@ document.addEventListener('DOMContentLoaded', () => {
     // Toggle Forms
     function showLoginForm() {
         authModal.classList.add('active');
-
-        toggleRegisterBtn.classList.remove('active');
-        toggleLoginBtn.classList.add('active');
-        registerForm.classList.remove('active');
-        loginForm.classList.add('active');
-        modalTitle.innerText = "Welcome Back";
-        modalSubtitle.innerText = "Log in to continue your impact.";
+        if (loginView && registerView) {
+            registerView.style.display = 'none';
+            loginView.style.display = 'block';
+        }
+        if (registerForm) registerForm.classList.remove('active');
+        if (loginForm) loginForm.classList.add('active');
     }
 
     function showRegisterForm() {
         authModal.classList.add('active');
-
-        toggleLoginBtn.classList.remove('active');
-        toggleRegisterBtn.classList.add('active');
-        loginForm.classList.remove('active');
-        registerForm.classList.add('active');
-        modalTitle.innerText = "Join the Network";
-        modalSubtitle.innerText = "Create an account to get started.";
+        if (loginView && registerView) {
+            loginView.style.display = 'none';
+            registerView.style.display = 'block';
+        }
+        if (loginForm) loginForm.classList.remove('active');
+        if (registerForm) registerForm.classList.add('active');
     }
 
-    toggleLoginBtn.addEventListener('click', showLoginForm);
+    if (toRegisterLink) {
+        toRegisterLink.addEventListener('click', (e) => {
+            e.preventDefault();
+            showRegisterForm();
+        });
+    }
 
-    toggleRegisterBtn.addEventListener('click', showRegisterForm);
+    if (toLoginLink) {
+        toLoginLink.addEventListener('click', (e) => {
+            e.preventDefault();
+            showLoginForm();
+        });
+    }
+
+    window.showLoginForm = showLoginForm;
+    window.showRegisterForm = showRegisterForm;
 
 
     // =========================================
