@@ -58,7 +58,8 @@ window.toggleLiquidGlassCalendar = function(e) {
         const expiryInput = document.getElementById('p-expiry');
         if (expiryInput && expiryInput.value) {
             window.setLiquidPickerFromISO(expiryInput.value);
-        } else if (!window.stateLiquidCal || !window.stateLiquidCal.selectedDate) {
+        }
+        if (!window.stateLiquidCal || !window.stateLiquidCal.selectedDate || isNaN(new Date(window.stateLiquidCal.selectedDate).getTime())) {
             const now = new Date();
             window.stateLiquidCal = {
                 year: now.getFullYear(),
@@ -2604,7 +2605,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const openCart = () => cartDrawer.classList.add('active');
 
-    cartToggle.addEventListener('click', openCart);
+    if (cartToggle) {
+        cartToggle.addEventListener('click', openCart);
+    }
     // Dock Portal-Specific Listeners
     const cartToggleDock = document.getElementById('cart-toggle-dock');
     if (cartToggleDock) {

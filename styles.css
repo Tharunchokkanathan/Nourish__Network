@@ -3285,7 +3285,7 @@ select.form-control option {
     background: var(--bg-surface);
     border: 1px solid var(--border-glow);
     border-radius: 20px;
-    overflow: hidden;
+    overflow: visible !important;
     margin-bottom: 2.5rem;
 }
 
@@ -3296,6 +3296,8 @@ select.form-control option {
     padding: 1.25rem 1.75rem;
     border-bottom: 1px solid var(--border-glow);
     background: rgba(16, 185, 129, 0.05);
+    border-top-left-radius: 20px;
+    border-top-right-radius: 20px;
 }
 
 .seller-form-header i {
@@ -4725,10 +4727,20 @@ button:active,
 
 /* Hide native icon so custom calendar trigger button is used */
 .manual-glass-date-input::-webkit-calendar-picker-indicator {
+    display: none !important;
     opacity: 0 !important;
     width: 0 !important;
+    height: 0 !important;
     padding: 0 !important;
+    margin: 0 !important;
     pointer-events: none !important;
+    background: transparent !important;
+}
+
+.manual-glass-date-input::-webkit-inner-spin-button,
+.manual-glass-date-input::-webkit-clear-button {
+    display: none !important;
+    -webkit-appearance: none !important;
 }
 
 .glass-calendar-icon-btn {
@@ -4748,7 +4760,9 @@ button:active,
     justify-content: center;
     cursor: pointer;
     transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-    z-index: 5;
+    z-index: 10;
+    outline: none !important;
+    -webkit-tap-highlight-color: transparent;
 }
 
 .glass-calendar-icon-btn:hover {
@@ -4758,15 +4772,42 @@ button:active,
     transform: translateY(-50%) scale(1.05);
 }
 
+.glass-calendar-icon-btn:focus,
+.glass-calendar-icon-btn:focus-visible {
+    outline: none !important;
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.4) !important;
+}
+
 .glass-calendar-icon-btn:active {
     transform: translateY(-50%) scale(0.95);
 }
 
-/* Shorter & Compact Liquid Glass Floating Card (Pops Up above input) */
+[data-theme='light'] .glass-calendar-icon-btn {
+    background: rgba(59, 130, 246, 0.12) !important;
+    border: 1px solid rgba(59, 130, 246, 0.28) !important;
+    color: #2563eb !important;
+    outline: none !important;
+    box-shadow: none !important;
+}
+
+[data-theme='light'] .glass-calendar-icon-btn:hover {
+    background: #2563eb !important;
+    color: #ffffff !important;
+    box-shadow: 0 4px 14px rgba(37, 99, 235, 0.35) !important;
+}
+
+[data-theme='light'] .glass-calendar-icon-btn:focus,
+[data-theme='light'] .glass-calendar-icon-btn:focus-visible {
+    outline: none !important;
+    border-color: #2563eb !important;
+    box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.35) !important;
+}
+
+/* Shorter & Compact Liquid Glass Floating Card (Pops down smoothly below input) */
 .liquid-glass-calendar-card {
     position: absolute;
-    bottom: calc(100% + 8px);
-    top: auto;
+    top: calc(100% + 8px);
+    bottom: auto;
     right: 0;
     z-index: 999999 !important;
     width: 280px;
@@ -4779,21 +4820,21 @@ button:active,
     box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8), inset 0 1px 2px rgba(255, 255, 255, 0.2) !important;
     display: none;
     opacity: 0;
-    transform: translateY(8px) scale(0.96);
+    transform: translateY(-6px) scale(0.96);
     transition: opacity 0.2s ease, transform 0.2s ease;
 }
 
 .liquid-glass-calendar-card.active {
-    display: block;
-    opacity: 1;
-    transform: translateY(0) scale(1);
+    display: block !important;
+    opacity: 1 !important;
+    transform: translateY(0) scale(1) !important;
 }
 
 [data-theme='light'] .liquid-glass-calendar-card {
     background: rgba(235, 245, 243, 0.98) !important;
     border: 1px solid rgba(0, 0, 0, 0.15) !important;
     color: #0d3b36;
-    box-shadow: 0 20px 50px rgba(10, 80, 70, 0.3), inset 0 1px 2px rgba(255, 255, 255, 0.8) !important;
+    box-shadow: 0 20px 50px rgba(10, 80, 70, 0.25), inset 0 1px 2px rgba(255, 255, 255, 0.8) !important;
 }
 
 /* Header */
@@ -4825,12 +4866,18 @@ button:active,
 .lg-nav-btn {
     background: transparent;
     border: none;
+    outline: none !important;
     color: #3b82f6;
     font-size: 0.88rem;
     cursor: pointer;
     padding: 3px 6px;
     border-radius: 6px;
     transition: transform 0.2s ease;
+}
+
+.lg-nav-btn:focus,
+.lg-nav-btn:focus-visible {
+    outline: none !important;
 }
 
 .lg-nav-btn:hover {
@@ -4970,12 +5017,18 @@ button:active,
     background: #3b82f6;
     color: #ffffff;
     border: none;
+    outline: none !important;
     padding: 2px 6px;
     border-radius: 6px;
     font-size: 0.72rem;
     font-weight: 700;
     cursor: pointer;
     margin-left: 2px;
+}
+
+.lg-ampm-pill:focus,
+.lg-ampm-pill:focus-visible {
+    outline: none !important;
 }
 
 /* Footer Buttons */
@@ -4988,6 +5041,7 @@ button:active,
 .lg-reset-btn {
     background: rgba(255, 255, 255, 0.12);
     border: none;
+    outline: none !important;
     color: var(--text-primary);
     padding: 0.45rem 1.1rem;
     border-radius: 16px;
@@ -4997,9 +5051,15 @@ button:active,
     transition: all 0.2s ease;
 }
 
+.lg-reset-btn:focus,
+.lg-reset-btn:focus-visible {
+    outline: none !important;
+}
+
 [data-theme='light'] .lg-reset-btn {
     background: rgba(255, 255, 255, 0.6);
     color: #0d3b36;
+    outline: none !important;
 }
 
 .lg-reset-btn:hover {
@@ -5012,6 +5072,7 @@ button:active,
     border-radius: 50%;
     background: #3b82f6;
     border: none;
+    outline: none !important;
     color: #ffffff;
     font-size: 0.95rem;
     display: flex;
@@ -5020,6 +5081,11 @@ button:active,
     cursor: pointer;
     box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
     transition: all 0.2s ease;
+}
+
+.lg-confirm-btn:focus,
+.lg-confirm-btn:focus-visible {
+    outline: none !important;
 }
 
 .lg-confirm-btn:hover {
