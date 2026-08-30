@@ -44,13 +44,30 @@ window.stateLiquidCal = {
 };
 
 window.toggleLiquidGlassCalendar = function(e) {
-    if (e) e.stopPropagation();
+    if (e) {
+        if (e.stopPropagation) e.stopPropagation();
+        if (e.preventDefault) e.preventDefault();
+    }
     const card = document.getElementById('liquid-calendar-card');
     if (!card) return;
-    const isOpening = !card.classList.contains('active');
-    card.classList.toggle('active');
-    if (isOpening) {
+
+    const isActive = card.classList.contains('active');
+    if (isActive) {
+        card.classList.remove('active');
+    } else {
+        if (!window.stateLiquidCal || !window.stateLiquidCal.selectedDate) {
+            const now = new Date();
+            window.stateLiquidCal = {
+                year: now.getFullYear(),
+                month: now.getMonth(),
+                selectedDate: now,
+                hour: '10',
+                min: '00',
+                ampm: 'PM'
+            };
+        }
         window.renderLiquidCalendar();
+        card.classList.add('active');
     }
 };
 
@@ -106,8 +123,15 @@ window.resetLiquidCalendar = function() {
     window.confirmLiquidCalendar();
 };
 
-window.confirmLiquidCalendar = function() {
-    const sel = window.stateLiquidCal.selectedDate || new Date();
+window.confirmLiquidCalendar = function(e) {
+    if (e) {
+        if (e.stopPropagation) e.stopPropagation();
+        if (e.preventDefault) e.preventDefault();
+    }
+    let sel = window.stateLiquidCal && window.stateLiquidCal.selectedDate;
+    if (!sel || typeof sel.getFullYear !== 'function' || isNaN(sel.getTime())) {
+        sel = new Date();
+    }
     const yyyy = sel.getFullYear();
     const mm = String(sel.getMonth() + 1).padStart(2, '0');
     const dd = String(sel.getDate()).padStart(2, '0');
@@ -126,16 +150,7 @@ window.confirmLiquidCalendar = function() {
     const isoStr = `${yyyy}-${mm}-${dd}T${hhStr}:${minStr}`;
     
     const hiddenExpiry = document.getElementById('p-expiry');
-    const displayTag = document.getElementById('glass-picker-display');
-
     if (hiddenExpiry) hiddenExpiry.value = isoStr;
-
-    if (displayTag) {
-        const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-        const monthStr = monthNames[sel.getMonth()];
-        const displayHour = String(hour12).padStart(2, '0');
-        displayTag.innerHTML = `<i class="fa-regular fa-clock" style="color: var(--accent-primary);"></i> ${sel.getDate()} ${monthStr} ${yyyy} @ ${displayHour}:${minStr} ${ampm}`;
-    }
 
     const card = document.getElementById('liquid-calendar-card');
     if (card) card.classList.remove('active');
@@ -162,7 +177,6 @@ window.setLiquidPickerFromISO = function(isoStr) {
         window.stateLiquidCal.min = String(mins).padStart(2, '0');
 
         window.renderLiquidCalendar();
-        window.confirmLiquidCalendar();
     } catch (e) { }
 };
 
@@ -210,7 +224,7 @@ window.renderLiquidCalendar = function() {
     }
 
     const today = new Date();
-    const selDate = window.stateLiquidCal.selectedDate;
+    const selDate = (window.stateLiquidCal.selectedDate && typeof window.stateLiquidCal.selectedDate.getFullYear === 'function') ? window.stateLiquidCal.selectedDate : null;
 
     for (let d = 1; d <= totalDays; d++) {
         const isToday = today.getFullYear() === window.stateLiquidCal.year &&
@@ -239,11 +253,14 @@ window.renderLiquidCalendar = function() {
 
 document.addEventListener('click', (e) => {
     const card = document.getElementById('liquid-calendar-card');
-    const trigger = document.getElementById('glass-picker-trigger');
-    if (card && card.classList.contains('active')) {
-        if (!card.contains(e.target) && (!trigger || !trigger.contains(e.target))) {
-            card.classList.remove('active');
-        }
+    if (!card || !card.classList.contains('active')) return;
+
+    const isInsideCard = card.contains(e.target);
+    const isTriggerBtn = e.target.closest('.glass-calendar-icon-btn') || e.target.closest('#glass-picker-trigger');
+    const isOption = e.target.tagName === 'OPTION' || e.target.tagName === 'SELECT';
+
+    if (!isInsideCard && !isTriggerBtn && !isOption) {
+        card.classList.remove('active');
     }
 });
 
