@@ -33,38 +33,6 @@ window.deleteComment = function (commentId, btnEl) {
     }, 250);
 };
 
-// ---- DARK GLASSMORPHISM DATE & TIME HELPERS ----
-window.setQuickExpiryOffset = function(hours) {
-    const hiddenExpiry = document.getElementById('p-expiry');
-    if (!hiddenExpiry) return;
-    const target = new Date(Date.now() + hours * 3600 * 1000);
-    const yyyy = target.getFullYear();
-    const mm = String(target.getMonth() + 1).padStart(2, '0');
-    const dd = String(target.getDate()).padStart(2, '0');
-    const hh = String(target.getHours()).padStart(2, '0');
-    const min = String(target.getMinutes()).padStart(2, '0');
-    hiddenExpiry.value = `${yyyy}-${mm}-${dd}T${hh}:${min}`;
-    window.updateExpiryPreviewTag();
-};
-
-window.updateExpiryPreviewTag = function() {
-    const hiddenExpiry = document.getElementById('p-expiry');
-    const tag = document.getElementById('expiry-preview-tag');
-    if (!hiddenExpiry || !tag || !hiddenExpiry.value) return;
-
-    try {
-        const d = new Date(hiddenExpiry.value);
-        if (isNaN(d.getTime())) return;
-        const formatted = d.toLocaleDateString('en-IN', {
-            weekday: 'short', month: 'short', day: 'numeric',
-            hour: '2-digit', minute: '2-digit', hour12: true
-        });
-        tag.innerHTML = `<i class="fa-regular fa-clock"></i> Expiry: ${formatted}`;
-        tag.style.display = 'inline-block';
-    } catch (e) { }
-};
-
-
 document.addEventListener('DOMContentLoaded', () => {
 
     // 1. Configuration - Dynamic API Detection
@@ -1736,26 +1704,10 @@ document.addEventListener('DOMContentLoaded', () => {
                                     <label>Price per Portion (₹)</label>
                                     <input type="number" id="p-price" class="form-control" value="20" min="0" required>
                                 </div>
-                                 <div class="form-group full-width">
-                                     <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.4rem; flex-wrap: wrap; gap: 8px;">
-                                         <label style="margin: 0;"><i class="fa-regular fa-clock" style="color: var(--accent-primary);"></i> Expiry Date & Time</label>
-                                         <span id="expiry-preview-tag" style="font-size: 0.8rem; color: var(--accent-primary); font-weight: 600; display: none; background: rgba(16, 185, 129, 0.1); padding: 2px 10px; border-radius: 10px; border: 1px solid rgba(16, 185, 129, 0.2);"></span>
-                                     </div>
-                                     
-                                     <input type="datetime-local" id="p-expiry" class="form-control glass-date-input" required onchange="window.updateExpiryPreviewTag()">
-                                     
-                                     <!-- Floating Quick Add Presets Bar -->
-                                     <div class="floating-quick-add-bar">
-                                         <span class="quick-add-label"><i class="fa-solid fa-bolt" style="color: #fbbf24;"></i> Quick Add:</span>
-                                         <div class="quick-add-chips">
-                                             <button type="button" class="preset-chip-pill" onclick="window.setQuickExpiryOffset(2)">+2 Hours</button>
-                                             <button type="button" class="preset-chip-pill" onclick="window.setQuickExpiryOffset(4)">+4 Hours</button>
-                                             <button type="button" class="preset-chip-pill" onclick="window.setQuickExpiryOffset(6)">+6 Hours</button>
-                                             <button type="button" class="preset-chip-pill" onclick="window.setQuickExpiryOffset(12)">+12 Hours</button>
-                                             <button type="button" class="preset-chip-pill" onclick="window.setQuickExpiryOffset(24)">Tomorrow</button>
-                                         </div>
-                                     </div>
-                                 </div>
+                                <div class="form-group">
+                                    <label>Expiry Date & Time</label>
+                                    <input type="datetime-local" id="p-expiry" class="form-control" required>
+                                </div>
                                 <div class="form-group">
                                     <label>Custom Image URL (Optional)</label>
                                     <input type="url" id="p-img" class="form-control" placeholder="Paste custom photo link (e.g. https://...)">
@@ -1854,11 +1806,6 @@ document.addEventListener('DOMContentLoaded', () => {
             </div>
         `).join('');
 
-        // Initialize glass date/time picker if empty
-        if (document.getElementById('glass-date-val') && !document.getElementById('glass-date-val').value) {
-            window.applyQuickTimeOffset(4);
-        }
-
         document.querySelectorAll('.edit-btn').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 const id = btn.dataset.id;
@@ -1873,9 +1820,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (item.expiry) {
                         try {
                             const d = new Date(item.expiry);
-                            const isoStr = d.toISOString().slice(0, 16);
-                            document.getElementById('p-expiry').value = isoStr;
-                            window.updateExpiryPreviewTag();
+                            document.getElementById('p-expiry').value = d.toISOString().slice(0, 16);
                         } catch (e) { }
                     }
                     document.getElementById('submit-btn').innerHTML = '💾 Save Changes';
@@ -2239,9 +2184,6 @@ document.addEventListener('DOMContentLoaded', () => {
         if (form) {
             form.addEventListener('submit', async (e) => {
                 e.preventDefault();
-                if (typeof window.syncGlassPickerToExpiry === 'function') {
-                    window.syncGlassPickerToExpiry();
-                }
                 const pId = document.getElementById('p-id').value;
                 const name = document.getElementById('p-name').value;
                 const category = document.getElementById('p-cat').value;
