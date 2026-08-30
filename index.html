@@ -570,142 +570,160 @@
         </div>
     </div>
 
-    <!-- Settings Modal - Full Page Premium Design -->
+    <!-- Settings Modal - Full Page Premium Liquid-Glass Design -->
     <div id="settingsModal"
-        style="display: none; position: fixed; inset: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.85); z-index: 2000; align-items: flex-start; justify-content: center; backdrop-filter: blur(14px); overflow-y: auto;">
-        <div style="width: 100%; max-width: 860px; margin: 40px auto 80px; padding: 0 16px;">
+        style="display: none; position: fixed; inset: 0; width: 100vw; height: 100vh; background: rgba(0, 0, 0, 0.88); z-index: 99999; align-items: center; justify-content: center; backdrop-filter: blur(8px); overflow-y: auto; padding: 20px 10px;">
+        <div class="settings-modal-card" style="width: 100% !important; max-width: 780px !important; margin: auto !important; padding: 2.5rem !important; max-height: 90vh; overflow-y: auto; background: #091913 !important; border: 1.5px solid rgba(16, 185, 129, 0.45) !important; border-radius: 32px !important; box-shadow: 0 35px 90px rgba(0, 0, 0, 0.95), 0 0 45px rgba(16, 185, 129, 0.25) !important; color: #ffffff !important;">
 
             <!-- Header Bar -->
-            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 32px;">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 2rem; padding-bottom: 1rem; border-bottom: 1.5px solid rgba(16, 185, 129, 0.3);">
                 <div style="display: flex; align-items: center; gap: 14px;">
                     <div
-                        style="width: 46px; height: 46px; background: linear-gradient(135deg, var(--primary-color), #059669); border-radius: 12px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
-                        <i class="fa-solid fa-user-gear" style="color: white; font-size: 1.2rem;"></i>
+                        style="width: 48px; height: 48px; background: linear-gradient(135deg, #10b981, #059669); border-radius: 16px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; box-shadow: 0 8px 20px rgba(16, 185, 129, 0.4);">
+                        <i class="fa-solid fa-user-gear" style="color: white; font-size: 1.3rem;"></i>
                     </div>
                     <div>
-                        <h2 style="margin: 0; font-size: 1.6rem; font-weight: 800; letter-spacing: -0.5px;">Profile
-                            Settings</h2>
-                        <p style="margin: 0; font-size: 0.8rem; color: var(--text-muted);">Manage your organization's
-                            identity and details</p>
+                        <h2 style="margin: 0; font-size: 1.75rem; font-weight: 700; color: #ffffff; letter-spacing: -0.01em;">Profile Settings</h2>
+                        <p id="settingsSubtitle" style="margin: 0; font-size: 0.88rem; color: #34d399; font-weight: 500;">Manage your organization's identity, contact, and pickup details</p>
                     </div>
                 </div>
                 <button id="closeSettingsModal" onclick="document.getElementById('settingsModal').style.display='none'"
-                    style="width: 40px; height: 40px; background: rgba(255,255,255,0.06); border: 1px solid var(--border-glow); border-radius: 10px; font-size: 1.1rem; cursor: pointer; color: var(--text-primary); display: flex; align-items: center; justify-content: center;">
+                    style="width: 42px; height: 42px; background: rgba(255,255,255,0.08); border: 1.5px solid rgba(255,255,255,0.2); border-radius: 50%; font-size: 1.2rem; cursor: pointer; color: #ffffff; display: flex; align-items: center; justify-content: center; transition: all 0.2s ease;">
                     <i class="fa-solid fa-xmark"></i>
                 </button>
             </div>
 
-            <form id="settingsForm">
+            <form id="settingsForm" onsubmit="if(window.handleSettingsSubmit) { window.handleSettingsSubmit(event); } else { e.preventDefault(); } return false;">
 
-                <!-- SECTION 1: Identity -->
-                <div
-                    style="background: rgba(255,255,255,0.03); border: 1px solid var(--border-glow); border-radius: 20px; padding: 28px; margin-bottom: 20px;">
-                    <div
-                        style="display: flex; align-items: center; gap: 10px; margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px solid rgba(255,255,255,0.06);">
-                        <i class="fa-solid fa-id-card" style="color: var(--primary-color);"></i>
-                        <h3
-                            style="margin: 0; font-size: 0.85rem; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: var(--text-muted);">
-                            Identity</h3>
-                        <div id="verificationBadgeContainer" style="display: none; margin-left: auto;">
-                            <span
-                                style="background: linear-gradient(135deg, #f59e0b, #d97706); color: white; font-size: 0.7rem; font-weight: 700; padding: 4px 12px; border-radius: 20px; letter-spacing: 0.5px;">
-                                <i class="fa-solid fa-circle-check"></i> VERIFIED PARTNER
+                <!-- SECTION 1: Account Credentials & Identity -->
+                <div style="background: rgba(255,255,255,0.04); border: 1.5px solid rgba(16, 185, 129, 0.25); border-radius: 20px; padding: 1.5rem; margin-bottom: 1.5rem;">
+                    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.25rem; padding-bottom: 0.75rem; border-bottom: 1px solid rgba(255,255,255,0.1);">
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <i class="fa-solid fa-id-card" style="color: #10b981; font-size: 1.1rem;"></i>
+                            <h3 style="margin: 0; font-size: 0.9rem; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: #34d399;">
+                                Account Identity & Credentials
+                            </h3>
+                        </div>
+                        <div id="verificationBadgeContainer" style="display: none;">
+                            <span style="background: linear-gradient(135deg, #10b981, #059669); color: white; font-size: 0.72rem; font-weight: 700; padding: 4px 14px; border-radius: 20px; letter-spacing: 0.5px; box-shadow: 0 4px 12px rgba(16,185,129,0.3);">
+                                <i class="fa-solid fa-circle-check"></i> VERIFIED ACCOUNT
                             </span>
                         </div>
                     </div>
-                    <div style="display: flex; gap: 28px; align-items: flex-start;">
-                        <div style="flex-shrink: 0; text-align: center;">
-                            <div style="position: relative; display: inline-block; margin-bottom: 18px;">
+
+                    <div style="display: grid; grid-template-columns: 120px 1fr; gap: 1.5rem; align-items: start;">
+                        <!-- Avatar Column -->
+                        <div style="text-align: center;">
+                            <div style="position: relative; display: inline-block; margin-bottom: 8px;">
                                 <img id="avatarPreview" src="assets/default-avatar.jpg" alt="Avatar"
-                                    style="width: 100px; height: 100px; border-radius: 18px; object-fit: cover; border: 2px solid var(--primary-color); display: block;">
+                                    style="width: 105px; height: 105px; border-radius: 22px; object-fit: cover; border: 2.5px solid #10b981; display: block; box-shadow: 0 8px 24px rgba(0,0,0,0.5);">
                                 <label for="avatarInput"
-                                    style="position: absolute; bottom: -12px; left: 50%; transform: translateX(-50%); background: var(--primary-color); color: white; font-size: 0.6rem; font-weight: 700; padding: 4px 10px; border-radius: 20px; cursor: pointer; white-space: nowrap; letter-spacing: 0.5px;">CHANGE</label>
+                                    style="position: absolute; bottom: -10px; left: 50%; transform: translateX(-50%); background: #10b981; color: white; font-size: 0.65rem; font-weight: 700; padding: 4px 12px; border-radius: 20px; cursor: pointer; white-space: nowrap; letter-spacing: 0.5px; box-shadow: 0 4px 10px rgba(0,0,0,0.4);">
+                                    CHANGE
+                                </label>
                                 <input type="file" id="avatarInput" accept="image/*" style="display: none;">
                             </div>
                         </div>
-                        <div style="flex: 1;">
-                            <label
-                                style="font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.8px; color: var(--text-muted); margin-bottom: 8px; display: block;">Short
-                                Bio</label>
-                            <textarea id="bioInput" class="form-control"
-                                placeholder="Describe your organization — e.g. 5-Star Hotel in Chennai offering surplus gourmet meals daily."
-                                rows="4" style="resize: none;"></textarea>
+
+                        <!-- Fields Grid -->
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                            <!-- Org Name -->
+                            <div style="grid-column: 1 / -1;">
+                                <label style="font-size: 0.8rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.8px; color: rgba(255,255,255,0.8); margin-bottom: 6px; display: block;">
+                                    Organization / Business Name
+                                </label>
+                                <input type="text" id="orgNameInput" class="minimal-input" placeholder="e.g. Hope Foundation / Elite Bistro" required>
+                            </div>
+
+                            <!-- Email -->
+                            <div>
+                                <label style="font-size: 0.8rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.8px; color: rgba(255,255,255,0.8); margin-bottom: 6px; display: block;">
+                                    Registered Email Address
+                                </label>
+                                <input type="email" id="emailInput" class="minimal-input" placeholder="user@domain.com" readonly style="background: rgba(16, 185, 129, 0.08) !important; border-color: rgba(16, 185, 129, 0.3) !important; color: #34d399 !important; font-weight: 600;">
+                            </div>
+
+                            <!-- Account Role -->
+                            <div>
+                                <label style="font-size: 0.8rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.8px; color: rgba(255,255,255,0.8); margin-bottom: 6px; display: block;">
+                                    Portal Account Type
+                                </label>
+                                <input type="text" id="accountTypeInput" class="minimal-input" placeholder="Vendor / NGO" readonly style="background: rgba(16, 185, 129, 0.08) !important; border-color: rgba(16, 185, 129, 0.3) !important; color: #34d399 !important; font-weight: 600;">
+                            </div>
+
+                            <!-- Bio -->
+                            <div style="grid-column: 1 / -1;">
+                                <label style="font-size: 0.8rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.8px; color: rgba(255,255,255,0.8); margin-bottom: 6px; display: block;">
+                                    Short Bio / About Us
+                                </label>
+                                <textarea id="bioInput" class="minimal-input" rows="2" style="resize: vertical; min-height: 60px;" placeholder="Describe your organization's mission or food sharing details..."></textarea>
+                            </div>
                         </div>
                     </div>
                 </div>
 
                 <!-- SECTION 2: Contact Details -->
-                <div
-                    style="background: rgba(255,255,255,0.03); border: 1px solid var(--border-glow); border-radius: 20px; padding: 28px; margin-bottom: 20px;">
-                    <div
-                        style="display: flex; align-items: center; gap: 10px; margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px solid rgba(255,255,255,0.06);">
-                        <i class="fa-solid fa-address-book" style="color: var(--primary-color);"></i>
-                        <h3
-                            style="margin: 0; font-size: 0.85rem; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: var(--text-muted);">
-                            Contact Details</h3>
+                <div style="background: rgba(255,255,255,0.04); border: 1.5px solid rgba(16, 185, 129, 0.25); border-radius: 20px; padding: 1.5rem; margin-bottom: 1.5rem;">
+                    <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 1.25rem; padding-bottom: 0.75rem; border-bottom: 1px solid rgba(255,255,255,0.1);">
+                        <i class="fa-solid fa-address-book" style="color: #10b981; font-size: 1.1rem;"></i>
+                        <h3 style="margin: 0; font-size: 0.9rem; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: #34d399;">
+                            Contact & Location Details
+                        </h3>
                     </div>
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 18px;">
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
                         <div>
-                            <label
-                                style="font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.8px; color: var(--text-muted); margin-bottom: 8px; display: flex; align-items: center; gap: 6px;"><i
-                                    class="fa-solid fa-user" style="font-size: 0.7rem;"></i> Contact Person</label>
-                            <input type="text" id="contactPersonInput" class="form-control"
-                                placeholder="e.g. Rajesh Kumar">
+                            <label style="font-size: 0.8rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.8px; color: rgba(255,255,255,0.8); margin-bottom: 6px; display: flex; align-items: center; gap: 6px;">
+                                <i class="fa-solid fa-user-tie" style="color: #10b981;"></i> Contact Person
+                            </label>
+                            <input type="text" id="contactPersonInput" class="minimal-input" placeholder="e.g. Rajesh Kumar">
                         </div>
                         <div>
-                            <label
-                                style="font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.8px; color: var(--text-muted); margin-bottom: 8px; display: flex; align-items: center; gap: 6px;"><i
-                                    class="fa-solid fa-phone" style="font-size: 0.7rem;"></i> Phone Number</label>
-                            <input type="tel" id="publicPhoneInput" class="form-control" placeholder="+91 98765 43210">
+                            <label style="font-size: 0.8rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.8px; color: rgba(255,255,255,0.8); margin-bottom: 6px; display: flex; align-items: center; gap: 6px;">
+                                <i class="fa-solid fa-phone" style="color: #10b981;"></i> Phone Number
+                            </label>
+                            <input type="tel" id="publicPhoneInput" class="minimal-input" placeholder="+91 98765 43210">
                         </div>
                         <div style="grid-column: 1 / -1;">
-                            <label
-                                style="font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.8px; color: var(--text-muted); margin-bottom: 8px; display: flex; align-items: center; gap: 6px;"><i
-                                    class="fa-solid fa-location-dot" style="font-size: 0.7rem;"></i> Address</label>
-                            <input type="text" id="locationInput" class="form-control"
-                                placeholder="123, Brigade Road, Bengaluru - 560001">
+                            <label style="font-size: 0.8rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.8px; color: rgba(255,255,255,0.8); margin-bottom: 6px; display: flex; align-items: center; gap: 6px;">
+                                <i class="fa-solid fa-location-dot" style="color: #10b981;"></i> Primary Address
+                            </label>
+                            <input type="text" id="locationInput" class="minimal-input" placeholder="123, Main Road, Bengaluru - 560001">
                         </div>
                     </div>
                 </div>
 
-                <!-- SECTION 3: Compliance & Logistics -->
-                <div
-                    style="background: rgba(255,255,255,0.03); border: 1px solid var(--border-glow); border-radius: 20px; padding: 28px; margin-bottom: 28px;">
-                    <div
-                        style="display: flex; align-items: center; gap: 10px; margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px solid rgba(255,255,255,0.06);">
-                        <i class="fa-solid fa-shield-halved" style="color: var(--primary-color);"></i>
-                        <h3
-                            style="margin: 0; font-size: 0.85rem; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: var(--text-muted);">
-                            Compliance &amp; Logistics</h3>
+                <!-- SECTION 3: Compliance & Pickup Logistics -->
+                <div style="background: rgba(255,255,255,0.04); border: 1.5px solid rgba(16, 185, 129, 0.25); border-radius: 20px; padding: 1.5rem; margin-bottom: 2rem;">
+                    <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 1.25rem; padding-bottom: 0.75rem; border-bottom: 1px solid rgba(255,255,255,0.1);">
+                        <i class="fa-solid fa-shield-halved" style="color: #10b981; font-size: 1.1rem;"></i>
+                        <h3 style="margin: 0; font-size: 0.9rem; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: #34d399;">
+                            Compliance & Logistics
+                        </h3>
                     </div>
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 18px;">
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
                         <!-- FSSAI: Seller only -->
                         <div id="fssaiFieldWrap" style="grid-column: 1 / -1; display: none;">
-                            <label
-                                style="font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.8px; color: var(--text-muted); margin-bottom: 8px; display: flex; align-items: center; gap: 6px;"><i
-                                    class="fa-solid fa-certificate" style="font-size: 0.7rem;"></i> FSSAI License
-                                No.</label>
-                            <input type="text" id="fssaiInput" class="form-control" placeholder="14-digit FSSAI number"
-                                style="font-family: monospace; letter-spacing: 1px; max-width: 340px;">
+                            <label style="font-size: 0.8rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.8px; color: rgba(255,255,255,0.8); margin-bottom: 6px; display: flex; align-items: center; gap: 6px;">
+                                <i class="fa-solid fa-certificate" style="color: #10b981;"></i> FSSAI License Number
+                            </label>
+                            <input type="text" id="fssaiInput" class="minimal-input" placeholder="14-digit FSSAI Registration number" style="font-family: monospace; letter-spacing: 1px;">
                         </div>
-                        <!-- Pickup Instructions: Both -->
+                        <!-- Pickup Instructions -->
                         <div style="grid-column: 1 / -1;">
-                            <label
-                                style="font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.8px; color: var(--text-muted); margin-bottom: 8px; display: flex; align-items: center; gap: 6px;"><i
-                                    class="fa-solid fa-route" style="font-size: 0.7rem;"></i> Pickup
-                                Instructions</label>
-                            <textarea id="pickupInstructionsInput" class="form-control"
-                                placeholder="e.g. Enter through the rear service gate. Ask for the kitchen supervisor on duty."
-                                rows="3" style="resize: none;"></textarea>
+                            <label style="font-size: 0.8rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.8px; color: rgba(255,255,255,0.8); margin-bottom: 6px; display: flex; align-items: center; gap: 6px;">
+                                <i class="fa-solid fa-route" style="color: #10b981;"></i> Pickup Instructions
+                            </label>
+                            <textarea id="pickupInstructionsInput" class="minimal-input" rows="2" style="resize: vertical;" placeholder="e.g. Enter through rear kitchen entrance. Contact manager on duty."></textarea>
                         </div>
                     </div>
                 </div>
 
                 <!-- Save Button -->
-                <button type="submit" id="saveSettingsBtn" class="btn btn-primary w-100 btn-glow"
-                    style="height: 54px; font-size: 1rem; font-weight: 700; letter-spacing: 0.5px; border-radius: 14px;">
-                    <i class="fa-solid fa-floppy-disk"></i>&nbsp; Save All Changes
-                </button>
+                <div style="text-align: center;">
+                    <button type="submit" id="saveSettingsBtn" class="minimal-pill-btn" style="min-width: 240px !important;">
+                        <i class="fa-solid fa-floppy-disk"></i>&nbsp; Save All Changes
+                    </button>
+                </div>
 
             </form>
         </div>

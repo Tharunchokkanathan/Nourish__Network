@@ -30,6 +30,28 @@
     --terracotta: #e67e22;
 }
 
+.preset-chip-btn {
+    background: rgba(16, 185, 129, 0.08);
+    border: 1px solid rgba(16, 185, 129, 0.3);
+    color: var(--text-primary);
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.preset-chip-btn:hover {
+    background: var(--accent-primary);
+    color: #ffffff;
+    border-color: var(--accent-primary);
+    transform: translateY(-2px);
+}
+
 /* Anti-flash Utilities */
 .user-logged-in #home-portal { display: none !important; }
 .user-logged-in #nn-portals-root { display: block !important; }
@@ -4394,5 +4416,250 @@ select.form-control option {
     }
     to {
         filter: brightness(1.2) drop-shadow(0 0 15px currentColor);
+    }
+}
+
+/* =========================================
+   COMPREHENSIVE MOBILE & SMOOTHNESS SUITE
+   ========================================= */
+
+/* 1. Global Touch & Tap Optimization */
+html, body {
+    -webkit-tap-highlight-color: transparent !important;
+    touch-action: manipulation;
+    -webkit-text-size-adjust: 100%;
+}
+
+/* Micro-interaction feedback for active touch elements */
+button:active, 
+.btn:active, 
+.minimal-pill-btn:active, 
+.preset-chip-btn:active, 
+.nav-item:active,
+.dock-theme-btn:active {
+    transform: scale(0.96) !important;
+    transition: transform 0.12s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+/* Touch Scroll Smoothness */
+.cart-items-list,
+.comment-wall-premium,
+.settings-modal-card,
+.modal-content,
+#settingsModal {
+    -webkit-overflow-scrolling: touch;
+}
+
+/* 2. Settings Modal Mobile Perfection */
+@media (max-width: 768px) {
+    #settingsModal {
+        padding: 12px 10px !important;
+        align-items: flex-end !important; /* Bottom-sheet feel on mobile */
+    }
+
+    .settings-modal-card {
+        padding: 1.5rem 1.1rem !important;
+        border-radius: 28px 28px 20px 20px !important;
+        max-height: 94vh !important;
+        width: 100% !important;
+        margin: 0 !important;
+    }
+
+    /* Stack identity section avatar & fields */
+    .settings-modal-card form > div > div[style*="grid-template-columns: 120px 1fr"] {
+        grid-template-columns: 1fr !important;
+        gap: 1.25rem !important;
+        text-align: center;
+    }
+
+    .settings-modal-card form > div > div > div[style*="text-align: center"] {
+        margin: 0 auto;
+    }
+
+    /* Stack 2-column input grids into single column */
+    .settings-modal-card div[style*="grid-template-columns: 1fr 1fr"] {
+        grid-template-columns: 1fr !important;
+        gap: 0.9rem !important;
+    }
+
+    /* Input sizing & 16px font-size to prevent iOS focus-zoom */
+    .settings-modal-card input,
+    .settings-modal-card textarea,
+    .minimal-input,
+    .form-control {
+        font-size: 16px !important;
+        padding: 0.8rem 1rem !important;
+        min-height: 48px;
+        border-radius: 14px !important;
+    }
+
+    .settings-modal-card button[type="submit"] {
+        width: 100% !important;
+        min-height: 52px !important;
+        font-size: 1rem !important;
+    }
+}
+
+/* 3. Portals & Seller/Buyer Mobile Responsiveness */
+@media (max-width: 768px) {
+    .portal-wrapper {
+        padding-top: 75px !important;
+    }
+
+    .portal-wrapper .container {
+        padding: 1rem 1rem 4rem !important;
+    }
+
+    /* Page title */
+    .seller-page-title {
+        font-size: 1.5rem !important;
+    }
+
+    /* Profile / Bio Card Header */
+    .seller-form-card div[style*="display: flex; align-items: center; gap: 1.5rem"] {
+        flex-direction: column !important;
+        text-align: center !important;
+        gap: 1.1rem !important;
+    }
+
+    .seller-form-card div[style*="display: flex; align-items: center; gap: 1.5rem"] button {
+        width: 100% !important;
+        justify-content: center !important;
+    }
+
+    /* Tab Buttons on Mobile */
+    .portal-tabs {
+        width: 100% !important;
+        justify-content: space-around !important;
+    }
+
+    .portal-tab-btn {
+        flex: 1 !important;
+        padding: 0.7rem 0.5rem !important;
+        font-size: 0.85rem !important;
+        text-align: center !important;
+    }
+
+    /* Quick Preset Chips */
+    .preset-chip-btn {
+        padding: 7px 14px !important;
+        font-size: 0.8rem !important;
+    }
+
+    /* Add Food Form Grid */
+    .add-food-grid {
+        grid-template-columns: 1fr !important;
+    }
+
+    /* Food Cards Grid on Mobile */
+    .items-grid {
+        grid-template-columns: 1fr !important;
+        gap: 1.25rem !important;
+    }
+
+    .card-image {
+        height: 210px !important;
+    }
+
+    .card-info {
+        padding: 1.5rem !important;
+    }
+}
+
+/* 4. Landing Page Mobile Polish */
+@media (max-width: 768px) {
+    .hero {
+        padding: 6.5rem 0 3.5rem !important;
+    }
+
+    .hero-title {
+        font-size: clamp(2.2rem, 7.5vw, 3.5rem) !important;
+        line-height: 1.15 !important;
+    }
+
+    .hero-subtitle {
+        font-size: 1.05rem !important;
+        margin-bottom: 2rem !important;
+    }
+
+    .bento-hero-img {
+        height: 260px !important;
+    }
+
+    .about-grid, .contact-grid {
+        grid-template-columns: 1fr !important;
+        gap: 2.5rem !important;
+    }
+
+    .image-grid {
+        height: 320px !important;
+    }
+
+    .img-1 {
+        width: 88% !important;
+    }
+
+    .img-2 {
+        width: 72% !important;
+    }
+
+    .section-header h2 {
+        font-size: 2.1rem !important;
+    }
+
+    .steps-grid {
+        grid-template-columns: 1fr !important;
+        gap: 1.25rem !important;
+    }
+
+    .impact-stats {
+        grid-template-columns: repeat(2, 1fr) !important;
+        gap: 1rem !important;
+    }
+
+    .stat-box {
+        padding: 2rem 1rem !important;
+        border-radius: 24px !important;
+    }
+
+    .stat-number {
+        font-size: 2.2rem !important;
+    }
+
+    .stat-icon {
+        width: 60px !important;
+        height: 60px !important;
+        font-size: 2rem !important;
+        margin-bottom: 1rem !important;
+    }
+
+    .join-banner {
+        padding: 3rem 1.5rem !important;
+        border-radius: 28px !important;
+        gap: 2rem !important;
+    }
+
+    .footer-grid {
+        grid-template-columns: 1fr !important;
+        gap: 2rem !important;
+    }
+}
+
+/* 5. Extra Small Screens (<= 480px) */
+@media (max-width: 480px) {
+    .container {
+        padding: 0 1.2rem !important;
+    }
+
+    .impact-stats {
+        grid-template-columns: 1fr !important;
+    }
+
+    .logo span {
+        font-size: 1.15rem !important;
+    }
+
+    .minimal-auth-card {
+        padding: 2.25rem 1.25rem 1.75rem !important;
     }
 }

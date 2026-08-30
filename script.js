@@ -39,6 +39,115 @@ document.addEventListener('DOMContentLoaded', () => {
     const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.protocol === 'file:';
     const API_BASE = window.location.protocol === 'file:' ? 'http://localhost:3000/api' : (isLocal ? '/api' : 'https://nourish-network-4bit.onrender.com/api');
 
+    function getSmartFoodImage(name, category, customImageUrl) {
+        if (customImageUrl && customImageUrl.startsWith('/uploads')) {
+            const isLocalHost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+            return (isLocalHost ? '' : 'https://nourish-network-4bit.onrender.com') + customImageUrl;
+        }
+        if (customImageUrl && customImageUrl.includes('unsplash.com/photos/')) {
+            try {
+                const parts = customImageUrl.split('unsplash.com/photos/')[1].split('?')[0].split('-');
+                const photoId = parts[parts.length - 1];
+                if (photoId) {
+                    return `https://images.unsplash.com/photo-${photoId}?w=600&q=80`;
+                }
+            } catch (e) { }
+        }
+        if (customImageUrl && customImageUrl.includes('drive.google.com')) {
+            const driveIdMatch = customImageUrl.match(/\/d\/([a-zA-Z0-9_-]+)/) || customImageUrl.match(/id=([a-zA-Z0-9_-]+)/);
+            if (driveIdMatch && driveIdMatch[1]) {
+                return `https://lh3.googleusercontent.com/d/${driveIdMatch[1]}`;
+            }
+        }
+        if (customImageUrl && /^https?:\/\//i.test(customImageUrl) && !customImageUrl.includes('ba9599a7e63c')) {
+            return customImageUrl;
+        }
+
+        const title = (name || '').toLowerCase();
+        const cat = (category || '').toLowerCase();
+
+        // 1. Noodles / Maggi / Maggie / Chowmein / Ramen
+        if (/maggi|maggie|noodle|ramen|chowmein|chow mein/i.test(title)) {
+            return 'https://images.unsplash.com/photo-1612927601601-6638404737ce?w=600&q=80';
+        }
+
+        // 2. Pasta / Spaghetti / Lasagna / Macaroni / Penne
+        if (/pasta|spaghetti|lasagna|macaroni|penne/i.test(title)) {
+            return 'https://images.unsplash.com/photo-1551183053-bf91a1d81141?w=600&q=80';
+        }
+
+        // 3. Pizza
+        if (/pizza/i.test(title)) {
+            return 'https://images.unsplash.com/photo-1513104890138-7c749659a591?w=600&q=80';
+        }
+
+        // 4. Burger / Sandwich
+        if (/burger/i.test(title)) {
+            return 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=600&q=80';
+        }
+        if (/sandwich|toast|sub/i.test(title)) {
+            return 'https://images.unsplash.com/photo-1528735602780-2552fd46c7af?w=600&q=80';
+        }
+
+        // 5. South Indian / Idli / Dosa / Sambar / Vada / Uttapam / Upma
+        if (/idli|dosa|sambar|vada|uttapam|upma|pongal|chutney|south/i.test(title)) {
+            return 'https://images.unsplash.com/photo-1589301760014-d929f3979dbc?w=600&q=80';
+        }
+
+        // 6. Biryani / Rice / Pulao / Fried Rice / Thali
+        if (/biryani|rice|pulao|palao|khichdi|fried rice|thali/i.test(title)) {
+            return 'https://images.unsplash.com/photo-1563379091339-03b21ab4a4f8?w=600&q=80';
+        }
+
+        // 7. Indian Curry / Paneer / Butter Chicken / Dal / Roti / Naan / Chole
+        if (/paneer|curry|butter chicken|dal|gravy|roti|naan|paratha|chole|rajma|subzi|sabzi/i.test(title)) {
+            return 'https://images.unsplash.com/photo-1588166524941-3bf61a9c41db?w=600&q=80';
+        }
+
+        // 8. Salad / Veg / Healthy / Soup / Bowl
+        if (/salad|sprouts|vegetable|veg|green|soup|bowl|healthy/i.test(title) || cat.includes('produce')) {
+            return 'https://images.unsplash.com/photo-1540420773420-3366772f4999?w=600&q=80';
+        }
+
+        // 9. Sweets / Dessert / Cake / Pastry / Donut / Bakery / Bread / Mithai
+        if (/cake|sweet|mithai|dessert|pastry|donut|bread|bakery|cookie|halwa|gulab/i.test(title) || cat.includes('bakery')) {
+            return 'https://images.unsplash.com/photo-1509440159596-0249088772ff?w=600&q=80';
+        }
+
+        // 10. Fruits / Produce / Juice / Beverages
+        if (/fruit|apple|banana|mango|orange|juice|smoothie|drink/i.test(title)) {
+            return 'https://images.unsplash.com/photo-1610832958506-aa56368176cf?w=600&q=80';
+        }
+
+        // 11. Packaged Goods
+        if (cat.includes('packaged')) {
+            return 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=600&q=80';
+        }
+
+        // Universal Healthy Meal Bowl Default
+        return 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=600&q=80';
+    }
+
+    window.applyFoodPreset = function (presetName, presetCategory) {
+        const idEl = document.getElementById('p-id');
+        const nameEl = document.getElementById('p-name');
+        const catEl = document.getElementById('p-cat');
+        const imgEl = document.getElementById('p-img');
+        const cancelBtn = document.getElementById('cancel-edit-btn');
+        const submitBtn = document.getElementById('submit-btn');
+
+        if (idEl) idEl.value = '';
+        if (nameEl) nameEl.value = presetName;
+        if (catEl) catEl.value = presetCategory;
+        if (imgEl) imgEl.value = '';
+        if (cancelBtn) cancelBtn.style.display = 'none';
+        if (submitBtn) submitBtn.innerHTML = '<i class="fa-solid fa-leaf"></i> Publish Listing';
+
+        if (window.__showToast) {
+            window.__showToast(`Preset "${presetName}" applied! 🌿`, 'info');
+        }
+    };
+
     // 1. Initial State
     const state = {
         activePortal: 'home',
@@ -236,9 +345,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     ...item,
                     qty: item.quantity || item.qty || 0,
                     expiry: item.expiryTime || item.expiry || null,
-                    img: (item.imageUrl || item.img || "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=600").startsWith('/uploads')
-                        ? (isLocal ? '' : 'https://nourish-network-4bit.onrender.com') + (item.imageUrl || item.img)
-                        : (item.imageUrl || item.img)
+                    img: getSmartFoodImage(item.name, item.category, item.imageUrl || item.img)
                 }));
                 // Merge in any demo listings saved to localStorage
                 const demoListings = JSON.parse(localStorage.getItem('nn_demo_listings') || '[]');
@@ -1552,7 +1659,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     <div id="tab-listings" class="portal-tab-content">
                         <div class="seller-listings-header">
                             <h2>LISTINGS</h2>
-                            <span class="listings-count-badge">${state.listings.length} items</span>
+                            <span class="listings-count-badge" id="my-listings-count-badge">${sellerListings.length} items</span>
                         </div>
                         <div class="items-grid" id="my-listings-container" style="margin-bottom: 4rem;">
                             <!-- Listings will render here -->
@@ -1565,6 +1672,19 @@ document.addEventListener('DOMContentLoaded', () => {
                             </div>
                             <form id="add-food-form" class="add-food-grid">
                                 <input type="hidden" id="p-id" value="">
+                                <div class="form-group full-width" style="margin-bottom: 0.5rem;">
+                                    <label style="font-size: 0.82rem; color: var(--accent-primary); font-weight: 700;">⚡ Quick Presets (Click to autofill dish & image):</label>
+                                    <div style="display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px;">
+                                        <button type="button" class="preset-chip-btn" onclick="window.applyFoodPreset('Idli & Sambar', 'Cooked')">🍲 Idli & Sambar</button>
+                                        <button type="button" class="preset-chip-btn" onclick="window.applyFoodPreset('Pasta & Maggie', 'Cooked')">🍝 Pasta & Maggie</button>
+                                        <button type="button" class="preset-chip-btn" onclick="window.applyFoodPreset('Hyderabadi Biryani', 'Cooked')">🍛 Hyderabadi Biryani</button>
+                                        <button type="button" class="preset-chip-btn" onclick="window.applyFoodPreset('Paneer Butter Masala', 'Cooked')">🥘 Paneer Masala</button>
+                                        <button type="button" class="preset-chip-btn" onclick="window.applyFoodPreset('Classic Pizza', 'Cooked')">🍕 Pizza</button>
+                                        <button type="button" class="preset-chip-btn" onclick="window.applyFoodPreset('Fresh Garden Salad', 'Produce')">🥗 Fresh Salad</button>
+                                        <button type="button" class="preset-chip-btn" onclick="window.applyFoodPreset('Artisan Pastries & Cake', 'Bakery')">🍰 Bakery Treats</button>
+                                        <button type="button" class="preset-chip-btn" onclick="window.applyFoodPreset('Fresh Fruit Box', 'Produce')">🍎 Fruits</button>
+                                    </div>
+                                </div>
                                 <div class="form-group">
                                     <label>Food Name</label>
                                     <input type="text" id="p-name" class="form-control" placeholder="e.g. Idli & Sambar" required>
@@ -1587,6 +1707,10 @@ document.addEventListener('DOMContentLoaded', () => {
                                 <div class="form-group">
                                     <label>Expiry Date & Time</label>
                                     <input type="datetime-local" id="p-expiry" class="form-control" required>
+                                </div>
+                                <div class="form-group">
+                                    <label>Custom Image URL (Optional)</label>
+                                    <input type="url" id="p-img" class="form-control" placeholder="Paste custom photo link (e.g. https://...)">
                                 </div>
                                 <div class="form-group full-width">
                                     <label>Short Description</label>
@@ -1636,6 +1760,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Filter to show only THIS seller's items
         const myItems = state.listings.filter(l => String(l.vendorId) === String(user.id));
+
+        const countBadge = document.getElementById('my-listings-count-badge');
+        if (countBadge) {
+            countBadge.textContent = `${myItems.length} items`;
+        }
 
         if (myItems.length === 0) {
             container.innerHTML = `
@@ -1696,7 +1825,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                     document.getElementById('submit-btn').innerHTML = '💾 Save Changes';
                     document.getElementById('cancel-edit-btn').style.display = 'block';
-                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                    const addFormSection = document.getElementById('add-listing-section') || document.getElementById('add-food-form');
+                    if (addFormSection) {
+                        addFormSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }
                 }
             });
         });
@@ -1707,18 +1839,20 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (!confirm("Are you sure you want to delete this listing?")) return;
 
                 const token = sessionStorage.getItem('nourishToken');
-                
+
                 // Helper to remove locally
                 const removeLocally = () => {
                     let demoListings = JSON.parse(localStorage.getItem('nn_demo_listings') || '[]');
                     demoListings = demoListings.filter(l => String(l.id) !== String(id));
                     localStorage.setItem('nn_demo_listings', JSON.stringify(demoListings));
                     state.listings = state.listings.filter(l => String(l.id) !== String(id));
-                    showToast("Listing deleted successfully.");
-                    refreshState();
+                    showToast("Listing deleted successfully. 🗑️", "success");
+                    renderSellerListings();
+                    if (typeof renderBuyerPortal === 'function') renderBuyerPortal();
+                    updateLiveStats();
                 };
 
-                const isDemoToken = !token || token === 'demo-token-seller' || token === 'demo-token-buyer';
+                const isDemoToken = !token || token.startsWith('demo-token') || String(id).startsWith('demo-');
                 if (isDemoToken) {
                     removeLocally();
                     return;
@@ -1730,14 +1864,9 @@ document.addEventListener('DOMContentLoaded', () => {
                         headers: { 'Authorization': `Bearer ${token}` }
                     });
 
-                    if (response.ok) {
+                    if (response.ok || response.status === 404 || response.status === 403) {
                         removeLocally();
                     } else {
-                        let demoListings = JSON.parse(localStorage.getItem('nn_demo_listings') || '[]');
-                        if (demoListings.some(l => String(l.id) === String(id))) {
-                            removeLocally();
-                            return;
-                        }
                         const data = await response.json();
                         showToast(data.error || "Delete failed", "error");
                     }
@@ -2039,6 +2168,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const price = document.getElementById('p-price').value;
                 const description = document.getElementById('p-desc').value;
                 const expiry = document.getElementById('p-expiry').value;
+                const customImg = (document.getElementById('p-img') && document.getElementById('p-img').value) ? document.getElementById('p-img').value.trim() : null;
 
                 const token = sessionStorage.getItem('nourishToken');
                 if (!token) {
@@ -2051,6 +2181,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const payload = {
                     name, category, quantity: parseInt(qty),
                     price: parseFloat(price), description,
+                    imageUrl: customImg || getSmartFoodImage(name, category, null),
                     expiryTime: expiry ? new Date(expiry).toISOString() : null
                 };
 
@@ -2068,6 +2199,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                 qty: parseInt(qty),
                                 price: parseFloat(price),
                                 description,
+                                img: getSmartFoodImage(name, category, customImg),
                                 expiry: expiry ? new Date(expiry).toISOString() : null
                             };
                         }
@@ -2088,7 +2220,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             vendorAvatar: user.avatarUrl || 'assets/default-avatar.jpg',
                             isVerified: true,
                             fssaiCode: user.fssaiCode || '',
-                            img: `https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=600&q=80`
+                            img: getSmartFoodImage(name, category, customImg)
                         };
                         state.listings.unshift(newItem);
                         // Persist demo listing to localStorage so it survives refresh
@@ -2121,6 +2253,17 @@ document.addEventListener('DOMContentLoaded', () => {
                             },
                             body: JSON.stringify(payload)
                         });
+                        // If updating a deleted or missing listing returns 404, fallback to CREATE automatically!
+                        if (response.status === 404) {
+                            response = await fetch(`${API_BASE}/listings`, {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'Authorization': `Bearer ${token}`
+                                },
+                                body: JSON.stringify(payload)
+                            });
+                        }
                     } else {
                         // CREATE
                         response = await fetch(`${API_BASE}/listings`, {
@@ -2748,6 +2891,32 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         // Listen for the custom event to load data
         document.addEventListener('load-profile-data', loadProfile);
+
+        // Backdrop click to dismiss settings modal
+        if (settingsModal) {
+            settingsModal.addEventListener('click', (e) => {
+                if (e.target === settingsModal) {
+                    settingsModal.style.display = 'none';
+                }
+            });
+        }
+
+        // Global ESC key listener for modals
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                if (settingsModal && settingsModal.style.display !== 'none') {
+                    settingsModal.style.display = 'none';
+                }
+                const authModal = document.getElementById('authModal');
+                if (authModal && authModal.classList.contains('active')) {
+                    authModal.classList.remove('active');
+                }
+                const cartDrawer = document.getElementById('cart-drawer');
+                if (cartDrawer && cartDrawer.classList.contains('active')) {
+                    cartDrawer.classList.remove('active');
+                }
+            }
+        });
 
         const settingsNavBtn = document.getElementById('settings-toggle-nav');
         if (settingsNavBtn) {
