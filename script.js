@@ -33,6 +33,112 @@ window.deleteComment = function (commentId, btnEl) {
     }, 250);
 };
 
+// ---- GLASSMORPHISM 12-HOUR DATE & TIME PICKER HELPERS ----
+window.glassAmPmState = 'PM';
+
+window.setGlassAmPm = function(period) {
+    window.glassAmPmState = period;
+    const amBtn = document.getElementById('ampm-am');
+    const pmBtn = document.getElementById('ampm-pm');
+    if (amBtn && pmBtn) {
+        if (period === 'AM') {
+            amBtn.classList.add('active');
+            pmBtn.classList.remove('active');
+        } else {
+            pmBtn.classList.add('active');
+            amBtn.classList.remove('active');
+        }
+    }
+    window.syncGlassPickerToExpiry();
+};
+
+window.syncGlassPickerToExpiry = function() {
+    const dateInput = document.getElementById('glass-date-val');
+    const hourInput = document.getElementById('glass-hour-val');
+    const minInput = document.getElementById('glass-min-val');
+    const hiddenExpiry = document.getElementById('p-expiry');
+    const preview = document.getElementById('glass-time-preview');
+
+    if (!dateInput || !hourInput || !minInput || !hiddenExpiry) return;
+
+    let dateVal = dateInput.value;
+    if (!dateVal) {
+        const today = new Date();
+        const yyyy = today.getFullYear();
+        const mm = String(today.getMonth() + 1).padStart(2, '0');
+        const dd = String(today.getDate()).padStart(2, '0');
+        dateVal = `${yyyy}-${mm}-${dd}`;
+        dateInput.value = dateVal;
+    }
+
+    let hour12 = parseInt(hourInput.value) || 8;
+    let mins = minInput.value || '00';
+    let ampm = window.glassAmPmState || 'PM';
+
+    let hour24 = hour12;
+    if (ampm === 'PM') {
+        if (hour12 < 12) hour24 = hour12 + 12;
+    } else {
+        if (hour12 === 12) hour24 = 0;
+    }
+    const hhStr = String(hour24).padStart(2, '0');
+
+    const isoString = `${dateVal}T${hhStr}:${mins}`;
+    hiddenExpiry.value = isoString;
+
+    try {
+        const d = new Date(`${dateVal}T${hhStr}:${mins}:00`);
+        const dayStr = d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+        const displayHour = String(hour12).padStart(2, '0');
+        if (preview) {
+            preview.innerHTML = `<i class="fa-regular fa-clock"></i> ${dayStr} @ ${displayHour}:${mins} ${ampm}`;
+        }
+    } catch (e) {
+        if (preview) preview.textContent = `${dateVal} @ ${hourInput.value}:${mins} ${ampm}`;
+    }
+};
+
+window.setGlassPickerFromISO = function(isoStr) {
+    if (!isoStr) return;
+    try {
+        const d = new Date(isoStr);
+        if (isNaN(d.getTime())) return;
+
+        const yyyy = d.getFullYear();
+        const mm = String(d.getMonth() + 1).padStart(2, '0');
+        const dd = String(d.getDate()).padStart(2, '0');
+        const dateVal = `${yyyy}-${mm}-${dd}`;
+
+        let hours24 = d.getHours();
+        let mins = String(d.getMinutes()).padStart(2, '0');
+
+        let minNum = Math.round(parseInt(mins) / 5) * 5;
+        if (minNum >= 60) minNum = 55;
+        let minStr = String(minNum).padStart(2, '0');
+
+        let ampm = hours24 >= 12 ? 'PM' : 'AM';
+        let hours12 = hours24 % 12;
+        if (hours12 === 0) hours12 = 12;
+        let hourStr = String(hours12).padStart(2, '0');
+
+        const dateInput = document.getElementById('glass-date-val');
+        const hourInput = document.getElementById('glass-hour-val');
+        const minInput = document.getElementById('glass-min-val');
+
+        if (dateInput) dateInput.value = dateVal;
+        if (hourInput) hourInput.value = hourStr;
+        if (minInput) minInput.value = minStr;
+
+        window.setGlassAmPm(ampm);
+    } catch (e) { }
+};
+
+window.applyQuickTimeOffset = function(offsetHours) {
+    const target = new Date(Date.now() + offsetHours * 3600 * 1000);
+    const isoStr = target.toISOString().slice(0, 16);
+    window.setGlassPickerFromISO(isoStr);
+};
+
 document.addEventListener('DOMContentLoaded', () => {
 
     // 1. Configuration - Dynamic API Detection
@@ -1704,10 +1810,76 @@ document.addEventListener('DOMContentLoaded', () => {
                                     <label>Price per Portion (₹)</label>
                                     <input type="number" id="p-price" class="form-control" value="20" min="0" required>
                                 </div>
-                                <div class="form-group">
-                                    <label>Expiry Date & Time</label>
-                                    <input type="datetime-local" id="p-expiry" class="form-control" required>
-                                </div>
+                                 <div class="form-group full-width">
+                                     <label style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;">
+                                         <span><i class="fa-regular fa-clock" style="color: var(--accent-primary);"></i> Expiry Date & Time</span>
+                                         <span id="glass-time-preview" style="font-size: 0.82rem; color: var(--accent-primary); font-weight: 700; background: rgba(16, 185, 129, 0.1); padding: 4px 12px; border-radius: 12px; border: 1px solid rgba(16, 185, 129, 0.25);">Select Date & Time</span>
+                                     </label>
+                                     
+                                     <div class="glass-datetime-container">
+                                         <input type="hidden" id="p-expiry" required>
+                                         
+                                         <div class="glass-datetime-grid">
+                                             <div class="glass-dt-box">
+                                                 <span class="glass-dt-label"><i class="fa-regular fa-calendar-days"></i> Date</span>
+                                                 <input type="date" id="glass-date-val" class="glass-dt-input" required onchange="window.syncGlassPickerToExpiry()">
+                                             </div>
+                                             
+                                             <div class="glass-dt-box">
+                                                 <span class="glass-dt-label"><i class="fa-solid fa-hourglass-half"></i> Hour</span>
+                                                 <select id="glass-hour-val" class="glass-dt-select" onchange="window.syncGlassPickerToExpiry()">
+                                                     <option value="01">01</option>
+                                                     <option value="02">02</option>
+                                                     <option value="03">03</option>
+                                                     <option value="04">04</option>
+                                                     <option value="05">05</option>
+                                                     <option value="06">06</option>
+                                                     <option value="07">07</option>
+                                                     <option value="08" selected>08</option>
+                                                     <option value="09">09</option>
+                                                     <option value="10">10</option>
+                                                     <option value="11">11</option>
+                                                     <option value="12">12</option>
+                                                 </select>
+                                             </div>
+                                             
+                                             <div class="glass-dt-box">
+                                                 <span class="glass-dt-label"><i class="fa-solid fa-stopwatch"></i> Minute</span>
+                                                 <select id="glass-min-val" class="glass-dt-select" onchange="window.syncGlassPickerToExpiry()">
+                                                     <option value="00" selected>00</option>
+                                                     <option value="05">05</option>
+                                                     <option value="10">10</option>
+                                                     <option value="15">15</option>
+                                                     <option value="20">20</option>
+                                                     <option value="25">25</option>
+                                                     <option value="30">30</option>
+                                                     <option value="35">35</option>
+                                                     <option value="40">40</option>
+                                                     <option value="45">45</option>
+                                                     <option value="50">50</option>
+                                                     <option value="55">55</option>
+                                                 </select>
+                                             </div>
+                                             
+                                             <div class="glass-dt-box">
+                                                 <span class="glass-dt-label"><i class="fa-regular fa-sun"></i> Period</span>
+                                                 <div class="glass-ampm-toggle">
+                                                     <button type="button" class="ampm-btn" id="ampm-am" onclick="window.setGlassAmPm('AM')">AM</button>
+                                                     <button type="button" class="ampm-btn active" id="ampm-pm" onclick="window.setGlassAmPm('PM')">PM</button>
+                                                 </div>
+                                             </div>
+                                         </div>
+
+                                         <div class="glass-time-presets">
+                                             <span class="presets-title">Quick Add:</span>
+                                             <button type="button" class="preset-time-chip" onclick="window.applyQuickTimeOffset(2)">+2 Hours</button>
+                                             <button type="button" class="preset-time-chip" onclick="window.applyQuickTimeOffset(4)">+4 Hours</button>
+                                             <button type="button" class="preset-time-chip" onclick="window.applyQuickTimeOffset(6)">+6 Hours</button>
+                                             <button type="button" class="preset-time-chip" onclick="window.applyQuickTimeOffset(12)">+12 Hours</button>
+                                             <button type="button" class="preset-time-chip" onclick="window.applyQuickTimeOffset(24)">Tomorrow</button>
+                                         </div>
+                                     </div>
+                                 </div>
                                 <div class="form-group">
                                     <label>Custom Image URL (Optional)</label>
                                     <input type="url" id="p-img" class="form-control" placeholder="Paste custom photo link (e.g. https://...)">
@@ -1806,6 +1978,11 @@ document.addEventListener('DOMContentLoaded', () => {
             </div>
         `).join('');
 
+        // Initialize glass date/time picker if empty
+        if (document.getElementById('glass-date-val') && !document.getElementById('glass-date-val').value) {
+            window.applyQuickTimeOffset(4);
+        }
+
         document.querySelectorAll('.edit-btn').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 const id = btn.dataset.id;
@@ -1820,7 +1997,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (item.expiry) {
                         try {
                             const d = new Date(item.expiry);
-                            document.getElementById('p-expiry').value = d.toISOString().slice(0, 16);
+                            const isoStr = d.toISOString().slice(0, 16);
+                            document.getElementById('p-expiry').value = isoStr;
+                            window.setGlassPickerFromISO(isoStr);
                         } catch (e) { }
                     }
                     document.getElementById('submit-btn').innerHTML = '💾 Save Changes';
@@ -2184,6 +2363,9 @@ document.addEventListener('DOMContentLoaded', () => {
         if (form) {
             form.addEventListener('submit', async (e) => {
                 e.preventDefault();
+                if (typeof window.syncGlassPickerToExpiry === 'function') {
+                    window.syncGlassPickerToExpiry();
+                }
                 const pId = document.getElementById('p-id').value;
                 const name = document.getElementById('p-name').value;
                 const category = document.getElementById('p-cat').value;
