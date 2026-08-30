@@ -1941,7 +1941,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                     <label>Price per Portion (₹)</label>
                                     <input type="number" id="p-price" class="form-control" value="20" min="0" required>
                                 </div>
-                                 <div class="form-group full-width" style="position: relative;">
+                                <div class="form-group" style="position: relative;">
                                      <label style="color: var(--text-primary); font-weight: 600;"><i class="fa-regular fa-clock" style="color: var(--accent-primary);"></i> Expiry Date & Time</label>
                                      
                                      <div class="manual-glass-input-wrapper">
