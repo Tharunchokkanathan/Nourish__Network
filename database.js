@@ -67,7 +67,8 @@ if (dbUrl) {
 
     function convertSql(sql) {
         let index = 1;
-        let converted = sql.replace(/\?/g, () => `$${index++}`);
+        let converted = sql.replace(/\?/g, () => `$${index++}`)
+                           .replace(/datetime\('now'\)/gi, 'CURRENT_TIMESTAMP');
         // If it's an INSERT without RETURNING id, append RETURNING id
         if (/^\s*INSERT\s+INTO/i.test(converted) && !/RETURNING/i.test(converted)) {
             converted += ' RETURNING id';

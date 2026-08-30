@@ -178,7 +178,7 @@ app.post('/api/login', (req, res) => {
         return res.status(200).json({
             message: 'Hackathon Demo Login Successful!',
             token: makeToken(user),
-            user: { id: user.id, email: user.email, name: user.organizationName, type: user.accountType, isVerified: 1 }
+            user: { id: user.id, email: user.email, name: user.organizationName, organizationName: user.organizationName, type: user.accountType, accountType: user.accountType, isVerified: 1 }
         });
     }
     if (email === 'ngodemo@gmail.com' && password === 'demo123') {
@@ -192,7 +192,7 @@ app.post('/api/login', (req, res) => {
         return res.status(200).json({
             message: 'Hackathon Demo Login Successful!',
             token: makeToken(user),
-            user: { id: user.id, email: user.email, name: user.organizationName, type: user.accountType, isVerified: 1 }
+            user: { id: user.id, email: user.email, name: user.organizationName, organizationName: user.organizationName, type: user.accountType, accountType: user.accountType, isVerified: 1 }
         });
     }
     // Legacy demo accounts
@@ -201,7 +201,7 @@ app.post('/api/login', (req, res) => {
         return res.status(200).json({
             message: 'Demo login successful!',
             token: makeToken(user),
-            user: { id: user.id, email: user.email, name: user.organizationName, type: user.accountType, isVerified: 1 }
+            user: { id: user.id, email: user.email, name: user.organizationName, organizationName: user.organizationName, type: user.accountType, accountType: user.accountType, isVerified: 1 }
         });
     }
     if (email === 'buyer@demo.com' && password === 'demo123') {
@@ -209,7 +209,7 @@ app.post('/api/login', (req, res) => {
         return res.status(200).json({
             message: 'Demo login successful!',
             token: makeToken(user),
-            user: { id: user.id, email: user.email, name: user.organizationName, type: user.accountType, isVerified: 1 }
+            user: { id: user.id, email: user.email, name: user.organizationName, organizationName: user.organizationName, type: user.accountType, accountType: user.accountType, isVerified: 1 }
         });
     }
     // -------------------------
@@ -237,7 +237,24 @@ app.post('/api/login', (req, res) => {
             res.status(200).json({
                 message: 'Login successful!',
                 token,
-                user: { id: user.id, email: user.email, name: user.organizationName, type: user.accountType, isVerified: 1 }
+                user: {
+                    id: user.id,
+                    email: user.email,
+                    name: user.organizationName,
+                    organizationName: user.organizationName,
+                    type: user.accountType,
+                    accountType: user.accountType,
+                    phone: user.phone || '',
+                    bio: user.bio || '',
+                    address: user.address || '',
+                    contactPerson: user.contactPerson || '',
+                    publicPhone: user.publicPhone || user.phone || '',
+                    website: user.website || '',
+                    fssaiCode: user.fssaiCode || '',
+                    pickupInstructions: user.pickupInstructions || '',
+                    avatarUrl: user.avatarUrl || '',
+                    isVerified: user.isVerified || 1
+                }
             });
         } catch (err) {
             res.status(500).json({ error: err.message });
@@ -247,16 +264,94 @@ app.post('/api/login', (req, res) => {
 
 // 2b. EMAIL VERIFICATION VIA LINK (GET /api/verify-email?token=...)
 app.get('/api/verify-email', (req, res) => {
+    res.setHeader('Content-Type', 'text/html');
     const { token } = req.query;
 
     if (!token) {
         return res.status(400).send(`
+            <!DOCTYPE html>
             <html>
-                <body style="background:#0d1612; color:#ef4444; font-family:sans-serif; text-align:center; padding:50px;">
-                    <h2>Invalid Verification Request</h2>
+            <head>
+                <title>Invalid Request - Nourish Network</title>
+                <style>
+                    * { box-sizing: border-box; }
+                    body {
+                        background: radial-gradient(circle at 50% 30%, #0d261d 0%, #050d09 70%, #020604 100%);
+                        color: #ffffff;
+                        font-family: 'Segoe UI', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        min-height: 100vh;
+                        margin: 0;
+                        padding: 1.5rem;
+                    }
+                    .card {
+                        width: 100%;
+                        max-width: 410px;
+                        background: #091913;
+                        border: 1.5px solid rgba(239, 68, 68, 0.45);
+                        border-radius: 32px;
+                        padding: 3rem 2.25rem 2.5rem;
+                        text-align: center;
+                        box-shadow: 0 35px 90px rgba(0, 0, 0, 0.95), 0 0 45px rgba(239, 68, 68, 0.2);
+                        animation: cardAppear 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+                    }
+                    @keyframes cardAppear {
+                        from { opacity: 0; transform: translateY(20px) scale(0.96); }
+                        to { opacity: 1; transform: translateY(0) scale(1); }
+                    }
+                    .icon-badge {
+                        width: 76px;
+                        height: 76px;
+                        margin: 0 auto 1.5rem;
+                        border-radius: 50%;
+                        background: rgba(239, 68, 68, 0.15);
+                        border: 1.5px solid rgba(239, 68, 68, 0.4);
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        font-size: 2rem;
+                        color: #ef4444;
+                        box-shadow: 0 0 25px rgba(239, 68, 68, 0.3);
+                    }
+                    h2 { font-size: 1.85rem; font-weight: 700; margin: 0 0 0.75rem 0; color: #ffffff; letter-spacing: -0.01em; }
+                    p { color: rgba(255, 255, 255, 0.75); font-size: 0.98rem; line-height: 1.55; margin: 0 0 1.75rem 0; }
+                    .btn {
+                        display: inline-flex;
+                        align-items: center;
+                        justify-content: center;
+                        min-width: 180px;
+                        padding: 0.9rem 2.75rem;
+                        border-radius: 100px;
+                        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+                        color: #ffffff;
+                        font-size: 1.15rem;
+                        font-weight: 700;
+                        letter-spacing: 0.5px;
+                        border: 1px solid rgba(255, 255, 255, 0.3);
+                        box-shadow: 0 10px 30px rgba(16, 185, 129, 0.4), inset 0 1px 1px 0 rgba(255, 255, 255, 0.35);
+                        text-decoration: none;
+                        cursor: pointer;
+                        transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+                    }
+                    .btn:hover {
+                        background: linear-gradient(135deg, #059669 0%, #047857 100%);
+                        border-color: rgba(255, 255, 255, 0.5);
+                        box-shadow: 0 14px 35px rgba(16, 185, 129, 0.5), inset 0 1px 1px 0 rgba(255, 255, 255, 0.45);
+                        transform: translateY(-2px) scale(1.03);
+                    }
+                    .btn:active { transform: scale(0.97); }
+                </style>
+            </head>
+            <body>
+                <div class="card">
+                    <div class="icon-badge">⚠️</div>
+                    <h2>Invalid Request</h2>
                     <p>No verification token was provided.</p>
-                    <a href="/" style="color:#10b981;">Return to Nourish Network</a>
-                </body>
+                    <a href="/" class="btn">Return to Nourish Network</a>
+                </div>
+            </body>
             </html>
         `);
     }
@@ -264,12 +359,89 @@ app.get('/api/verify-email', (req, res) => {
     db.get(`SELECT * FROM users WHERE verificationToken = ?`, [token], (err, user) => {
         if (err || !user) {
             return res.status(400).send(`
+                <!DOCTYPE html>
                 <html>
-                    <body style="background:#0d1612; color:#ef4444; font-family:sans-serif; text-align:center; padding:50px;">
+                <head>
+                    <title>Verification Failed - Nourish Network</title>
+                    <style>
+                        * { box-sizing: border-box; }
+                        body {
+                            background: radial-gradient(circle at 50% 30%, #0d261d 0%, #050d09 70%, #020604 100%);
+                            color: #ffffff;
+                            font-family: 'Segoe UI', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+                            display: flex;
+                            align-items: center;
+                            justify-content: center;
+                            min-height: 100vh;
+                            margin: 0;
+                            padding: 1.5rem;
+                        }
+                        .card {
+                            width: 100%;
+                            max-width: 410px;
+                            background: #091913;
+                            border: 1.5px solid rgba(239, 68, 68, 0.45);
+                            border-radius: 32px;
+                            padding: 3rem 2.25rem 2.5rem;
+                            text-align: center;
+                            box-shadow: 0 35px 90px rgba(0, 0, 0, 0.95), 0 0 45px rgba(239, 68, 68, 0.2);
+                            animation: cardAppear 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+                        }
+                        @keyframes cardAppear {
+                            from { opacity: 0; transform: translateY(20px) scale(0.96); }
+                            to { opacity: 1; transform: translateY(0) scale(1); }
+                        }
+                        .icon-badge {
+                            width: 76px;
+                            height: 76px;
+                            margin: 0 auto 1.5rem;
+                            border-radius: 50%;
+                            background: rgba(239, 68, 68, 0.15);
+                            border: 1.5px solid rgba(239, 68, 68, 0.4);
+                            display: flex;
+                            align-items: center;
+                            justify-content: center;
+                            font-size: 2rem;
+                            color: #ef4444;
+                            box-shadow: 0 0 25px rgba(239, 68, 68, 0.3);
+                        }
+                        h2 { font-size: 1.85rem; font-weight: 700; margin: 0 0 0.75rem 0; color: #ffffff; letter-spacing: -0.01em; }
+                        p { color: rgba(255, 255, 255, 0.75); font-size: 0.98rem; line-height: 1.55; margin: 0 0 1.75rem 0; }
+                        .btn {
+                            display: inline-flex;
+                            align-items: center;
+                            justify-content: center;
+                            min-width: 180px;
+                            padding: 0.9rem 2.75rem;
+                            border-radius: 100px;
+                            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+                            color: #ffffff;
+                            font-size: 1.15rem;
+                            font-weight: 700;
+                            letter-spacing: 0.5px;
+                            border: 1px solid rgba(255, 255, 255, 0.3);
+                            box-shadow: 0 10px 30px rgba(16, 185, 129, 0.4), inset 0 1px 1px 0 rgba(255, 255, 255, 0.35);
+                            text-decoration: none;
+                            cursor: pointer;
+                            transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+                        }
+                        .btn:hover {
+                            background: linear-gradient(135deg, #059669 0%, #047857 100%);
+                            border-color: rgba(255, 255, 255, 0.5);
+                            box-shadow: 0 14px 35px rgba(16, 185, 129, 0.5), inset 0 1px 1px 0 rgba(255, 255, 255, 0.45);
+                            transform: translateY(-2px) scale(1.03);
+                        }
+                        .btn:active { transform: scale(0.97); }
+                    </style>
+                </head>
+                <body>
+                    <div class="card">
+                        <div class="icon-badge">❌</div>
                         <h2>Verification Failed</h2>
                         <p>Invalid or expired verification token.</p>
-                        <a href="/" style="color:#10b981;">Return to Nourish Network</a>
-                    </body>
+                        <a href="/" class="btn">Return to Nourish Network</a>
+                    </div>
+                </body>
                 </html>
             `);
         }
@@ -292,46 +464,104 @@ app.get('/api/verify-email', (req, res) => {
                     <head>
                         <title>Email Verified - Nourish Network</title>
                         <style>
+                            * { box-sizing: border-box; }
                             body {
-                                background: #0d1612;
-                                color: #e2e8f0;
-                                font-family: 'Segoe UI', system-ui, sans-serif;
+                                background: radial-gradient(circle at 50% 30%, #0d261d 0%, #050d09 70%, #020604 100%);
+                                color: #ffffff;
+                                font-family: 'Segoe UI', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
                                 display: flex;
                                 align-items: center;
                                 justify-content: center;
-                                height: 100vh;
+                                min-height: 100vh;
                                 margin: 0;
+                                padding: 1.5rem;
                             }
                             .card {
-                                background: #13221b;
-                                border: 1px solid #10b981;
-                                padding: 40px;
-                                border-radius: 24px;
+                                width: 100%;
+                                max-width: 410px;
+                                background: #091913;
+                                border: 1.5px solid rgba(16, 185, 129, 0.45);
+                                border-radius: 32px;
+                                padding: 3rem 2.25rem 2.5rem;
                                 text-align: center;
-                                max-width: 440px;
-                                box-shadow: 0 20px 50px rgba(16,185,129,0.2);
+                                box-shadow: 0 35px 90px rgba(0, 0, 0, 0.95), 0 0 45px rgba(16, 185, 129, 0.25);
+                                animation: cardAppear 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
                             }
-                            .icon { font-size: 50px; color: #10b981; margin-bottom: 20px; }
+                            @keyframes cardAppear {
+                                from { opacity: 0; transform: translateY(20px) scale(0.96); }
+                                to { opacity: 1; transform: translateY(0) scale(1); }
+                            }
+                            .icon-badge {
+                                width: 80px;
+                                height: 80px;
+                                margin: 0 auto 1.5rem;
+                                border-radius: 50%;
+                                background: rgba(16, 185, 129, 0.15);
+                                border: 1.5px solid rgba(16, 185, 129, 0.4);
+                                display: flex;
+                                align-items: center;
+                                justify-content: center;
+                                font-size: 2.2rem;
+                                color: #34d399;
+                                box-shadow: 0 0 30px rgba(16, 185, 129, 0.35);
+                            }
+                            h2 {
+                                font-size: 1.85rem;
+                                font-weight: 700;
+                                margin: 0 0 0.85rem 0;
+                                color: #ffffff;
+                                letter-spacing: -0.01em;
+                            }
+                            p {
+                                color: rgba(255, 255, 255, 0.85);
+                                font-size: 1rem;
+                                line-height: 1.55;
+                                margin: 0 0 0.5rem 0;
+                            }
+                            .org-name {
+                                color: #34d399;
+                                font-weight: 700;
+                            }
+                            .sub-text {
+                                font-size: 0.92rem;
+                                color: rgba(255, 255, 255, 0.65);
+                                margin-bottom: 1.75rem;
+                            }
                             .btn {
-                                display: inline-block;
-                                margin-top: 20px;
-                                padding: 14px 32px;
-                                background: linear-gradient(135deg, #10b981, #059669);
-                                color: #fff;
+                                display: inline-flex;
+                                align-items: center;
+                                justify-content: center;
+                                min-width: 180px;
+                                padding: 0.9rem 2.75rem;
+                                border-radius: 100px;
+                                background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+                                color: #ffffff;
+                                font-size: 1.15rem;
+                                font-weight: 700;
+                                letter-spacing: 0.5px;
+                                border: 1px solid rgba(255, 255, 255, 0.3);
+                                box-shadow: 0 10px 30px rgba(16, 185, 129, 0.4), inset 0 1px 1px 0 rgba(255, 255, 255, 0.35);
                                 text-decoration: none;
-                                font-weight: bold;
-                                border-radius: 14px;
-                                font-size: 16px;
-                                box-shadow: 0 10px 25px rgba(16, 185, 129, 0.4);
+                                cursor: pointer;
+                                transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+                            }
+                            .btn:hover {
+                                background: linear-gradient(135deg, #059669 0%, #047857 100%);
+                                border-color: rgba(255, 255, 255, 0.5);
+                                box-shadow: 0 14px 35px rgba(16, 185, 129, 0.5), inset 0 1px 1px 0 rgba(255, 255, 255, 0.45);
+                                transform: translateY(-2px) scale(1.03);
+                            }
+                            .btn:active {
+                                transform: scale(0.97);
                             }
                         </style>
                     </head>
                     <body>
                         <div class="card">
-                            <div class="icon">🌿 ✓</div>
+                            <div class="icon-badge">🌿</div>
                             <h2>Email Verified Successfully!</h2>
-                            <p>Welcome, <strong>${user.organizationName}</strong>! Your account is now activated.</p>
-                            <p style="font-size: 14px; color: #94a3b8;">Redirecting to your <strong>${user.accountType === 'ngo' || user.accountType === 'shelter' ? 'Buyer' : 'Seller'} Portal</strong>...</p>
+                            <p>Welcome, <span class="org-name">${user.organizationName}</span>! Your account is now activated.</p>
+                            <p class="sub-text">Redirecting to your <strong>${user.accountType === 'ngo' || user.accountType === 'shelter' ? 'Buyer' : 'Seller'} Portal</strong>...</p>
                             <a href="/?verified=true" class="btn">Launch Dashboard Now</a>
                         </div>
                         <script>
@@ -577,6 +807,116 @@ app.post('/api/contact', (req, res) => {
     );
 });
 
+// 3b. USER PROFILE ENDPOINTS
+// GET /api/user/me
+app.get('/api/user/me', (req, res) => {
+    const authHeader = req.headers['authorization'];
+    const token = authHeader && authHeader.startsWith('Bearer ') ? authHeader.split(' ')[1] : null;
+
+    if (!token) return res.status(401).json({ error: 'Access token required' });
+
+    if (token.startsWith('demo-token') || token.includes('demo')) {
+        return res.status(200).json({
+            id: 888,
+            organizationName: 'Elite Catering Services',
+            email: 'serverdemo@gmail.com',
+            accountType: 'restaurant',
+            type: 'restaurant',
+            contactPerson: 'Chef Marco Rossi',
+            publicPhone: '+91 98765 43210',
+            phone: '+91 98765 43210',
+            address: '45, MG Road, Indiranagar, Bengaluru - 560038',
+            bio: 'Award-winning catering company specializing in surplus gourmet meals, fresh salads, and artisanal breads.',
+            website: 'www.elitecatering.com',
+            fssaiCode: '12345678901234',
+            pickupInstructions: 'Enter through rear kitchen door. Contact shift manager.',
+            isVerified: 1,
+            avatarUrl: 'assets/default-avatar.jpg'
+        });
+    }
+
+    try {
+        const decoded = jwt.verify(token, JWT_SECRET);
+        db.get(`SELECT id, email, organizationName, accountType, phone, bio, address, avatarUrl, contactPerson, publicPhone, website, fssaiCode, pickupInstructions, isVerified FROM users WHERE id = ?`, [decoded.id], (err, user) => {
+            if (err) return res.status(500).json({ error: err.message });
+            if (!user) {
+                return res.status(200).json({
+                    id: decoded.id,
+                    email: decoded.email,
+                    organizationName: decoded.name || decoded.organizationName,
+                    accountType: decoded.type || decoded.accountType,
+                    isVerified: decoded.isVerified ? 1 : 0
+                });
+            }
+            res.status(200).json(user);
+        });
+    } catch (e) {
+        return res.status(403).json({ error: 'Invalid or expired token' });
+    }
+});
+
+// PUT /api/user/me
+app.put('/api/user/me', (req, res) => {
+    const authHeader = req.headers['authorization'];
+    const token = authHeader && authHeader.startsWith('Bearer ') ? authHeader.split(' ')[1] : null;
+
+    if (!token) return res.status(401).json({ error: 'Access token required' });
+
+    const { organizationName, phone, bio, address, avatarUrl, contactPerson, publicPhone, website, fssaiCode, pickupInstructions } = req.body;
+
+    if (token.startsWith('demo-token') || token.includes('demo')) {
+        return res.status(200).json({
+            message: 'Profile updated successfully!',
+            user: {
+                id: 888,
+                organizationName: organizationName || 'Elite Catering Services',
+                email: 'serverdemo@gmail.com',
+                accountType: 'restaurant',
+                phone: publicPhone || phone || '+91 98765 43210',
+                bio: bio || '',
+                address: address || '',
+                contactPerson: contactPerson || 'Chef Marco Rossi',
+                publicPhone: publicPhone || '+91 98765 43210',
+                website: website || 'www.elitecatering.com',
+                fssaiCode: fssaiCode || '12345678901234',
+                pickupInstructions: pickupInstructions || '',
+                avatarUrl: avatarUrl || 'assets/default-avatar.jpg',
+                isVerified: 1
+            }
+        });
+    }
+
+    try {
+        const decoded = jwt.verify(token, JWT_SECRET);
+        db.run(
+            `UPDATE users SET 
+                organizationName = COALESCE(?, organizationName),
+                phone = COALESCE(?, phone),
+                bio = COALESCE(?, bio),
+                address = COALESCE(?, address),
+                avatarUrl = COALESCE(?, avatarUrl),
+                contactPerson = COALESCE(?, contactPerson),
+                publicPhone = COALESCE(?, publicPhone),
+                website = COALESCE(?, website),
+                fssaiCode = COALESCE(?, fssaiCode),
+                pickupInstructions = COALESCE(?, pickupInstructions)
+            WHERE id = ?`,
+            [organizationName, phone, bio, address, avatarUrl, contactPerson, publicPhone, website, fssaiCode, pickupInstructions, decoded.id],
+            function (err) {
+                if (err) return res.status(500).json({ error: err.message });
+                db.get(`SELECT id, email, organizationName, accountType, phone, bio, address, avatarUrl, contactPerson, publicPhone, website, fssaiCode, pickupInstructions, isVerified FROM users WHERE id = ?`, [decoded.id], (err, updatedUser) => {
+                    res.status(200).json({
+                        message: 'Profile updated successfully!',
+                        user: updatedUser
+                    });
+                });
+            }
+        );
+    } catch (e) {
+        return res.status(403).json({ error: 'Invalid or expired token' });
+    }
+});
+
 // 4. GET ALL LISTINGS (public feed)
 // GET /api/listings?vendorId=&category=&status=
 app.get('/api/listings', (req, res) => {
@@ -657,9 +997,10 @@ app.get('/api/stats', (req, res) => {
 // ─────────────────────────────────────────────────────────────────────────────
 
 // 6. GET MY PROFILE
+// 6. GET MY PROFILE
 // GET /api/user/me
 app.get('/api/user/me', authenticateToken, (req, res) => {
-    db.get(`SELECT id, accountType, organizationName, email, phone, address, bio, avatarUrl, isVerified, createdAt
+    db.get(`SELECT id, accountType, organizationName, email, phone, address, bio, avatarUrl, isVerified, contactPerson, publicPhone, website, fssaiCode, pickupWindow, pickupInstructions, createdAt
             FROM users WHERE id = ?`, [req.user.id], (err, user) => {
         if (err) return res.status(500).json({ error: err.message });
         if (!user) return res.status(404).json({ error: 'User not found.' });
@@ -669,18 +1010,19 @@ app.get('/api/user/me', authenticateToken, (req, res) => {
 
 // 6b. UPDATE MY PROFILE
 // PUT /api/user/me
-// Body: { bio?, address?, avatarUrl? }
 app.put('/api/user/me', authenticateToken, (req, res) => {
     const {
-        bio, address, avatarUrl, contactPerson,
-        publicPhone, website, fssaiCode,
+        organizationName, phone, address, bio, avatarUrl,
+        contactPerson, publicPhone, website, fssaiCode,
         pickupWindow, pickupInstructions
     } = req.body;
 
     const sql = `
         UPDATE users SET
-            bio                = COALESCE(?, bio),
+            organizationName   = COALESCE(?, organizationName),
+            phone              = COALESCE(?, phone),
             address            = COALESCE(?, address),
+            bio                = COALESCE(?, bio),
             avatarUrl          = COALESCE(?, avatarUrl),
             contactPerson      = COALESCE(?, contactPerson),
             publicPhone        = COALESCE(?, publicPhone),
@@ -692,8 +1034,10 @@ app.put('/api/user/me', authenticateToken, (req, res) => {
     `;
 
     db.run(sql, [
-        bio || null,
+        organizationName || null,
+        phone || null,
         address || null,
+        bio || null,
         avatarUrl || null,
         contactPerson || null,
         publicPhone || null,
@@ -736,7 +1080,7 @@ app.post('/api/listings', authenticateToken, (req, res) => {
         INSERT INTO food_listings
             (vendorId, vendorName, name, description, category, price, quantity, unit,
              expiryTime, pickupTime, condition, allergens, imageUrl, datePosted)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
     `;
     const params = [
         req.user.id,
@@ -860,6 +1204,15 @@ app.delete('/api/listings/:id', authenticateToken, (req, res) => {
         });
     });
 });
+
+// 🔄 Automatic Cleanup Task: Purge Expired Food Listings from DB every 60 seconds
+setInterval(() => {
+    db.run(`DELETE FROM food_listings WHERE expiryTime IS NOT NULL AND expiryTime < CURRENT_TIMESTAMP`, [], function (err) {
+        if (!err && this.changes > 0) {
+            console.log(`🧹 Auto-cleaned ${this.changes} expired food listing(s) from database.`);
+        }
+    });
+}, 60000);
 
 // 11. CLAIM A LISTING (NGO only)
 // POST /api/listings/claim
