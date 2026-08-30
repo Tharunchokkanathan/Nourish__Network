@@ -4665,160 +4665,102 @@ button:active,
 }
 
 /* =========================================
-   GLASSMORPHISM 12-HOUR DATE & TIME PICKER
+   DARK GLASSMORPHISM CALENDAR POPUP & INPUT
    ========================================= */
-.glass-datetime-container {
-    background: rgba(255, 255, 255, 0.03);
-    border: 1px solid rgba(255, 255, 255, 0.09);
-    border-radius: 20px;
-    padding: 1.25rem;
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3), inset 0 1px 1px rgba(255, 255, 255, 0.1);
-    margin-top: 0.5rem;
-    transition: all 0.3s ease;
-}
-
-[data-theme='light'] .glass-datetime-container {
-    background: rgba(0, 0, 0, 0.03);
-    border: 1px solid rgba(0, 0, 0, 0.08);
-}
-
-.glass-datetime-grid {
-    display: grid;
-    grid-template-columns: 1.4fr 1fr 1fr 1.1fr;
-    gap: 0.85rem;
-    align-items: center;
-}
-
-@media (max-width: 768px) {
-    .glass-datetime-grid {
-        grid-template-columns: 1fr 1fr;
-        gap: 0.85rem;
-    }
-}
-
-@media (max-width: 480px) {
-    .glass-datetime-grid {
-        grid-template-columns: 1fr;
-    }
-}
-
-.glass-dt-box {
-    display: flex;
-    flex-direction: column;
-    gap: 0.4rem;
-}
-
-.glass-dt-label {
-    font-size: 0.76rem;
-    font-weight: 700;
-    color: var(--text-muted);
-    letter-spacing: 0.4px;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    text-transform: uppercase;
-}
-
-.glass-dt-input,
-.glass-dt-select {
-    background: rgba(10, 10, 10, 0.5) !important;
+.glass-date-input {
+    color-scheme: dark !important;
+    background: rgba(10, 25, 20, 0.6) !important;
     border: 1px solid rgba(255, 255, 255, 0.12) !important;
     border-radius: 14px !important;
-    padding: 0.75rem 0.9rem !important;
+    padding: 0.85rem 1.1rem !important;
     color: var(--text-primary) !important;
-    font-size: 0.95rem !important;
+    font-size: 1rem !important;
     font-weight: 600 !important;
-    outline: none !important;
-    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
-    cursor: pointer;
+    backdrop-filter: blur(12px) !important;
+    -webkit-backdrop-filter: blur(12px) !important;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2), inset 0 1px 1px rgba(255, 255, 255, 0.1) !important;
+    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1) !important;
 }
 
-[data-theme='light'] .glass-dt-input,
-[data-theme='light'] .glass-dt-select {
-    background: #ffffff !important;
+[data-theme='light'] .glass-date-input {
+    color-scheme: light !important;
+    background: rgba(255, 255, 255, 0.85) !important;
     border: 1px solid rgba(0, 0, 0, 0.15) !important;
     color: #0f172a !important;
 }
 
-.glass-dt-input:focus,
-.glass-dt-select:focus {
+.glass-date-input:focus {
     border-color: var(--accent-primary) !important;
-    box-shadow: 0 0 15px rgba(16, 185, 129, 0.25) !important;
+    box-shadow: 0 0 20px rgba(16, 185, 129, 0.3) !important;
 }
 
-/* Glass AM/PM Segmented Control */
-.glass-ampm-toggle {
-    display: flex;
-    background: rgba(0, 0, 0, 0.4);
-    border: 1px solid rgba(255, 255, 255, 0.12);
-    border-radius: 14px;
-    padding: 3px;
-    gap: 3px;
+/* Custom Calendar Picker Icon */
+.glass-date-input::-webkit-calendar-picker-indicator {
+    filter: invert(0.85) sepia(1) saturate(3) hue-rotate(110deg) !important;
+    cursor: pointer !important;
+    opacity: 0.9 !important;
+    padding: 4px !important;
+    border-radius: 6px !important;
+    transition: transform 0.2s ease, opacity 0.2s ease !important;
 }
 
-[data-theme='light'] .glass-ampm-toggle {
-    background: rgba(0, 0, 0, 0.06);
-    border-color: rgba(0, 0, 0, 0.12);
+.glass-date-input::-webkit-calendar-picker-indicator:hover {
+    transform: scale(1.15) !important;
+    opacity: 1 !important;
 }
 
-.ampm-btn {
-    flex: 1;
-    padding: 0.65rem 0.4rem;
-    border-radius: 11px;
-    border: none;
-    background: transparent;
-    color: var(--text-muted);
-    font-size: 0.88rem;
-    font-weight: 700;
-    cursor: pointer;
-    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-    text-align: center;
-}
-
-.ampm-btn.active {
-    background: linear-gradient(135deg, #10b981, #059669) !important;
-    color: #ffffff !important;
-    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.35);
-}
-
-/* Quick Time Presets */
-.glass-time-presets {
+/* Floating Quick Add Bar */
+.floating-quick-add-bar {
     display: flex;
     align-items: center;
-    gap: 8px;
-    margin-top: 1rem;
-    padding-top: 0.85rem;
-    border-top: 1px solid rgba(255, 255, 255, 0.06);
+    gap: 10px;
+    margin-top: 0.6rem;
+    padding: 0.5rem 0.85rem;
+    background: rgba(16, 185, 129, 0.04);
+    border: 1px solid rgba(16, 185, 129, 0.15);
+    border-radius: 16px;
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
     flex-wrap: wrap;
 }
 
-.presets-title {
+.quick-add-label {
     font-size: 0.78rem;
     font-weight: 700;
     color: var(--text-muted);
-    margin-right: 4px;
+    letter-spacing: 0.3px;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    white-space: nowrap;
 }
 
-.preset-time-chip {
-    background: rgba(16, 185, 129, 0.08);
-    border: 1px solid rgba(16, 185, 129, 0.2);
-    color: var(--accent-primary);
-    padding: 5px 12px;
+.quick-add-chips {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+
+.preset-chip-pill {
+    background: rgba(16, 185, 129, 0.1);
+    border: 1px solid rgba(16, 185, 129, 0.25);
+    color: #34d399;
+    padding: 4px 12px;
     border-radius: 20px;
     font-size: 0.8rem;
     font-weight: 600;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.preset-time-chip:hover {
-    background: rgba(16, 185, 129, 0.2);
+.preset-chip-pill:hover {
+    background: rgba(16, 185, 129, 0.25);
+    color: #ffffff;
     transform: translateY(-1px);
-    box-shadow: 0 4px 10px rgba(16, 185, 129, 0.2);
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
 }
 
-.preset-time-chip:active {
-    transform: scale(0.95);
+.preset-chip-pill:active {
+    transform: scale(0.94);
 }
