@@ -1921,14 +1921,14 @@ document.addEventListener('DOMContentLoaded', () => {
                                  <div class="form-group full-width" style="position: relative;">
                                      <label style="color: var(--text-primary); font-weight: 600;"><i class="fa-regular fa-clock" style="color: var(--accent-primary);"></i> Expiry Date & Time</label>
                                      
-                                     <div class="liquid-glass-picker-trigger" id="glass-picker-trigger" onclick="window.toggleLiquidGlassCalendar(event)">
-                                         <span id="glass-picker-display"><i class="fa-regular fa-calendar-days" style="color: var(--accent-primary);"></i> Select Expiry Date & Time...</span>
-                                         <i class="fa-solid fa-chevron-down trigger-arrow" style="color: #3b82f6;"></i>
+                                     <div class="manual-glass-input-wrapper">
+                                         <input type="datetime-local" id="p-expiry" class="manual-glass-date-input" required onchange="window.setLiquidPickerFromISO(this.value)">
+                                         <button type="button" class="glass-calendar-icon-btn" onclick="window.toggleLiquidGlassCalendar(event)" title="Open Liquid Glass Calendar">
+                                             <i class="fa-regular fa-calendar-days"></i>
+                                         </button>
                                      </div>
-                                     
-                                     <input type="hidden" id="p-expiry" required>
 
-                                     <!-- Liquid Glass Floating Calendar Card (Matching Image 1) -->
+                                     <!-- Compact Liquid Glass Floating Calendar Card -->
                                      <div class="liquid-glass-calendar-card" id="liquid-calendar-card">
                                          <div class="lg-cal-header">
                                              <span class="lg-cal-month-year" id="lg-month-year">August 2026</span>
@@ -1939,7 +1939,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                          </div>
 
                                          <div class="lg-cal-weekdays">
-                                             <span>MON</span><span>TUE</span><span>WED</span><span>THU</span><span>FRI</span><span>SAT</span><span>SUN</span>
+                                             <span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span><span>S</span>
                                          </div>
 
                                          <div class="lg-cal-days" id="lg-days-grid"></div>
