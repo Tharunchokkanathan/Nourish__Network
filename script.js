@@ -1847,8 +1847,11 @@ document.addEventListener('DOMContentLoaded', () => {
                     localStorage.setItem('nn_demo_listings', JSON.stringify(demoListings));
                     state.listings = state.listings.filter(l => String(l.id) !== String(id));
                     showToast("Listing deleted successfully. 🗑️", "success");
-                    renderSellerListings();
-                    if (typeof renderBuyerPortal === 'function') renderBuyerPortal();
+                    if (state.activePortal === 'seller') {
+                        renderSellerListings();
+                    } else if (state.activePortal === 'buyer' && typeof renderExchangeGrid === 'function') {
+                        renderExchangeGrid();
+                    }
                     updateLiveStats();
                 };
 
@@ -1930,7 +1933,27 @@ document.addEventListener('DOMContentLoaded', () => {
         const grid = document.getElementById('exchange-grid');
         if (!grid) return;
 
-        grid.innerHTML = state.listings.map((item, idx) => {
+        // Filter out expired items or garbage demo items for the buyer view
+        const validListings = state.listings.filter(item => {
+            if (item.name === 'lp.okijuh' || item.name === 'lp,okijuh' || item.name === 'wesrdtfgybh') return false;
+            if (!item.expiry) return true;
+            const expDate = new Date(item.expiry);
+            if (isNaN(expDate.getTime())) return true;
+            return expDate > new Date();
+        });
+
+        if (validListings.length === 0) {
+            grid.innerHTML = `
+                <div style="grid-column: 1 / -1; text-align: center; padding: 4rem 1.5rem; color: var(--text-muted); background: rgba(255,255,255,0.02); border: 1px dashed var(--border-glow); border-radius: 24px;">
+                    <i class="fa-solid fa-seedling" style="font-size: 3rem; color: var(--accent-primary); margin-bottom: 1rem; display: block;"></i>
+                    <h3 style="color: var(--text-primary); font-size: 1.3rem; margin-bottom: 0.5rem;">No Active Food Listings Right Now</h3>
+                    <p style="font-size: 0.95rem;">Check back soon! Local restaurants publish fresh surplus meals throughout the day.</p>
+                </div>
+            `;
+            return;
+        }
+
+        grid.innerHTML = validListings.map((item, idx) => {
             const avatarImg = item.vendorAvatar ? item.vendorAvatar : `assets/default-avatar.jpg`;
             const bioText = item.vendorBio ? `<div style="font-size: 0.75rem; color: #cbd5e1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 150px;">${item.vendorBio}</div>` : '';
 
