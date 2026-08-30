@@ -4930,8 +4930,20 @@ button:active,
     cursor: pointer;
 }
 
+.lg-time-input-group select option {
+    background-color: #1e293b !important;
+    color: #ffffff !important;
+    font-weight: 600 !important;
+    padding: 6px 12px !important;
+}
+
 [data-theme='light'] .lg-time-input-group select {
     color: #0d3b36;
+}
+
+[data-theme='light'] .lg-time-input-group select option {
+    background-color: #ffffff !important;
+    color: #0f172a !important;
 }
 
 .lg-ampm-pill {
