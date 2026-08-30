@@ -1546,10 +1546,9 @@ img {
     letter-spacing: 0.2px;
 }
 
-.form-control,
-.input-with-icon .form-control {
+.form-control {
     width: 100%;
-    padding: 0.75rem 1rem 0.75rem 2.75rem;
+    padding: 0.75rem 1rem;
     background: rgba(255, 255, 255, 0.04) !important;
     color: #f8fafc !important;
     border: 1px solid rgba(255, 255, 255, 0.1) !important;
@@ -1558,6 +1557,27 @@ img {
     font-family: inherit;
     transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
     box-sizing: border-box;
+}
+
+.input-with-icon .form-control {
+    padding-left: 2.75rem !important;
+}
+
+select.form-control {
+    appearance: none !important;
+    -webkit-appearance: none !important;
+    -moz-appearance: none !important;
+    padding-right: 2.75rem !important;
+    padding-left: 1rem !important;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%233b82f6' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E") !important;
+    background-repeat: no-repeat !important;
+    background-position: right 1.1rem center !important;
+    background-size: 1rem !important;
+    cursor: pointer;
+}
+
+[data-theme='light'] select.form-control {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%230d3b36' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E") !important;
 }
 
 .form-control:focus,
