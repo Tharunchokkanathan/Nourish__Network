@@ -55,7 +55,10 @@ window.toggleLiquidGlassCalendar = function(e) {
     if (isActive) {
         card.classList.remove('active');
     } else {
-        if (!window.stateLiquidCal || !window.stateLiquidCal.selectedDate) {
+        const expiryInput = document.getElementById('p-expiry');
+        if (expiryInput && expiryInput.value) {
+            window.setLiquidPickerFromISO(expiryInput.value);
+        } else if (!window.stateLiquidCal || !window.stateLiquidCal.selectedDate) {
             const now = new Date();
             window.stateLiquidCal = {
                 year: now.getFullYear(),
@@ -161,6 +164,7 @@ window.setLiquidPickerFromISO = function(isoStr) {
     try {
         const d = new Date(isoStr);
         if (isNaN(d.getTime())) return;
+        if (!window.stateLiquidCal) window.stateLiquidCal = {};
         window.stateLiquidCal.year = d.getFullYear();
         window.stateLiquidCal.month = d.getMonth();
         window.stateLiquidCal.selectedDate = d;
@@ -176,7 +180,9 @@ window.setLiquidPickerFromISO = function(isoStr) {
         window.stateLiquidCal.hour = String(h12).padStart(2, '0');
         window.stateLiquidCal.min = String(mins).padStart(2, '0');
 
-        window.renderLiquidCalendar();
+        if (document.getElementById('lg-month-year')) {
+            window.renderLiquidCalendar();
+        }
     } catch (e) { }
 };
 
