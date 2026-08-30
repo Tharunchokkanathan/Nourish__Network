@@ -1371,33 +1371,35 @@ app.get('/{*path}', (req, res) => {
 
 // ─── TEMPORARY CLEANUP ENDPOINT ───────────────────────────────────────────────
 app.get('/api/cleanup-listings', (req, res) => {
-    const sql = `DELETE FROM food_listings WHERE name IN ('lp,okijuh', 'wesrdtfgybh')`;
+    const sql = `DELETE FROM food_listings WHERE name IN ('lp.okijuh', 'lp,okijuh', 'wesrdtfgybh') OR name LIKE '%okijuh%' OR name LIKE '%wesrdtfgybh%'`;
     db.run(sql, function (err) {
         if (err) return res.status(500).json({ error: err.message });
         res.status(200).json({ message: `Cleanup successful! Deleted ${this.changes} garbage listings.` });
     });
 });
 
-// ─── BACKGROUND AUTO-PURGE (2 MINUTES POST-EXPIRATION) ───────────────────────
+// ─── BACKGROUND AUTO-PURGE (EXPIRATION & GARBAGE CLEANUP) ───────────────────────
 setInterval(() => {
-    db.all(`SELECT id, expiryTime FROM food_listings WHERE expiryTime IS NOT NULL`, [], (err, rows) => {
+    db.all(`SELECT id, name, expiryTime, status FROM food_listings`, [], (err, rows) => {
         if (err || !rows || rows.length === 0) return;
         const now = Date.now();
-        const twoMinsMs = 2 * 60 * 1000;
+        const garbageNames = ['lp.okijuh', 'lp,okijuh', 'wesrdtfgybh'];
 
-        const expiredIds = rows.filter(r => {
+        const expiredOrGarbageIds = rows.filter(r => {
+            if (garbageNames.includes(r.name) || (r.name && r.name.toLowerCase().includes('okijuh'))) return true;
             if (!r.expiryTime) return false;
             const exp = new Date(r.expiryTime).getTime();
-            return !isNaN(exp) && (now - exp >= twoMinsMs);
+            if (isNaN(exp)) return true; // Purge unparseable date strings
+            return now >= exp; // Expired
         }).map(r => r.id);
 
-        if (expiredIds.length > 0) {
-            const placeholders = expiredIds.map(() => '?').join(',');
-            db.run(`DELETE FROM food_listings WHERE id IN (${placeholders})`, expiredIds, function (err) {
+        if (expiredOrGarbageIds.length > 0) {
+            const placeholders = expiredOrGarbageIds.map(() => '?').join(',');
+            db.run(`DELETE FROM food_listings WHERE id IN (${placeholders})`, expiredOrGarbageIds, function (err) {
                 if (err) {
                     console.error("Auto-purge DB error:", err.message);
                 } else if (this.changes > 0) {
-                    console.log(`🌿 Auto-purged ${this.changes} expired food listing(s) older than 2 minutes.`);
+                    console.log(`🌿 Auto-purged ${this.changes} expired/garbage food listing(s) from database.`);
                 }
             });
         }
