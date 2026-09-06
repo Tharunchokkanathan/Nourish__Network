@@ -1621,12 +1621,21 @@ app.post('/api/checkout', authenticateToken, (req, res) => {
         // Step 1: Atomically deduct quantity and mark sold if depleted
         db.run(
             `UPDATE food_listings
-             SET quantity = MAX(0, quantity - ?),
-                 status = CASE WHEN (quantity - ?) <= 0 THEN 'sold' ELSE status END
+             SET quantity = CASE 
+                 WHEN CAST(quantity AS INTEGER) - ? <= 0 THEN '0' 
+                 ELSE CAST(CAST(quantity AS INTEGER) - ? AS TEXT) 
+             END,
+             status = CASE 
+                 WHEN CAST(quantity AS INTEGER) - ? <= 0 THEN 'sold' 
+                 ELSE status 
+             END
              WHERE id = ? AND status = 'available'`,
-            [qty, qty, listingId],
+            [qty, qty, qty, listingId],
             function (updateErr) {
-                if (updateErr) errors.push(updateErr.message);
+                if (updateErr) {
+                    console.error("Checkout UPDATE error for listing", listingId, updateErr);
+                    errors.push(updateErr.message);
+                }
 
                 // Step 2: Insert order record
                 db.run(

@@ -937,7 +937,18 @@ document.addEventListener('DOMContentLoaded', () => {
                     return { ...l, qty: remainingQty, status: remainingQty <= 0 ? 'sold' : l.status };
                 }).filter(l => l.status !== 'sold' && (parseInt(l.qty) || 0) > 0);
 
-                state.listings = [...uniqueDemoListings, ...filteredApiListings];
+                let combinedListings = [...uniqueDemoListings, ...filteredApiListings];
+                // Deduct any portions currently in user's active cart session
+                if (Array.isArray(state.cart) && state.cart.length > 0) {
+                    combinedListings = combinedListings.map(l => {
+                        const inCart = state.cart.find(c => String(c.item.id) === String(l.id));
+                        if (!inCart) return l;
+                        const originalQty = l.originalQty != null ? l.originalQty : (parseInt(l.qty) || 0);
+                        const remaining = Math.max(0, originalQty - (inCart.qty || 0));
+                        return { ...l, originalQty, qty: remaining };
+                    });
+                }
+                state.listings = combinedListings;
             } else {
                 // API failed — still load demo listings (filter sold-out ones)
                 const allDemo = JSON.parse(localStorage.getItem('nn_demo_listings') || '[]');
@@ -2463,8 +2474,12 @@ document.addEventListener('DOMContentLoaded', () => {
         const user = JSON.parse(sessionStorage.getItem('nourishUser'));
         if (!user) return;
 
-        // Filter to show only THIS seller's items
-        const myItems = state.listings.filter(l => String(l.vendorId) === String(user.id));
+        // Filter to show only THIS seller's active items (sold out items cleared on refresh)
+        const myItems = state.listings.filter(l => 
+            String(l.vendorId) === String(user.id) &&
+            l.status !== 'sold' &&
+            (parseInt(l.qty) || 0) > 0
+        );
 
         const countBadge = document.getElementById('my-listings-count-badge');
         if (countBadge) {
@@ -2647,9 +2662,18 @@ document.addEventListener('DOMContentLoaded', () => {
         const grid = document.getElementById('exchange-grid');
         if (!grid) return;
 
-        // Filter out expired items or garbage demo items for the buyer view
+        // Filter out expired items, sold-out items, or garbage demo items for the buyer view
+        // Sold-out listings are completely cleared on refresh
         const validListings = state.listings.filter(item => {
             if (item.name === 'lp.okijuh' || item.name === 'lp,okijuh' || item.name === 'wesrdtfgybh') return false;
+            if (item.status === 'sold' || item.status === 'claimed') return false;
+
+            const inCart = (state.cart || []).find(c => String(c.item.id) === String(item.id));
+            const cartQty = inCart ? (parseInt(inCart.qty) || 0) : 0;
+            const originalStock = item.originalQty != null ? item.originalQty : ((parseInt(item.qty) || 0) + cartQty);
+            // If the listing originally had 0 or was depleted before cart, filter out
+            if (originalStock <= 0) return false;
+
             if (!item.expiry || !window.isValidExpiry(item.expiry)) return true;
             return !window.isItemExpired(item.expiry);
         });
@@ -2669,22 +2693,28 @@ document.addEventListener('DOMContentLoaded', () => {
             const avatarImg = item.vendorAvatar ? item.vendorAvatar : `assets/default-avatar.jpg`;
             const bioText = item.vendorBio ? `<div style="font-size: 0.75rem; color: #cbd5e1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 150px;">${item.vendorBio}</div>` : '';
 
+            const inCart = (state.cart || []).find(c => String(c.item.id) === String(item.id));
+            const cartQty = inCart ? (parseInt(inCart.qty) || 0) : 0;
+            const totalStock = item.originalQty != null ? item.originalQty : ((parseInt(item.qty) || 0) + cartQty);
+            const remainingLive = Math.max(0, totalStock - cartQty);
+            const isAllInBasket = (remainingLive <= 0);
+            const isExpired = window.isItemExpired(item.expiry);
+
             return `
-            <div class="nn-food-card stagger-item ${item.qty <= 0 ? 'is-sold-out' : ''} ${window.isItemExpired(item.expiry) ? 'is-expired' : ''}" data-id="${item.id}" style="animation-delay: ${idx * 0.05}s">
-                ${item.qty <= 0 ? '<div class="nn-sold-out-badge"><i class="fa-solid fa-ban"></i> Sold Out</div>' : ''}
+            <div class="nn-food-card stagger-item ${isAllInBasket ? 'is-sold-out' : ''} ${isExpired ? 'is-expired' : ''}" data-id="${item.id}" style="animation-delay: ${idx * 0.05}s">
+                ${isAllInBasket ? '<div class="nn-sold-out-badge"><i class="fa-solid fa-basket-shopping"></i> All Portions in Basket</div>' : ''}
                 <div class="nn-card-img-wrap">
                     <img src="${item.img}" alt="${item.name}" loading="lazy" referrerpolicy="no-referrer" onerror="this.onerror=null; this.src=window.getSmartFoodImage ? window.getSmartFoodImage('${(item.name || '').replace(/'/g, "\\'")}', '${(item.category || '').replace(/'/g, "\\'")}', null) : 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=600&q=80';">
                     <div class="nn-card-img-overlay"></div>
                     <div class="nn-card-badges">
                         <span class="nn-badge nn-badge-cat">${item.category}</span>
-                        <span class="nn-badge nn-badge-qty ${item.qty <= 5 && item.qty > 0 ? 'nn-badge-low' : ''}"><i class="fa-solid fa-utensils"></i> ${item.qty} left</span>
+                        <span class="nn-badge nn-badge-qty ${remainingLive <= 5 && remainingLive > 0 ? 'nn-badge-low' : ''}"><i class="fa-solid fa-utensils"></i> ${remainingLive} left</span>
                     </div>
                     <div class="nn-card-vendor" style="display: flex; align-items: center; gap: 8px; background: rgba(0,0,0,0.6); padding: 5px 10px; border-radius: 20px;">
                         <img src="${avatarImg}" style="width: 24px; height: 24px; border-radius: 50%; border: 1px solid var(--border-glow); object-fit: cover;">
                         <div style="display: flex; flex-direction: column; text-align: left;">
                             <div style="display: flex; align-items: center; gap: 5px;">
                                 <strong style="font-size: 0.85rem; color: white;">${item.vendorName}</strong>
-
                             </div>
                             ${item.fssaiCode ? `<div class="fssai-trust-badge" title="FSSAI Food Safety Certified — License verified"><i class="fa-solid fa-shield-halved"></i> FSSAI Certified</div>` : bioText}
                         </div>
@@ -2704,12 +2734,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 </div>
                 <div class="nn-card-footer nn-card-footer-buyer">
                     <div class="nn-stepper">
-                        <button class="nn-step-btn stepper-btn minus" data-id="${item.id}"><i class="fa-solid fa-minus"></i></button>
-                        <span class="nn-step-val stepper-val" id="stepper-${item.id}">1</span>
-                        <button class="nn-step-btn stepper-btn plus" data-id="${item.id}"><i class="fa-solid fa-plus"></i></button>
+                        <button class="nn-step-btn stepper-btn minus" data-id="${item.id}" ${isAllInBasket || isExpired ? 'disabled' : ''}><i class="fa-solid fa-minus"></i></button>
+                        <span class="nn-step-val stepper-val" id="stepper-${item.id}">${isAllInBasket ? 0 : 1}</span>
+                        <button class="nn-step-btn stepper-btn plus" data-id="${item.id}" ${isAllInBasket || isExpired ? 'disabled' : ''}><i class="fa-solid fa-plus"></i></button>
                     </div>
-                    <button class="nn-add-btn add-btn" data-id="${item.id}" ${(item.qty <= 0 || window.isItemExpired(item.expiry)) ? 'disabled' : ''}>
-                        <i class="fa-solid fa-cart-plus"></i> Add to Basket
+                    <button class="nn-add-btn add-btn" data-id="${item.id}" ${(isAllInBasket || isExpired) ? 'disabled' : ''}>
+                        <i class="fa-solid fa-cart-plus"></i> ${isAllInBasket ? 'All in Basket' : 'Add to Basket'}
                     </button>
                 </div>
             </div>
@@ -2725,10 +2755,22 @@ document.addEventListener('DOMContentLoaded', () => {
             btn.addEventListener('click', (e) => {
                 const id = btn.dataset.id;
                 const span = document.getElementById(`stepper-${id}`);
-                let val = parseInt(span.innerText);
-                const item = state.listings.find(l => l.id == id);
+                if (!span) return;
+                let val = parseInt(span.innerText) || 1;
+                const item = state.listings.find(l => String(l.id) === String(id));
+                if (!item) return;
+
+                const inCart = (state.cart || []).find(c => String(c.item.id) === String(id));
+                const inCartQty = inCart ? (parseInt(inCart.qty) || 0) : 0;
+                const totalStock = item.originalQty != null ? item.originalQty : ((parseInt(item.qty) || 0) + inCartQty);
+                const maxAvailable = Math.max(0, totalStock - inCartQty);
+
                 if (btn.classList.contains('plus')) {
-                    if (val < item.qty) val++;
+                    if (val < maxAvailable) {
+                        val++;
+                    } else {
+                        showToast(`Only ${maxAvailable} portion(s) available to add!`, "info");
+                    }
                 } else {
                     if (val > 1) val--;
                 }
@@ -2739,10 +2781,11 @@ document.addEventListener('DOMContentLoaded', () => {
         document.querySelectorAll('.add-btn').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 const id = btn.dataset.id;
-                const item = state.listings.find(l => l.id == id);
-                const qtyToAdd = parseInt(document.getElementById(`stepper-${id}`).innerText);
+                const item = state.listings.find(l => String(l.id) === String(id));
+                const span = document.getElementById(`stepper-${id}`);
+                const qtyToAdd = span ? (parseInt(span.innerText) || 1) : 1;
 
-                if (item && item.qty >= qtyToAdd) {
+                if (item && qtyToAdd > 0) {
                     addToCart(item, qtyToAdd, e);
                 }
             });
@@ -2754,38 +2797,54 @@ document.addEventListener('DOMContentLoaded', () => {
             showToast("This item has expired and can no longer be added.", "error");
             return;
         }
-        item.qty -= qtyToAdd; // reduce live portions
 
-        const existingCartItem = state.cart.find(c => c.item.id === item.id);
-        if (existingCartItem) {
-            existingCartItem.qty += qtyToAdd;
-        } else {
-            state.cart.push({ item: item, qty: qtyToAdd });
+        const inCart = (state.cart || []).find(c => String(c.item.id) === String(item.id));
+        const currentInCart = inCart ? (parseInt(inCart.qty) || 0) : 0;
+        const totalStock = item.originalQty != null ? item.originalQty : ((parseInt(item.qty) || 0) + currentInCart);
+        const maxCanAdd = Math.max(0, totalStock - currentInCart);
+
+        if (maxCanAdd <= 0) {
+            showToast(`All ${totalStock} available portions are already in your basket!`, "info");
+            return;
         }
+
+        const actualQty = Math.min(qtyToAdd, maxCanAdd);
+
+        if (inCart) {
+            inCart.qty += actualQty;
+        } else {
+            state.cart.push({ item: { ...item, originalQty: totalStock }, qty: actualQty });
+        }
+
+        // Live update remaining quantity on the item
+        item.originalQty = totalStock;
+        item.qty = Math.max(0, totalStock - (currentInCart + actualQty));
 
         updateCartBadge();
         renderExchangeGrid();
 
         // Fly Animation
-        const rect = e.target.getBoundingClientRect();
-        const flyItem = document.createElement('div');
-        flyItem.className = 'flying-item';
-        flyItem.style.left = rect.left + 'px';
-        flyItem.style.top = rect.top + 'px';
-        document.body.appendChild(flyItem);
+        if (e && e.target) {
+            const rect = e.target.getBoundingClientRect();
+            const flyItem = document.createElement('div');
+            flyItem.className = 'flying-item';
+            flyItem.style.left = rect.left + 'px';
+            flyItem.style.top = rect.top + 'px';
+            document.body.appendChild(flyItem);
 
-        const flyTarget = cartToggle || document.getElementById('cart-toggle-dock') || document.body;
-        const target = flyTarget.getBoundingClientRect();
+            const flyTarget = cartToggle || document.getElementById('cart-toggle-dock') || document.body;
+            const target = flyTarget.getBoundingClientRect();
 
-        flyItem.animate([
-            { left: rect.left + 'px', top: rect.top + 'px', transform: 'scale(1)' },
-            { left: target.left + 'px', top: target.top + 'px', transform: 'scale(0.1)' }
-        ], {
-            duration: 800,
-            easing: 'cubic-bezier(0.165, 0.84, 0.44, 1)'
-        }).onfinish = () => flyItem.remove();
+            flyItem.animate([
+                { left: rect.left + 'px', top: rect.top + 'px', transform: 'scale(1)' },
+                { left: target.left + 'px', top: target.top + 'px', transform: 'scale(0.1)' }
+            ], {
+                duration: 800,
+                easing: 'cubic-bezier(0.165, 0.84, 0.44, 1)'
+            }).onfinish = () => flyItem.remove();
+        }
 
-        showToast(`${qtyToAdd} portions of ${item.name} added to your basket!`, 'success');
+        showToast(`${actualQty} portion(s) of ${item.name} added to your basket!`, 'success');
         renderCartItems();
     }
 
@@ -2827,14 +2886,15 @@ document.addEventListener('DOMContentLoaded', () => {
             btn.addEventListener('click', () => {
                 const idx = btn.dataset.idx;
                 const cartItem = state.cart[idx];
+                if (!cartItem) return;
                 if (cartItem.qty > 1) {
                     cartItem.qty--;
-                    const originalListing = state.listings.find(l => l.id === cartItem.item.id);
-                    if (originalListing) originalListing.qty++;
+                    const originalListing = state.listings.find(l => String(l.id) === String(cartItem.item.id));
+                    if (originalListing) originalListing.qty = (originalListing.qty || 0) + 1;
                 } else {
                     const removedCartItem = state.cart.splice(idx, 1)[0];
-                    const originalListing = state.listings.find(l => l.id === removedCartItem.item.id);
-                    if (originalListing) originalListing.qty += removedCartItem.qty;
+                    const originalListing = state.listings.find(l => String(l.id) === String(removedCartItem.item.id));
+                    if (originalListing) originalListing.qty = (originalListing.qty || 0) + (removedCartItem.qty || 1);
                 }
                 renderCartItems();
                 updateCartBadge();
@@ -2846,15 +2906,22 @@ document.addEventListener('DOMContentLoaded', () => {
             btn.addEventListener('click', () => {
                 const idx = btn.dataset.idx;
                 const cartItem = state.cart[idx];
-                const originalListing = state.listings.find(l => l.id === cartItem.item.id);
-                if (originalListing && originalListing.qty > 0) {
+                if (!cartItem) return;
+                const originalListing = state.listings.find(l => String(l.id) === String(cartItem.item.id));
+                const totalStock = (cartItem.item.originalQty != null) 
+                    ? cartItem.item.originalQty 
+                    : (originalListing ? (originalListing.originalQty || ((parseInt(originalListing.qty) || 0) + cartItem.qty)) : cartItem.qty);
+
+                if (cartItem.qty < totalStock) {
                     cartItem.qty++;
-                    originalListing.qty--;
+                    if (originalListing && originalListing.qty > 0) {
+                        originalListing.qty--;
+                    }
                     renderCartItems();
                     updateCartBadge();
                     renderExchangeGrid();
                 } else {
-                    showToast("No more portions available!", "error");
+                    showToast(`Maximum available portions (${totalStock}) reached!`, "error");
                 }
             });
         });
@@ -2863,9 +2930,10 @@ document.addEventListener('DOMContentLoaded', () => {
             btn.addEventListener('click', () => {
                 const idx = btn.dataset.idx;
                 const removedCartItem = state.cart.splice(idx, 1)[0];
-                const originalListing = state.listings.find(l => l.id === removedCartItem.item.id);
+                if (!removedCartItem) return;
+                const originalListing = state.listings.find(l => String(l.id) === String(removedCartItem.item.id));
                 if (originalListing) {
-                    originalListing.qty += removedCartItem.qty;
+                    originalListing.qty = (originalListing.qty || 0) + (removedCartItem.qty || 0);
                 }
 
                 renderCartItems();
