@@ -51,7 +51,8 @@ function sanitizeHtmlForEmail(html) {
 function sanitizeSubjectForEmail(subject) {
     if (!subject) return '';
     return subject
-        .replace(/🌿|🔑|🔒|🛡️|🛡|✅|⚠️|🎉|🤝|🌱/g, '')
+        .replace(/[\u{1F300}-\u{1FAFF}]|[\u{2600}-\u{27BF}]|[\u{FE00}-\u{FE0F}]|[\u{1F900}-\u{1F9FF}]|[\u{D800}-\u{DFFF}]/gu, '')
+        .replace(/[^\x20-\x7E]/g, '')
         .replace(/\s+/g, ' ')
         .trim();
 }
@@ -1170,7 +1171,7 @@ async function sendLoginApprovalEmail({
 
     return await dispatchEmail({
         toEmail,
-        subject: `🔐 Sign-in Approval Request for ${deviceName || 'your device'} - Nourish Network`,
+        subject: `Sign-in Approval Request for ${deviceName || 'your device'} - Nourish Network`,
         html: htmlTemplate
     });
 }
