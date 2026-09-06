@@ -33,6 +33,57 @@ window.deleteComment = function (commentId, btnEl) {
     }, 250);
 };
 
+// ---- SAFE EXPIRY HELPERS ----
+window.isValidExpiry = function (dateStr) {
+    if (!dateStr || dateStr === 'null' || dateStr === 'undefined') return false;
+    const d = new Date(dateStr);
+    return !isNaN(d.getTime());
+};
+
+window.isItemExpired = function (dateStr) {
+    if (!window.isValidExpiry(dateStr)) return false;
+    return new Date(dateStr).getTime() < Date.now();
+};
+
+window.formatExpiryDisplay = function (dateStr) {
+    if (!window.isValidExpiry(dateStr)) {
+        return 'Fresh / Same-Day Pickup';
+    }
+    const d = new Date(dateStr);
+    return d.toLocaleDateString('en-IN', {
+        day: 'numeric',
+        month: 'short',
+        hour: '2-digit',
+        minute: '2-digit'
+    });
+};
+
+window.getInitialCountdownStr = function (dateStr) {
+    if (!window.isValidExpiry(dateStr)) return 'Fresh';
+    const distance = new Date(dateStr).getTime() - Date.now();
+    if (distance <= 0) return 'EXPIRED';
+    const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+    const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+    const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+    return (
+        String(hours).padStart(2, '0') + ':' +
+        String(minutes).padStart(2, '0') + ':' +
+        String(seconds).padStart(2, '0')
+    );
+};
+
+window.toLocalDateTimeLocalString = function (dateInput) {
+    if (!dateInput) return '';
+    const d = new Date(dateInput);
+    if (isNaN(d.getTime())) return '';
+    const yyyy = d.getFullYear();
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const dd = String(d.getDate()).padStart(2, '0');
+    const hh = String(d.getHours()).padStart(2, '0');
+    const min = String(d.getMinutes()).padStart(2, '0');
+    return `${yyyy}-${mm}-${dd}T${hh}:${min}`;
+};
+
 // ---- LIQUID GLASS CALENDAR COMPONENT HELPERS ----
 window.stateLiquidCal = {
     year: new Date().getFullYear(),
@@ -601,11 +652,17 @@ document.addEventListener('DOMContentLoaded', () => {
                 updateLiveStats();
             }
 
+            const newSnapshot = JSON.stringify(state.listings.map(l => ({ id: l.id, qty: l.qty, status: l.status, expiry: l.expiry, price: l.price })));
+            const hasChanged = state._lastListingsSnapshot !== newSnapshot;
+            state._lastListingsSnapshot = newSnapshot;
+
             if (silent) {
-                if (state.activePortal === 'seller' && typeof renderSellerListings === 'function') {
-                    renderSellerListings();
-                } else if (state.activePortal === 'buyer' && typeof renderExchangeGrid === 'function') {
-                    renderExchangeGrid();
+                if (hasChanged) {
+                    if (state.activePortal === 'seller' && typeof renderSellerListings === 'function') {
+                        renderSellerListings();
+                    } else if (state.activePortal === 'buyer' && typeof renderExchangeGrid === 'function') {
+                        renderExchangeGrid();
+                    }
                 }
             } else {
                 renderPortal();
@@ -1641,69 +1698,33 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function updateAllCountdowns() {
         const timerElements = document.querySelectorAll('.nn-expiry-timer');
+        const now = Date.now();
+
         timerElements.forEach(el => {
             const expiry = el.dataset.expiry;
-            const itemId = el.dataset.id;
-            if (!expiry) return;
+            if (!expiry || !window.isValidExpiry(expiry)) {
+                if (el.innerHTML !== 'Fresh') el.innerHTML = 'Fresh';
+                if (!el.classList.contains('timer-safe')) el.className = 'nn-expiry-timer timer-safe';
+                return;
+            }
 
-            const now = new Date().getTime();
-            const distance = new Date(expiry).getTime() - now;
+            const expTime = new Date(expiry).getTime();
+            const distance = expTime - now;
 
-            if (distance < 0) {
-                const pastMs = Math.abs(distance);
-                const twoMinsMs = 2 * 60 * 1000; // 120,000 ms
-
+            if (distance <= 0) {
                 const card = el.closest('.nn-food-card');
                 if (card && !card.classList.contains('is-expired')) {
                     card.classList.add('is-expired');
-                    const btn = card.querySelector('.btn-primary');
-                    if (btn) {
-                        btn.disabled = true;
-                        btn.innerText = "EXPIRED";
+                    const actionBtn = card.querySelector('.nn-add-btn, .add-btn, .btn-primary');
+                    if (actionBtn) {
+                        actionBtn.disabled = true;
+                        actionBtn.innerHTML = '<i class="fa-solid fa-clock"></i> Expired';
                     }
+                    card.querySelectorAll('.stepper-btn').forEach(b => b.disabled = true);
                 }
 
-                // Check if 2 minutes have passed since expiration -> Auto-Delete
-                if (pastMs >= twoMinsMs) {
-                    if (card && card.dataset.deleting !== 'true') {
-                        card.dataset.deleting = 'true';
-                        card.style.transition = 'all 0.5s ease';
-                        card.style.opacity = '0';
-                        card.style.transform = 'scale(0.9)';
-
-                        setTimeout(async () => {
-                            // Remove from local state & storage
-                            let demoListings = JSON.parse(localStorage.getItem('nn_demo_listings') || '[]');
-                            demoListings = demoListings.filter(l => String(l.id) !== String(itemId));
-                            localStorage.setItem('nn_demo_listings', JSON.stringify(demoListings));
-                            state.listings = state.listings.filter(l => String(l.id) !== String(itemId));
-
-                            // Try API delete if logged in
-                            const token = sessionStorage.getItem('nourishToken');
-                            if (token && token !== 'demo-token-seller' && token !== 'demo-token-buyer') {
-                                try {
-                                    await fetch(`${API_BASE}/listings/${itemId}`, {
-                                        method: 'DELETE',
-                                        headers: { 'Authorization': `Bearer ${token}` }
-                                    });
-                                } catch (e) { }
-                            }
-
-                            showToast(`Expired listing automatically removed (2 mins post-expiry).`, 'info');
-                            refreshState();
-                        }, 500);
-                    }
-                    return;
-                }
-
-                // Countdown until auto-purge during the 2-min grace period
-                const remainingPurgeSecs = Math.ceil((twoMinsMs - pastMs) / 1000);
-                const purgeMins = Math.floor(remainingPurgeSecs / 60);
-                const purgeSecs = remainingPurgeSecs % 60;
-                const timeStr = `${String(purgeMins).padStart(2, '0')}:${String(purgeSecs).padStart(2, '0')}`;
-
-                el.innerHTML = `EXPIRED (${timeStr})`;
-                el.className = "nn-expiry-timer timer-expired";
+                if (el.innerHTML !== 'EXPIRED') el.innerHTML = 'EXPIRED';
+                if (!el.classList.contains('timer-expired')) el.className = 'nn-expiry-timer timer-expired';
                 return;
             }
 
@@ -1716,15 +1737,20 @@ document.addEventListener('DOMContentLoaded', () => {
                 String(minutes).padStart(2, '0') + ":" +
                 String(seconds).padStart(2, '0');
 
-            el.innerHTML = timeStr;
+            if (el.innerHTML !== timeStr) el.innerHTML = timeStr;
 
-            // Update Colors & Animations
+            // Target Class
+            let targetClass = 'nn-expiry-timer timer-safe';
             if (distance > 2 * 3600000) { // > 2 hours
-                el.className = "nn-expiry-timer timer-safe";
+                targetClass = 'nn-expiry-timer timer-safe';
             } else if (distance > 30 * 60000) { // 30m - 2h
-                el.className = "nn-expiry-timer timer-warning";
+                targetClass = 'nn-expiry-timer timer-warning';
             } else { // < 30m
-                el.className = "nn-expiry-timer timer-urgent";
+                targetClass = 'nn-expiry-timer timer-urgent';
+            }
+
+            if (el.className !== targetClass) {
+                el.className = targetClass;
             }
         });
     }
@@ -2053,7 +2079,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         container.innerHTML = myItems.map((item, idx) => `
-            <div class="nn-food-card stagger-item ${item.qty <= 0 ? 'is-sold-out' : ''} ${new Date(item.expiry) < new Date() ? 'is-expired' : ''}" data-id="${item.id}" style="animation-delay: ${idx * 0.05}s">
+            <div class="nn-food-card stagger-item ${item.qty <= 0 ? 'is-sold-out' : ''} ${window.isItemExpired(item.expiry) ? 'is-expired' : ''}" data-id="${item.id}" style="animation-delay: ${idx * 0.05}s">
                 <div class="nn-card-img-wrap">
                     <img src="${item.img}" alt="${item.name}" loading="lazy">
                     <div class="nn-card-img-overlay"></div>
@@ -2065,14 +2091,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 </div>
                 <div class="nn-expiry-container">
                     <span class="nn-expiry-label">Expires in:</span>
-                    <div class="nn-expiry-timer" data-expiry="${item.expiry}" data-id="${item.id}">--:--:--</div>
+                    <div class="nn-expiry-timer" data-expiry="${item.expiry && window.isValidExpiry(item.expiry) ? item.expiry : ''}" data-id="${item.id}">${window.getInitialCountdownStr(item.expiry)}</div>
                 </div>
                 <div class="nn-card-body">
                     <h3 class="nn-card-title">${item.name}</h3>
                     <p class="nn-card-desc">${item.description || 'No description provided.'}</p>
                     <div class="nn-card-meta">
                         <div class="nn-card-price">₹${item.price}<span>/portion</span></div>
-                        <div class="nn-card-expiry"><i class="fa-regular fa-clock"></i> ${new Date(item.expiry).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</div>
+                        <div class="nn-card-expiry"><i class="fa-regular fa-clock"></i> ${window.formatExpiryDisplay(item.expiry)}</div>
                     </div>
                 </div>
                 <div class="nn-card-footer">
@@ -2093,13 +2119,12 @@ document.addEventListener('DOMContentLoaded', () => {
                     document.getElementById('p-qty').value = item.qty;
                     document.getElementById('p-price').value = item.price;
                     document.getElementById('p-desc').value = item.description || '';
-                    if (item.expiry) {
+                    if (item.expiry && window.isValidExpiry(item.expiry)) {
                         try {
-                            const d = new Date(item.expiry);
-                            const iso = d.toISOString().slice(0, 16);
-                            document.getElementById('p-expiry').value = iso;
+                            const localIso = window.toLocalDateTimeLocalString(item.expiry);
+                            document.getElementById('p-expiry').value = localIso;
                             if (typeof window.setLiquidPickerFromISO === 'function') {
-                                window.setLiquidPickerFromISO(iso);
+                                window.setLiquidPickerFromISO(localIso);
                             }
                         } catch (e) { }
                     }
@@ -2216,10 +2241,8 @@ document.addEventListener('DOMContentLoaded', () => {
         // Filter out expired items or garbage demo items for the buyer view
         const validListings = state.listings.filter(item => {
             if (item.name === 'lp.okijuh' || item.name === 'lp,okijuh' || item.name === 'wesrdtfgybh') return false;
-            if (!item.expiry) return true;
-            const expDate = new Date(item.expiry);
-            if (isNaN(expDate.getTime())) return true;
-            return expDate > new Date();
+            if (!item.expiry || !window.isValidExpiry(item.expiry)) return true;
+            return !window.isItemExpired(item.expiry);
         });
 
         if (validListings.length === 0) {
@@ -2238,7 +2261,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const bioText = item.vendorBio ? `<div style="font-size: 0.75rem; color: #cbd5e1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 150px;">${item.vendorBio}</div>` : '';
 
             return `
-            <div class="nn-food-card stagger-item ${item.qty <= 0 ? 'is-sold-out' : ''} ${new Date(item.expiry) < new Date() ? 'is-expired' : ''}" data-id="${item.id}" style="animation-delay: ${idx * 0.05}s">
+            <div class="nn-food-card stagger-item ${item.qty <= 0 ? 'is-sold-out' : ''} ${window.isItemExpired(item.expiry) ? 'is-expired' : ''}" data-id="${item.id}" style="animation-delay: ${idx * 0.05}s">
                 ${item.qty <= 0 ? '<div class="nn-sold-out-badge"><i class="fa-solid fa-ban"></i> Sold Out</div>' : ''}
                 <div class="nn-card-img-wrap">
                     <img src="${item.img}" alt="${item.name}" loading="lazy">
@@ -2260,14 +2283,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 </div>
                 <div class="nn-expiry-container">
                     <span class="nn-expiry-label">Expires in:</span>
-                    <div class="nn-expiry-timer" data-expiry="${item.expiry}" data-id="${item.id}">--:--:--</div>
+                    <div class="nn-expiry-timer" data-expiry="${item.expiry && window.isValidExpiry(item.expiry) ? item.expiry : ''}" data-id="${item.id}">${window.getInitialCountdownStr(item.expiry)}</div>
                 </div>
                 <div class="nn-card-body">
                     <h3 class="nn-card-title">${item.name}</h3>
                     <p class="nn-card-desc">${item.description || ''}</p>
                     <div class="nn-card-meta">
                         <div class="nn-card-price">₹${item.price}<span>/portion</span></div>
-                        <div class="nn-card-expiry"><i class="fa-regular fa-clock"></i> ${new Date(item.expiry).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</div>
+                        <div class="nn-card-expiry"><i class="fa-regular fa-clock"></i> ${window.formatExpiryDisplay(item.expiry)}</div>
                     </div>
                 </div>
                 <div class="nn-card-footer nn-card-footer-buyer">
@@ -2276,7 +2299,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         <span class="nn-step-val stepper-val" id="stepper-${item.id}">1</span>
                         <button class="nn-step-btn stepper-btn plus" data-id="${item.id}"><i class="fa-solid fa-plus"></i></button>
                     </div>
-                    <button class="nn-add-btn add-btn" data-id="${item.id}" ${item.qty <= 0 ? 'disabled' : ''}>
+                    <button class="nn-add-btn add-btn" data-id="${item.id}" ${(item.qty <= 0 || window.isItemExpired(item.expiry)) ? 'disabled' : ''}>
                         <i class="fa-solid fa-cart-plus"></i> Add to Basket
                     </button>
                 </div>
@@ -2318,6 +2341,10 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function addToCart(item, qtyToAdd, e) {
+        if (window.isItemExpired(item.expiry)) {
+            showToast("This item has expired and can no longer be added.", "error");
+            return;
+        }
         item.qty -= qtyToAdd; // reduce live portions
 
         const existingCartItem = state.cart.find(c => c.item.id === item.id);
@@ -2451,6 +2478,23 @@ document.addEventListener('DOMContentLoaded', () => {
     function attachSellerListeners() {
         const form = document.getElementById('add-food-form');
         const cancelBtn = document.getElementById('cancel-edit-btn');
+        const expiryInput = document.getElementById('p-expiry');
+
+        const resetExpiryInput = () => {
+            if (expiryInput) {
+                const now = new Date();
+                expiryInput.min = window.toLocalDateTimeLocalString(now);
+                const defaultFuture = new Date(now.getTime() + 4 * 60 * 60 * 1000);
+                expiryInput.value = window.toLocalDateTimeLocalString(defaultFuture);
+                if (typeof window.setLiquidPickerFromISO === 'function') {
+                    window.setLiquidPickerFromISO(expiryInput.value);
+                }
+            }
+        };
+
+        if (expiryInput && !expiryInput.value) {
+            resetExpiryInput();
+        }
 
         if (cancelBtn) {
             cancelBtn.addEventListener('click', () => {
@@ -2458,6 +2502,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 document.getElementById('p-id').value = '';
                 document.getElementById('submit-btn').innerHTML = '<i class="fa-solid fa-leaf"></i> Publish Listing';
                 cancelBtn.style.display = 'none';
+                resetExpiryInput();
             });
         }
 
@@ -2473,6 +2518,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 const expiry = document.getElementById('p-expiry').value;
                 const customImg = (document.getElementById('p-img') && document.getElementById('p-img').value) ? document.getElementById('p-img').value.trim() : null;
 
+                if (expiry && window.isItemExpired(expiry)) {
+                    showToast("Expiry date and time cannot be in the past.", "error");
+                    return;
+                }
+
                 const token = sessionStorage.getItem('nourishToken');
                 if (!token) {
                     showToast("Please login to publish your listing.", "info");
@@ -2485,7 +2535,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     name, category, quantity: parseInt(qty),
                     price: parseFloat(price), description,
                     imageUrl: customImg || getSmartFoodImage(name, category, null),
-                    expiryTime: expiry ? new Date(expiry).toISOString() : null
+                    expiryTime: (expiry && window.isValidExpiry(expiry)) ? new Date(expiry).toISOString() : null
                 };
 
                 // ---- DEMO MODE: bypass API for demo tokens ----
@@ -2539,6 +2589,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     document.getElementById('p-id').value = '';
                     document.getElementById('submit-btn').innerHTML = '<i class="fa-solid fa-leaf"></i> Publish Listing';
                     if (cancelBtn) cancelBtn.style.display = 'none';
+                    resetExpiryInput();
                     renderSellerListings();
                     return;
 
@@ -2586,6 +2637,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         document.getElementById('p-id').value = '';
                         document.getElementById('submit-btn').innerHTML = '<i class="fa-solid fa-leaf"></i> Publish Listing';
                         if (cancelBtn) cancelBtn.style.display = 'none';
+                        resetExpiryInput();
                         refreshState(); // Refresh everything
                     } else {
                         showToast(data.error || "Operation failed", "error");

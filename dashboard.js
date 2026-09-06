@@ -212,6 +212,10 @@ document.addEventListener('DOMContentLoaded', () => {
             const avatarImg = item.vendorAvatar ? item.vendorAvatar : `assets/default-avatar.jpg`;
             const bioText = item.vendorBio ? `<div style="font-size: 0.8rem; color: #94a3b8; margin-top: 2px;">${item.vendorBio}</div>` : '';
 
+            const expiryStr = (item.expiryTime && !isNaN(new Date(item.expiryTime).getTime()))
+                ? new Date(item.expiryTime).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })
+                : 'Fresh / Same-Day';
+
             card.innerHTML = `
                 <div class="d-flex justify-between" style="margin-bottom: 10px; align-items: flex-start;">
                     <div class="d-flex" style="align-items: center; gap: 10px;">
@@ -228,6 +232,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 <div class="food-meta" style="margin-bottom: 10px;">
                     <div><i class="fa-solid fa-weight-hanging"></i> Quantity: <strong>${item.quantity}</strong></div>
                     <div><i class="fa-solid fa-clock"></i> Pickup: <strong>${item.pickupTime || 'Anytime'}</strong></div>
+                    <div><i class="fa-regular fa-hourglass-half"></i> Expiry: <strong>${expiryStr}</strong></div>
                 </div>
                 ${actionBtn}
             `;
@@ -310,6 +315,8 @@ document.addEventListener('DOMContentLoaded', () => {
             const name = document.getElementById('foodDesc').value;
             const quantity = document.getElementById('foodQty').value;
             const pickupTime = document.getElementById('pickupTime').value;
+            const expiryInput = document.getElementById('expiryTime');
+            const expiryTimeVal = expiryInput ? expiryInput.value : null;
 
             try {
                 const token = sessionStorage.getItem('nourishToken');
@@ -323,6 +330,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         name, 
                         quantity, 
                         pickupTime,
+                        expiryTime: (expiryTimeVal && !isNaN(new Date(expiryTimeVal).getTime())) ? new Date(expiryTimeVal).toISOString() : null,
                         category: 'Cooked',
                         condition: 'Fresh'
                     })
