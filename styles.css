@@ -1576,8 +1576,30 @@ select.form-control {
     cursor: pointer;
 }
 
+.form-control::placeholder {
+    color: #94a3b8;
+    opacity: 0.65;
+}
+
 [data-theme='light'] select.form-control {
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%230d3b36' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E") !important;
+}
+
+[data-theme='light'] .form-control {
+    background: rgba(255, 255, 255, 0.95) !important;
+    color: #0f172a !important;
+    border: 1px solid rgba(0, 0, 0, 0.16) !important;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05), inset 0 1px 2px rgba(0, 0, 0, 0.02) !important;
+}
+
+[data-theme='light'] .form-control::placeholder {
+    color: #64748b !important;
+    opacity: 0.85 !important;
+}
+
+[data-theme='light'] select.form-control option {
+    background-color: #ffffff !important;
+    color: #0f172a !important;
 }
 
 .form-control:focus,
@@ -1586,6 +1608,14 @@ select.form-control {
     border-color: var(--accent-primary) !important;
     box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.18) !important;
     outline: none !important;
+}
+
+[data-theme='light'] .form-control:focus,
+[data-theme='light'] .input-with-icon .form-control:focus {
+    background: #ffffff !important;
+    border-color: var(--accent-primary) !important;
+    color: #0f172a !important;
+    box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.22) !important;
 }
 
 .input-with-icon {
