@@ -221,7 +221,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     <div class="d-flex" style="align-items: center; gap: 10px;">
                         <img src="${avatarImg}" alt="Avatar" style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover; border: 1px solid var(--border-glow);">
                         <div>
-                            <span class="vendor-name" style="margin: 0; font-size: 0.95rem; font-weight: bold;">${item.vendorName}</span>
+                            <div style="display: flex; align-items: center; gap: 6px;">
+                                <span class="vendor-name" style="margin: 0; font-size: 0.95rem; font-weight: bold;">${item.vendorName}</span>
+                                ${item.fssaiCode ? `<span class="fssai-trust-badge" style="font-size:0.65rem;" title="FSSAI Food Safety Verified: ${item.fssaiCode}"><i class="fa-solid fa-shield-halved"></i> FSSAI</span>` : ''}
+                            </div>
                             ${bioText}
                         </div>
                     </div>

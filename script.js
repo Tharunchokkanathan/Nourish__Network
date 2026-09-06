@@ -75,6 +75,77 @@ window.getInitialCountdownStr = function (dateStr) {
     );
 };
 
+// ---- FSSAI VALIDATION & DECODER HELPER ----
+const FSSAI_STATES = {
+    '01': 'Jammu & Kashmir', '02': 'Himachal Pradesh', '03': 'Punjab', '04': 'Chandigarh',
+    '05': 'Uttarakhand', '06': 'Haryana', '07': 'Delhi', '08': 'Rajasthan',
+    '09': 'Uttar Pradesh', '10': 'Bihar', '11': 'Sikkim', '12': 'Arunachal Pradesh',
+    '13': 'Nagaland', '14': 'Manipur', '15': 'Mizoram', '16': 'Tripura',
+    '17': 'Meghalaya', '18': 'Assam', '19': 'West Bengal', '20': 'Jharkhand',
+    '21': 'Odisha', '22': 'Chhattisgarh', '23': 'Madhya Pradesh', '24': 'Gujarat',
+    '25': 'Daman & Diu', '26': 'Dadra & Nagar Haveli', '27': 'Maharashtra', '28': 'Andhra Pradesh',
+    '29': 'Karnataka', '30': 'Goa', '31': 'Lakshadweep', '32': 'Kerala',
+    '33': 'Tamil Nadu', '34': 'Puducherry', '35': 'Andaman & Nicobar', '36': 'Telangana', '37': 'Ladakh'
+};
+
+window.validateFSSAI = function (code) {
+    if (!code) return { valid: false, message: '' };
+    const clean = String(code).replace(/\D/g, '');
+    if (clean.length === 0) return { valid: false, message: '' };
+    if (clean.length !== 14) {
+        return {
+            valid: false,
+            message: `14 digits required (${clean.length}/14 entered)`,
+            clean
+        };
+    }
+
+    const typeDigit = clean[0];
+    const stateCode = clean.substring(1, 3);
+    const yearCode = parseInt(clean.substring(3, 5), 10);
+    const officerCode = clean.substring(5, 8);
+    const serialNum = clean.substring(8, 14);
+
+    let typeStr = '';
+    if (typeDigit === '1') typeStr = 'Licensed Business';
+    else if (typeDigit === '2') typeStr = 'Registered Operator';
+    else {
+        return {
+            valid: false,
+            message: 'First digit must be 1 (License) or 2 (Registration)',
+            clean
+        };
+    }
+
+    const stateName = FSSAI_STATES[stateCode];
+    if (!stateName) {
+        return {
+            valid: false,
+            message: `Invalid state code (${stateCode}). Expected 01–37`,
+            clean
+        };
+    }
+
+    const currentYearShort = (new Date().getFullYear()) % 100;
+    if (isNaN(yearCode) || yearCode < 10 || yearCode > (currentYearShort + 1)) {
+        return {
+            valid: false,
+            message: `Unlikely issuance year 20${clean.substring(3, 5)}. Expected 2010–20${currentYearShort + 1}`,
+            clean
+        };
+    }
+
+    return {
+        valid: true,
+        clean,
+        typeStr,
+        stateName,
+        year: `20${clean.substring(3, 5)}`,
+        serial: serialNum,
+        message: `✓ Valid FSSAI: ${stateName} · ${typeStr} · Year 20${clean.substring(3, 5)}`
+    };
+};
+
 window.toLocalDateTimeLocalString = function (dateInput) {
     if (!dateInput) return '';
     const d = new Date(dateInput);
@@ -2132,7 +2203,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                 </div>
                                 ${user.bio ? `<p style="color:var(--text-muted); font-size:0.9rem; margin: 0 0 8px;">${user.bio}</p>` : ''}
                                 <div style="display: flex; flex-wrap: wrap; gap: 10px 20px; font-size: 0.82rem; color: var(--text-muted); margin-top: 6px;">
-                                    ${user.fssaiCode ? `<span title="FSSAI License"><i class="fa-solid fa-certificate" style="color:#10b981;"></i> <strong style="color:var(--text-primary); font-family:monospace; letter-spacing:1px;">${user.fssaiCode}</strong> <span style="font-size:0.72rem; color:#10b981; font-weight:600;">FSSAI</span></span>` : '<span style="color:#f59e0b;"><i class="fa-solid fa-triangle-exclamation"></i> FSSAI not set — update in Settings</span>'}
+                                    ${user.fssaiCode ? `<span class="fssai-trust-badge" style="font-size:0.75rem; padding: 3px 10px; border-radius: 12px;" title="FSSAI Food Safety Verified"><i class="fa-solid fa-shield-halved"></i> <strong style="font-family:monospace; letter-spacing:1px;">${user.fssaiCode}</strong> <span style="font-weight:700;">FSSAI</span></span>` : '<span style="color:#f59e0b;"><i class="fa-solid fa-triangle-exclamation"></i> FSSAI not set — update in Settings</span>'}
                                     ${user.address ? `<span><i class="fa-solid fa-location-dot" style="color:var(--accent-primary);"></i> ${user.address}</span>` : ''}
                                     ${user.publicPhone ? `<span><i class="fa-solid fa-phone" style="color:var(--accent-primary);"></i> ${user.publicPhone}</span>` : ''}
                                     ${user.contactPerson ? `<span><i class="fa-solid fa-user-tie" style="color:var(--accent-primary);"></i> ${user.contactPerson}</span>` : ''}
@@ -2338,7 +2409,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         <span class="nn-badge nn-badge-cat">${item.category}</span>
                         <span class="nn-badge nn-badge-qty ${item.qty <= 0 ? 'nn-badge-sold' : ''}"><i class="fa-solid fa-utensils"></i> ${item.qty <= 0 ? 'Sold Out' : item.qty + ' left'}</span>
                     </div>
-                    <div class="nn-card-vendor"><i class="fa-solid fa-store"></i> ${item.vendorName}</div>
+                    <div class="nn-card-vendor"><i class="fa-solid fa-store"></i> ${item.vendorName} ${item.fssaiCode ? `<span class="fssai-trust-badge" style="margin-left: 6px;" title="FSSAI Food Safety Verified: ${item.fssaiCode}"><i class="fa-solid fa-shield-halved"></i> FSSAI</span>` : ''}</div>
                 </div>
                 <div class="nn-expiry-container">
                     <span class="nn-expiry-label">Expires in:</span>
@@ -2534,7 +2605,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                 <strong style="font-size: 0.85rem; color: white;">${item.vendorName}</strong>
                                 ${item.isVerified ? '<i class="fa-solid fa-circle-check" style="color: #fbbf24; font-size: 0.7rem;" title="Verified Partner"></i>' : ''}
                             </div>
-                            ${item.fssaiCode ? `<div style="font-size: 0.65rem; color: #10b981; font-weight: bold;">FSSAI: ${item.fssaiCode}</div>` : bioText}
+                            ${item.fssaiCode ? `<div class="fssai-trust-badge" title="FSSAI Food Safety Verified: ${item.fssaiCode}"><i class="fa-solid fa-shield-halved"></i> FSSAI: ${item.fssaiCode}</div>` : bioText}
                         </div>
                     </div>
                 </div>
@@ -3377,12 +3448,54 @@ document.addEventListener('DOMContentLoaded', () => {
         const websiteInput = document.getElementById('websiteInput');
         const fssaiInput = document.getElementById('fssaiInput');
         const fssaiFieldWrap = document.getElementById('fssaiFieldWrap');
+        const fssaiFeedback = document.getElementById('fssaiFeedback');
+        const fssaiStateTag = document.getElementById('fssaiStateTag');
         const pickupWindowInput = document.getElementById('pickupWindowInput');
         const pickupInstructionsInput = document.getElementById('pickupInstructionsInput');
         const avatarInput = document.getElementById('avatarInput');
         const avatarPreview = document.getElementById('avatarPreview');
 
         if (!settingsModal) return;
+
+        function updateFssaiFeedback() {
+            if (!fssaiInput) return;
+            const clean = fssaiInput.value.replace(/\D/g, '').slice(0, 14);
+            fssaiInput.value = clean;
+
+            if (!fssaiFeedback) return;
+
+            if (!clean) {
+                fssaiFeedback.style.display = 'none';
+                fssaiFeedback.className = '';
+                fssaiFeedback.innerHTML = '';
+                if (fssaiStateTag) fssaiStateTag.style.display = 'none';
+                return;
+            }
+
+            const res = window.validateFSSAI(clean);
+            fssaiFeedback.style.display = 'block';
+
+            if (res.valid) {
+                fssaiFeedback.className = 'fssai-feedback-valid';
+                fssaiFeedback.innerHTML = `<i class="fa-solid fa-circle-check"></i> <strong>Valid FSSAI</strong>: ${res.stateName} · ${res.typeStr} (${res.year})`;
+                if (fssaiStateTag) {
+                    fssaiStateTag.style.display = 'inline-block';
+                    fssaiStateTag.textContent = `${res.stateName} • ${res.year}`;
+                }
+            } else if (clean.length < 14) {
+                fssaiFeedback.className = 'fssai-feedback-warning';
+                fssaiFeedback.innerHTML = `<i class="fa-solid fa-circle-info"></i> 14 digits required (<strong>${clean.length}/14</strong> entered). Format: [1-2][State 01-37][Year][Serial]`;
+                if (fssaiStateTag) fssaiStateTag.style.display = 'none';
+            } else {
+                fssaiFeedback.className = 'fssai-feedback-invalid';
+                fssaiFeedback.innerHTML = `<i class="fa-solid fa-triangle-exclamation"></i> ${res.message}`;
+                if (fssaiStateTag) fssaiStateTag.style.display = 'none';
+            }
+        }
+
+        if (fssaiInput) {
+            fssaiInput.addEventListener('input', updateFssaiFeedback);
+        }
 
         async function loadProfile() {
             try {
@@ -3409,7 +3522,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (contactPersonInput) contactPersonInput.value = profile.contactPerson || '';
                 if (publicPhoneInput) publicPhoneInput.value = profile.publicPhone || profile.phone || '';
                 if (websiteInput) websiteInput.value = profile.website || '';
-                if (fssaiInput) fssaiInput.value = profile.fssaiCode || '';
+                if (fssaiInput) {
+                    fssaiInput.value = profile.fssaiCode || '';
+                    updateFssaiFeedback();
+                }
                 if (pickupWindowInput) pickupWindowInput.value = profile.pickupWindow || '';
                 if (pickupInstructionsInput) pickupInstructionsInput.value = profile.pickupInstructions || '';
 
@@ -3436,7 +3552,10 @@ document.addEventListener('DOMContentLoaded', () => {
                             if (contactPersonInput) contactPersonInput.value = liveProfile.contactPerson || '';
                             if (publicPhoneInput) publicPhoneInput.value = liveProfile.publicPhone || liveProfile.phone || '';
                             if (websiteInput) websiteInput.value = liveProfile.website || '';
-                            if (fssaiInput) fssaiInput.value = liveProfile.fssaiCode || '';
+                            if (fssaiInput) {
+                                fssaiInput.value = liveProfile.fssaiCode || '';
+                                updateFssaiFeedback();
+                            }
                             if (pickupWindowInput) pickupWindowInput.value = liveProfile.pickupWindow || '';
                             if (pickupInstructionsInput) pickupInstructionsInput.value = liveProfile.pickupInstructions || '';
 
@@ -3514,6 +3633,20 @@ document.addEventListener('DOMContentLoaded', () => {
         if (settingsForm) {
             settingsForm.addEventListener('submit', async (e) => {
                 e.preventDefault();
+
+                const fssaiCode = fssaiInput ? fssaiInput.value.trim() : '';
+                if (fssaiCode) {
+                    const validation = window.validateFSSAI(fssaiCode);
+                    if (!validation.valid) {
+                        showToast(`Invalid FSSAI License: ${validation.message}`, "error");
+                        if (fssaiInput) {
+                            fssaiInput.focus();
+                            fssaiInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        }
+                        return;
+                    }
+                }
+
                 const saveBtn = document.getElementById('saveSettingsBtn');
                 const originalText = saveBtn.innerText;
                 saveBtn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Saving...';
@@ -3525,7 +3658,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 const contactPerson = contactPersonInput ? contactPersonInput.value.trim() : '';
                 const publicPhone = publicPhoneInput ? publicPhoneInput.value.trim() : '';
                 const website = websiteInput ? websiteInput.value.trim() : '';
-                const fssaiCode = fssaiInput ? fssaiInput.value.trim() : '';
                 const pickupWindow = pickupWindowInput ? pickupWindowInput.value.trim() : '';
                 const pickupInstructions = pickupInstructionsInput ? pickupInstructionsInput.value.trim() : '';
 
