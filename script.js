@@ -1426,6 +1426,148 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
+    // 1b. Cross-Device Mobile / Gmail Login Approval
+    const magicApprovalBtn = document.getElementById('magicApprovalBtn');
+    const loginApprovalModal = document.getElementById('loginApprovalModal');
+    const closeApprovalModalBtn = document.getElementById('closeApprovalModalBtn');
+    const cancelApprovalBtn = document.getElementById('cancelApprovalBtn');
+    const approvalTargetEmailDisplay = document.getElementById('approvalTargetEmailDisplay');
+    const approvalDeviceText = document.getElementById('approvalDeviceText');
+
+    let approvalPollInterval = null;
+
+    function stopApprovalPolling() {
+        if (approvalPollInterval) {
+            clearInterval(approvalPollInterval);
+            approvalPollInterval = null;
+        }
+    }
+
+    if (closeApprovalModalBtn) {
+        closeApprovalModalBtn.addEventListener('click', () => {
+            stopApprovalPolling();
+            if (loginApprovalModal) loginApprovalModal.classList.remove('active');
+        });
+    }
+
+    if (cancelApprovalBtn) {
+        cancelApprovalBtn.addEventListener('click', () => {
+            stopApprovalPolling();
+            if (loginApprovalModal) loginApprovalModal.classList.remove('active');
+            showToast("Login approval request cancelled.", "info");
+        });
+    }
+
+    if (magicApprovalBtn) {
+        magicApprovalBtn.addEventListener('click', async () => {
+            const email = (document.getElementById('loginEmail') ? document.getElementById('loginEmail').value : '').trim();
+            const password = (document.getElementById('loginPassword') ? document.getElementById('loginPassword').value : '').trim();
+
+            if (!email) {
+                showToast("Please enter your email to receive login approval.", "error");
+                const emailInput = document.getElementById('loginEmail');
+                if (emailInput) emailInput.focus();
+                return;
+            }
+
+            const originalHtml = magicApprovalBtn.innerHTML;
+            magicApprovalBtn.disabled = true;
+            magicApprovalBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Sending Request...';
+
+            try {
+                const res = await fetch(`${API_BASE}/auth/request-approval-login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password: password || undefined })
+                });
+
+                const data = await res.json();
+
+                if (!res.ok) {
+                    showToast(data.error || "Failed to send approval email.", "error");
+                    return;
+                }
+
+                // Hide login form modal, show waiting modal
+                if (authModal) authModal.classList.remove('active');
+                if (approvalTargetEmailDisplay) approvalTargetEmailDisplay.textContent = email;
+                if (approvalDeviceText) approvalDeviceText.textContent = data.deviceName || 'This Computer';
+                if (loginApprovalModal) loginApprovalModal.classList.add('active');
+
+                showToast("Approval email sent! Check your phone's Gmail. 📱", "success");
+
+                // Start polling every 2 seconds
+                stopApprovalPolling();
+                const sessionId = data.sessionId;
+                const startTime = Date.now();
+                const maxTimeoutMs = 10 * 60 * 1000; // 10 minutes
+
+                approvalPollInterval = setInterval(async () => {
+                    if (Date.now() - startTime > maxTimeoutMs) {
+                        stopApprovalPolling();
+                        if (loginApprovalModal) loginApprovalModal.classList.remove('active');
+                        showToast("Login approval request timed out. Please try again.", "error");
+                        return;
+                    }
+
+                    try {
+                        const pollRes = await fetch(`${API_BASE}/auth/login-session-status?sessionId=${sessionId}`);
+                        if (!pollRes.ok) return;
+                        const pollData = await pollRes.json();
+
+                        if (pollData.status === 'approved' && pollData.token) {
+                            stopApprovalPolling();
+
+                            // Save credentials and login!
+                            localStorage.setItem('last_login_email', email);
+                            sessionStorage.setItem('nourishUser', JSON.stringify(pollData.user));
+                            sessionStorage.setItem('nourishToken', pollData.token);
+                            document.documentElement.classList.add('user-logged-in');
+
+                            if (loginApprovalModal) {
+                                loginApprovalModal.querySelector('.modal-content').innerHTML = `
+                                    <div style="width: 72px; height: 72px; border-radius: 50%; background: rgba(16, 185, 129, 0.2); border: 2px solid #10b981; display: flex; align-items: center; justify-content: center; margin: 0 auto 1.25rem; box-shadow: 0 0 35px rgba(16, 185, 129, 0.4);">
+                                        <i class="fa-solid fa-check" style="color: #10b981; font-size: 2rem;"></i>
+                                    </div>
+                                    <h2 class="minimal-auth-heading" style="color: #34d399;">Approved on Phone! 🌱</h2>
+                                    <p style="color: rgba(255,255,255,0.7); font-size: 0.95rem; margin-bottom: 1rem;">
+                                        Welcome back, <strong>${pollData.user.name || email}</strong>! Signing you in...
+                                    </p>
+                                `;
+                            }
+
+                            setTimeout(() => {
+                                if (loginApprovalModal) loginApprovalModal.classList.remove('active');
+                                if (pollData.user) {
+                                    const t = (pollData.user.type || pollData.user.accountType || pollData.user.role || '').toLowerCase();
+                                    state.activePortal = (t === 'restaurant' || t === 'vendor' || t === 'seller') ? 'seller' : 'buyer';
+                                }
+                                showToast(`Welcome back, ${pollData.user.name || email}! 🎉`);
+                                refreshState();
+                            }, 1200);
+                        } else if (pollData.status === 'rejected') {
+                            stopApprovalPolling();
+                            if (loginApprovalModal) loginApprovalModal.classList.remove('active');
+                            showToast("Sign-in request was rejected.", "error");
+                        } else if (pollData.status === 'expired') {
+                            stopApprovalPolling();
+                            if (loginApprovalModal) loginApprovalModal.classList.remove('active');
+                            showToast("Approval link expired.", "error");
+                        }
+                    } catch (pollErr) {
+                        console.warn("Poll check error:", pollErr.message);
+                    }
+                }, 2000);
+
+            } catch (err) {
+                showToast("Network error while requesting approval.", "error");
+            } finally {
+                magicApprovalBtn.disabled = false;
+                magicApprovalBtn.innerHTML = originalHtml;
+            }
+        });
+    }
+
     // 2. Registration Form Submit
     registerForm.addEventListener('submit', async (e) => {
         e.preventDefault();

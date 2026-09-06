@@ -16,7 +16,8 @@ const {
     sendLoginNotificationEmail, 
     sendPasswordChangedEmail,
     sendFoodPublishedBroadcastEmail,
-    sendSellerOrderNotificationEmail
+    sendSellerOrderNotificationEmail,
+    sendLoginApprovalEmail
 } = require('./mailer');
 
 // ─── APP SETUP ───────────────────────────────────────────────────────────────
@@ -260,6 +261,199 @@ app.post('/api/login', (req, res) => {
             res.status(500).json({ error: err.message });
         }
     });
+});
+
+// ─── CROSS-DEVICE LOGIN APPROVAL STATE & HELPERS ────────────────────────────
+const pendingLoginSessions = new Map();
+
+// Purge expired sessions every 2 minutes
+setInterval(() => {
+    const now = Date.now();
+    for (const [sId, sess] of pendingLoginSessions.entries()) {
+        if (sess.expiresAt < now) {
+            pendingLoginSessions.delete(sId);
+        }
+    }
+}, 2 * 60 * 1000);
+
+function parseDeviceName(userAgent) {
+    if (!userAgent || typeof userAgent !== 'string') return 'Desktop / Laptop Browser';
+    const ua = userAgent;
+
+    let os = 'Computer';
+    if (/windows nt/i.test(ua)) os = 'Windows PC';
+    else if (/macintosh|mac os x/i.test(ua)) os = 'MacBook / Mac';
+    else if (/iphone/i.test(ua)) os = 'iPhone';
+    else if (/ipad/i.test(ua)) os = 'iPad';
+    else if (/android/i.test(ua)) os = 'Android Phone';
+    else if (/linux/i.test(ua)) os = 'Linux Computer';
+
+    let browser = 'Browser';
+    if (/edg\//i.test(ua)) browser = 'Edge';
+    else if (/chrome|crios/i.test(ua) && !/opr|opera/i.test(ua)) browser = 'Chrome';
+    else if (/firefox|fxios/i.test(ua)) browser = 'Firefox';
+    else if (/safari/i.test(ua) && !/chrome/i.test(ua)) browser = 'Safari';
+    else if (/opera|opr/i.test(ua)) browser = 'Opera';
+
+    return `${os} (${browser})`;
+}
+
+// 2a. REQUEST CROSS-DEVICE LOGIN APPROVAL
+// POST /api/auth/request-approval-login
+// Body: { email, password? }
+app.post('/api/auth/request-approval-login', (req, res) => {
+    const { email, password } = req.body;
+    if (!email) {
+        return res.status(400).json({ error: 'Email is required.' });
+    }
+
+    db.get(`SELECT * FROM users WHERE email = ?`, [email], async (err, user) => {
+        if (err) return res.status(500).json({ error: err.message });
+        if (!user) return res.status(404).json({ error: 'No account registered with this email.' });
+
+        // If password provided, verify it before dispatching approval
+        if (password) {
+            try {
+                const match = await bcrypt.compare(password, user.password);
+                if (!match) return res.status(401).json({ error: 'Invalid password.' });
+            } catch (pErr) {
+                return res.status(500).json({ error: 'Password verification failed.' });
+            }
+        }
+
+        const sessionId = 'sess_' + crypto.randomBytes(16).toString('hex');
+        const magicToken = crypto.randomBytes(24).toString('hex');
+        const deviceName = parseDeviceName(req.headers['user-agent']);
+
+        const hostUrl = req.headers.origin || (req.headers.host ? `${req.headers['x-forwarded-proto'] || 'http'}://${req.headers.host}` : 'https://nourish-network-4bit.onrender.com');
+        const approveUrl = `${hostUrl}/api/auth/approve-login?sessionId=${sessionId}&token=${magicToken}`;
+        const denyUrl = `${hostUrl}/api/auth/deny-login?sessionId=${sessionId}&token=${magicToken}`;
+
+        pendingLoginSessions.set(sessionId, {
+            sessionId,
+            token: magicToken,
+            email: user.email,
+            user,
+            initiatorDevice: deviceName,
+            status: 'pending',
+            authToken: null,
+            authUser: null,
+            createdAt: Date.now(),
+            expiresAt: Date.now() + 10 * 60 * 1000 // 10 minutes
+        });
+
+        // Send approval request email asynchronously
+        sendLoginApprovalEmail({
+            toEmail: user.email,
+            name: user.organizationName || 'User',
+            deviceName,
+            approveUrl,
+            denyUrl,
+            expiresMinutes: 10
+        }).catch(e => console.error("Async Approval Email Error:", e));
+
+        return res.status(200).json({
+            message: 'Sign-in approval email dispatched! Tap Approve in your Gmail.',
+            sessionId,
+            deviceName,
+            email: user.email,
+            expiresAt: Date.now() + 10 * 60 * 1000
+        });
+    });
+});
+
+// 2b. POLL LOGIN SESSION STATUS (Laptop checks this every 2 seconds)
+// GET /api/auth/login-session-status?sessionId=...
+app.get('/api/auth/login-session-status', (req, res) => {
+    const { sessionId } = req.query;
+    if (!sessionId) return res.status(400).json({ error: 'sessionId required' });
+
+    const session = pendingLoginSessions.get(sessionId);
+    if (!session || session.expiresAt < Date.now()) {
+        if (session) pendingLoginSessions.delete(sessionId);
+        return res.json({ status: 'expired' });
+    }
+
+    if (session.status === 'pending') {
+        return res.json({ status: 'pending', device: session.initiatorDevice });
+    }
+
+    if (session.status === 'rejected') {
+        pendingLoginSessions.delete(sessionId);
+        return res.json({ status: 'rejected' });
+    }
+
+    if (session.status === 'approved') {
+        // Return token and user data to the waiting device
+        const responseData = {
+            status: 'approved',
+            token: session.authToken,
+            user: session.authUser
+        };
+        // Keep in memory briefly (30s) so multiple concurrent checks succeed then purge
+        setTimeout(() => pendingLoginSessions.delete(sessionId), 30000);
+        return res.json(responseData);
+    }
+
+    return res.json({ status: 'unknown' });
+});
+
+// 2c. APPROVE LOGIN (Opened when user taps "Approve" in Gmail on mobile or laptop)
+// GET /api/auth/approve-login?sessionId=...&token=...
+app.get('/api/auth/approve-login', (req, res) => {
+    const { sessionId, token } = req.query;
+    if (!sessionId || !token) {
+        return res.redirect('/approve-login.html?status=invalid');
+    }
+
+    const session = pendingLoginSessions.get(sessionId);
+    if (!session || session.expiresAt < Date.now()) {
+        if (session) pendingLoginSessions.delete(sessionId);
+        return res.redirect('/approve-login.html?status=expired');
+    }
+
+    if (session.token !== token) {
+        return res.redirect('/approve-login.html?status=invalid');
+    }
+
+    // Authorize session and generate JWT token
+    const user = session.user;
+    const jwtToken = makeToken(user);
+
+    session.status = 'approved';
+    session.authToken = jwtToken;
+    session.authUser = {
+        id: user.id,
+        email: user.email,
+        name: user.organizationName,
+        organizationName: user.organizationName,
+        type: user.accountType,
+        accountType: user.accountType,
+        phone: user.phone || '',
+        bio: user.bio || '',
+        address: user.address || '',
+        contactPerson: user.contactPerson || '',
+        publicPhone: user.publicPhone || user.phone || '',
+        website: user.website || '',
+        fssaiCode: user.fssaiCode || '',
+        pickupInstructions: user.pickupInstructions || '',
+        avatarUrl: user.avatarUrl || '',
+        isVerified: user.isVerified || 1
+    };
+
+    return res.redirect(`/approve-login.html?status=approved&device=${encodeURIComponent(session.initiatorDevice)}`);
+});
+
+// 2d. DENY LOGIN (Opened when user taps "Deny & Block" in Gmail)
+// GET /api/auth/deny-login?sessionId=...&token=...
+app.get('/api/auth/deny-login', (req, res) => {
+    const { sessionId, token } = req.query;
+    const session = pendingLoginSessions.get(sessionId);
+    if (session && session.token === token) {
+        session.status = 'rejected';
+    }
+    const dev = session ? session.initiatorDevice : 'Device';
+    return res.redirect(`/approve-login.html?status=denied&device=${encodeURIComponent(dev)}`);
 });
 
 // 2b. EMAIL VERIFICATION VIA LINK (GET /api/verify-email?token=...)

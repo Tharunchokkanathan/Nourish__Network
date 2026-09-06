@@ -967,12 +967,222 @@ async function sendSellerOrderNotificationEmail({ sellerEmail, sellerName, buyer
     });
 }
 
+/**
+ * Send Cross-Device Login Approval Request Email
+ */
+async function sendLoginApprovalEmail({
+    toEmail,
+    name,
+    deviceName,
+    ipAddress,
+    approveUrl,
+    denyUrl,
+    expiresMinutes = 10
+}) {
+    const formattedTime = new Date().toLocaleString('en-IN', {
+        timeZone: 'Asia/Kolkata',
+        dateStyle: 'medium',
+        timeStyle: 'short'
+    });
+
+    const htmlTemplate = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Approve Sign-In - Nourish Network</title>
+        <style>
+            body {
+                font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+                background-color: #0b1410;
+                color: #e2e8f0;
+                margin: 0;
+                padding: 0;
+                -webkit-font-smoothing: antialiased;
+            }
+            .email-container {
+                max-width: 580px;
+                margin: 30px auto;
+                background: #111f18;
+                border: 1px solid rgba(16, 185, 129, 0.35);
+                border-radius: 20px;
+                overflow: hidden;
+                box-shadow: 0 25px 60px rgba(0,0,0,0.7);
+            }
+            .header {
+                background: linear-gradient(135deg, #064e3b 0%, #065f46 50%, #047857 100%);
+                padding: 32px 28px;
+                text-align: center;
+                border-bottom: 1px solid rgba(16, 185, 129, 0.2);
+            }
+            .header-icon {
+                font-size: 40px;
+                line-height: 1;
+                margin-bottom: 8px;
+            }
+            .header h1 {
+                margin: 0;
+                color: #ffffff;
+                font-size: 24px;
+                font-weight: 700;
+                letter-spacing: 0.5px;
+            }
+            .content {
+                padding: 35px 30px;
+                text-align: center;
+            }
+            .title {
+                font-size: 20px;
+                color: #34d399;
+                margin-top: 0;
+                margin-bottom: 8px;
+                font-weight: 700;
+            }
+            .desc {
+                font-size: 14px;
+                color: #94a3b8;
+                line-height: 1.6;
+                margin-bottom: 24px;
+            }
+            .device-card {
+                background: rgba(16, 185, 129, 0.06);
+                border: 1px solid rgba(16, 185, 129, 0.2);
+                border-radius: 14px;
+                padding: 20px 24px;
+                text-align: left;
+                margin: 0 auto 28px;
+            }
+            .device-row {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                padding: 7px 0;
+                border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+                font-size: 13px;
+            }
+            .device-row:last-child {
+                border-bottom: none;
+            }
+            .device-label {
+                color: #64748b;
+                font-weight: 600;
+            }
+            .device-val {
+                color: #f1f5f9;
+                font-weight: 700;
+                text-align: right;
+            }
+            .actions-wrap {
+                margin: 28px 0 16px;
+            }
+            .btn-approve {
+                display: inline-block;
+                padding: 16px 42px;
+                background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+                color: #ffffff !important;
+                text-decoration: none;
+                text-align: center;
+                font-weight: 700;
+                font-size: 16px;
+                border-radius: 12px;
+                box-shadow: 0 10px 25px rgba(16, 185, 129, 0.35);
+                letter-spacing: 0.3px;
+            }
+            .deny-link {
+                display: block;
+                margin-top: 18px;
+                color: #f87171 !important;
+                font-size: 13px;
+                text-decoration: none;
+                font-weight: 600;
+            }
+            .deny-link:hover {
+                text-decoration: underline;
+            }
+            .note-box {
+                background: rgba(245, 158, 11, 0.08);
+                border-left: 3px solid #f59e0b;
+                border-radius: 8px;
+                padding: 12px 16px;
+                text-align: left;
+                margin-top: 26px;
+                font-size: 12px;
+                color: #cbd5e1;
+                line-height: 1.5;
+            }
+            .footer {
+                background: #080f0c;
+                padding: 20px;
+                text-align: center;
+                font-size: 12px;
+                color: #64748b;
+                border-top: 1px solid rgba(255,255,255,0.05);
+            }
+        </style>
+    </head>
+    <body>
+        <div class="email-container">
+            <div class="header">
+                <div class="header-icon">&#128274;</div>
+                <h1>Sign-In Approval Request</h1>
+            </div>
+            <div class="content">
+                <h2 class="title">Approve Sign-In on ${deviceName || 'your device'}</h2>
+                <p class="desc">
+                    Hello <strong>${name || 'Member'}</strong>, a sign-in attempt was initiated for your Nourish Network account.
+                    To complete sign-in on that device, tap the approval button below.
+                </p>
+
+                <div class="device-card">
+                    <div class="device-row">
+                        <span class="device-label">Device:</span>
+                        <span class="device-val">${deviceName || 'Unknown Browser / PC'}</span>
+                    </div>
+                    <div class="device-row">
+                        <span class="device-label">Time:</span>
+                        <span class="device-val">${formattedTime}</span>
+                    </div>
+                    <div class="device-row">
+                        <span class="device-label">Valid For:</span>
+                        <span class="device-val">${expiresMinutes} Minutes</span>
+                    </div>
+                </div>
+
+                <div class="actions-wrap">
+                    <a href="${approveUrl}" class="btn-approve" target="_blank">&#9989; Approve Sign-In</a>
+                    <a href="${denyUrl}" class="deny-link" target="_blank">&#128737; Deny &amp; Block Sign-In</a>
+                </div>
+
+                <div class="note-box">
+                    <strong>&#9888;&#65039; Cross-Device Flow:</strong>
+                    Tapping "Approve" from your mobile phone will automatically and securely log in your laptop session within 2 seconds.
+                    If you did not request this login, tap "Deny &amp; Block" immediately.
+                </div>
+            </div>
+            <div class="footer">
+                &copy; ${new Date().getFullYear()} Nourish Network. Secure Identity &amp; Food Rescue Platform.
+            </div>
+        </div>
+    </body>
+    </html>
+    `;
+
+    return await dispatchEmail({
+        toEmail,
+        subject: `🔐 Sign-in Approval Request for ${deviceName || 'your device'} - Nourish Network`,
+        html: htmlTemplate
+    });
+}
+
 module.exports = { 
     sendVerificationEmail, 
     sendPasswordResetEmail, 
     sendLoginNotificationEmail, 
     sendPasswordChangedEmail,
     sendFoodPublishedBroadcastEmail,
-    sendSellerOrderNotificationEmail
+    sendSellerOrderNotificationEmail,
+    sendLoginApprovalEmail
 };
+
 
