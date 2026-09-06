@@ -1062,10 +1062,85 @@ app.post('/api/upload', authenticateToken, upload.single('image'), (req, res) =>
     res.status(200).json({ message: 'Image uploaded successfully!', imageUrl });
 });
 
+// Helper: Resolve external image links, Google share shortlinks, drive links, and search redirects
+async function resolveExternalImageUrl(rawUrl) {
+    if (!rawUrl || typeof rawUrl !== 'string') return rawUrl;
+    let url = rawUrl.trim();
+
+    // 1. Direct Google imgurl or redirect query parameters
+    if (url.includes('google.') && (url.includes('imgurl=') || url.includes('/imgres'))) {
+        try {
+            const match = url.match(/[?&]imgurl=([^&]+)/);
+            if (match && match[1]) return decodeURIComponent(match[1]);
+        } catch (e) { }
+    }
+
+    // 2. Google Drive links
+    if (url.includes('drive.google.com')) {
+        const driveIdMatch = url.match(/\/d\/([a-zA-Z0-9_-]+)/) || url.match(/[?&]id=([a-zA-Z0-9_-]+)/);
+        if (driveIdMatch && driveIdMatch[1]) {
+            return `https://lh3.googleusercontent.com/d/${driveIdMatch[1]}`;
+        }
+    }
+
+    // 3. Google share links (e.g. share.google/...) and redirector/shortened links
+    if (url.includes('share.google') || url.includes('goo.gl') || url.includes('bit.ly') || url.includes('tinyurl.com')) {
+        try {
+            const controller = new AbortController();
+            const timeout = setTimeout(() => controller.abort(), 6000);
+            const res = await fetch(url, {
+                redirect: 'follow',
+                signal: controller.signal,
+                headers: {
+                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+                }
+            });
+            clearTimeout(timeout);
+
+            const finalUrl = res.url || '';
+            if (finalUrl) {
+                try {
+                    const u = new URL(finalUrl);
+                    if (u.searchParams.get('imgurl')) {
+                        return decodeURIComponent(u.searchParams.get('imgurl'));
+                    }
+                    if (u.searchParams.get('url')) {
+                        const direct = decodeURIComponent(u.searchParams.get('url'));
+                        if (/^https?:\/\//i.test(direct)) return direct;
+                    }
+                } catch (e) { }
+            }
+
+            const html = await res.text();
+            const ogMatch = html.match(/<meta[^>]*property=["']og:image["'][^>]*content=["']([^"']+)["']/i)
+                         || html.match(/<meta[^>]*content=["']([^"']+)["'][^>]*property=["']og:image["']/i);
+            if (ogMatch && ogMatch[1]) {
+                return ogMatch[1];
+            }
+        } catch (e) {
+            console.error('Failed to resolve short URL:', e.message);
+        }
+    }
+
+    return url;
+}
+
+// GET /api/resolve-image?url=...
+app.get('/api/resolve-image', async (req, res) => {
+    const rawUrl = req.query.url;
+    if (!rawUrl) return res.status(400).json({ error: 'URL is required' });
+    try {
+        const resolvedUrl = await resolveExternalImageUrl(rawUrl);
+        res.json({ resolvedUrl });
+    } catch (err) {
+        res.status(500).json({ error: 'Failed to resolve image URL' });
+    }
+});
+
 // 8. CREATE FOOD LISTING
 // POST /api/listings
 // Body: { name, description?, category, price, quantity, unit, expiryTime?, pickupTime?, condition, allergens?, imageUrl? }
-app.post('/api/listings', authenticateToken, (req, res) => {
+app.post('/api/listings', authenticateToken, async (req, res) => {
     const {
         name, description, category, price,
         quantity, unit, expiryTime, pickupTime,
@@ -1074,6 +1149,13 @@ app.post('/api/listings', authenticateToken, (req, res) => {
 
     if (!name || !quantity) {
         return res.status(400).json({ error: 'Food name and quantity are required.' });
+    }
+
+    let finalImageUrl = imageUrl || null;
+    if (finalImageUrl) {
+        try {
+            finalImageUrl = await resolveExternalImageUrl(finalImageUrl);
+        } catch (e) { }
     }
 
     const sql = `
@@ -1095,7 +1177,7 @@ app.post('/api/listings', authenticateToken, (req, res) => {
         pickupTime || null,
         condition || 'Fresh',
         allergens || null,
-        imageUrl || null
+        finalImageUrl || null
     ];
 
     db.run(sql, params, function (err) {
@@ -1138,7 +1220,7 @@ app.post('/api/listings', authenticateToken, (req, res) => {
 
 // 9. UPDATE A LISTING (vendor who owns it)
 // PUT /api/listings/:id
-app.put('/api/listings/:id', authenticateToken, (req, res) => {
+app.put('/api/listings/:id', authenticateToken, async (req, res) => {
     const { id } = req.params;
     const {
         name, description, category, price,
@@ -1147,11 +1229,18 @@ app.put('/api/listings/:id', authenticateToken, (req, res) => {
     } = req.body;
 
     // First verify ownership
-    db.get(`SELECT vendorId FROM food_listings WHERE id = ?`, [id], (err, row) => {
+    db.get(`SELECT vendorId FROM food_listings WHERE id = ?`, [id], async (err, row) => {
         if (err) return res.status(500).json({ error: err.message });
         if (!row) return res.status(404).json({ error: 'Listing not found.' });
         if (Number(row.vendorId) !== Number(req.user.id)) {
             return res.status(403).json({ error: 'You can only edit your own listings.' });
+        }
+
+        let finalImageUrl = imageUrl !== undefined ? imageUrl : null;
+        if (finalImageUrl) {
+            try {
+                finalImageUrl = await resolveExternalImageUrl(finalImageUrl);
+            } catch (e) { }
         }
 
         const sql = `
@@ -1175,7 +1264,7 @@ app.put('/api/listings/:id', authenticateToken, (req, res) => {
             price !== undefined ? parseFloat(price) : null,
             quantity || null, unit || null, expiryTime || null,
             pickupTime || null, condition || null,
-            allergens || null, imageUrl || null, status || null,
+            allergens || null, finalImageUrl || null, status || null,
             id
         ];
 
