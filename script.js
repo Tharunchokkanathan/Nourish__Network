@@ -1416,6 +1416,14 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                     refreshState();
                 }, 1000);
+            } else if (response.status === 403 && data.unverified) {
+                showToast(data.error || "Please verify your email address first.", "warning");
+                authModal.classList.remove('active');
+                const sentEmailEl = document.getElementById('verifySentEmail');
+                if (sentEmailEl) sentEmailEl.innerText = data.email || email;
+                const emailModal = document.getElementById('emailVerifyModal');
+                if (emailModal) emailModal.classList.add('active');
+                startVerificationPolling(data.email || email);
             } else {
                 showToast(data.error || "Login failed", "error");
             }
