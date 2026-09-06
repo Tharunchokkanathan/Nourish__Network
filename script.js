@@ -1428,8 +1428,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // 1b. Cross-Device Mobile / Gmail Login Approval
     const magicApprovalBtn = document.getElementById('magicApprovalBtn');
-    const loginApprovalModal = document.getElementById('loginApprovalModal');
-    const closeApprovalModalBtn = document.getElementById('closeApprovalModalBtn');
+    const loginViewContainer = document.getElementById('loginViewContainer');
+    const registerViewContainer = document.getElementById('registerViewContainer');
+    const approvalViewContainer = document.getElementById('approvalViewContainer');
     const cancelApprovalBtn = document.getElementById('cancelApprovalBtn');
     const approvalTargetEmailDisplay = document.getElementById('approvalTargetEmailDisplay');
     const approvalDeviceText = document.getElementById('approvalDeviceText');
@@ -1443,18 +1444,25 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    if (closeApprovalModalBtn) {
-        closeApprovalModalBtn.addEventListener('click', () => {
-            stopApprovalPolling();
-            if (loginApprovalModal) loginApprovalModal.classList.remove('active');
-        });
+    function returnToLoginForm() {
+        stopApprovalPolling();
+        if (approvalViewContainer) approvalViewContainer.style.display = 'none';
+        if (registerViewContainer) registerViewContainer.style.display = 'none';
+        if (loginViewContainer) loginViewContainer.style.display = 'block';
     }
 
     if (cancelApprovalBtn) {
         cancelApprovalBtn.addEventListener('click', () => {
-            stopApprovalPolling();
-            if (loginApprovalModal) loginApprovalModal.classList.remove('active');
+            returnToLoginForm();
             showToast("Login approval request cancelled.", "info");
+        });
+    }
+
+    const modalCloseBtn = document.getElementById('closeModal');
+    if (modalCloseBtn) {
+        modalCloseBtn.addEventListener('click', () => {
+            stopApprovalPolling();
+            setTimeout(returnToLoginForm, 300);
         });
     }
 
@@ -1488,11 +1496,12 @@ document.addEventListener('DOMContentLoaded', () => {
                     return;
                 }
 
-                // Hide login form modal, show waiting modal
-                if (authModal) authModal.classList.remove('active');
+                // Switch seamlessly to the approval view INSIDE authModal
+                if (loginViewContainer) loginViewContainer.style.display = 'none';
+                if (registerViewContainer) registerViewContainer.style.display = 'none';
                 if (approvalTargetEmailDisplay) approvalTargetEmailDisplay.textContent = email;
                 if (approvalDeviceText) approvalDeviceText.textContent = data.deviceName || 'This Computer';
-                if (loginApprovalModal) loginApprovalModal.classList.add('active');
+                if (approvalViewContainer) approvalViewContainer.style.display = 'block';
 
                 showToast("Approval email sent! Check your phone's Gmail. 📱", "success");
 
@@ -1504,8 +1513,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 approvalPollInterval = setInterval(async () => {
                     if (Date.now() - startTime > maxTimeoutMs) {
-                        stopApprovalPolling();
-                        if (loginApprovalModal) loginApprovalModal.classList.remove('active');
+                        returnToLoginForm();
                         showToast("Login approval request timed out. Please try again.", "error");
                         return;
                     }
@@ -1524,8 +1532,8 @@ document.addEventListener('DOMContentLoaded', () => {
                             sessionStorage.setItem('nourishToken', pollData.token);
                             document.documentElement.classList.add('user-logged-in');
 
-                            if (loginApprovalModal) {
-                                loginApprovalModal.querySelector('.modal-content').innerHTML = `
+                            if (approvalViewContainer) {
+                                approvalViewContainer.innerHTML = `
                                     <div style="width: 72px; height: 72px; border-radius: 50%; background: rgba(16, 185, 129, 0.2); border: 2px solid #10b981; display: flex; align-items: center; justify-content: center; margin: 0 auto 1.25rem; box-shadow: 0 0 35px rgba(16, 185, 129, 0.4);">
                                         <i class="fa-solid fa-check" style="color: #10b981; font-size: 2rem;"></i>
                                     </div>
@@ -1537,7 +1545,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             }
 
                             setTimeout(() => {
-                                if (loginApprovalModal) loginApprovalModal.classList.remove('active');
+                                if (authModal) authModal.classList.remove('active');
                                 if (pollData.user) {
                                     const t = (pollData.user.type || pollData.user.accountType || pollData.user.role || '').toLowerCase();
                                     state.activePortal = (t === 'restaurant' || t === 'vendor' || t === 'seller') ? 'seller' : 'buyer';
@@ -1546,12 +1554,10 @@ document.addEventListener('DOMContentLoaded', () => {
                                 refreshState();
                             }, 1200);
                         } else if (pollData.status === 'rejected') {
-                            stopApprovalPolling();
-                            if (loginApprovalModal) loginApprovalModal.classList.remove('active');
+                            returnToLoginForm();
                             showToast("Sign-in request was rejected.", "error");
                         } else if (pollData.status === 'expired') {
-                            stopApprovalPolling();
-                            if (loginApprovalModal) loginApprovalModal.classList.remove('active');
+                            returnToLoginForm();
                             showToast("Approval link expired.", "error");
                         }
                     } catch (pollErr) {
