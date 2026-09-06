@@ -739,39 +739,46 @@ app.get(['/api/verify-email', '/api/verify'], (req, res) => {
                                 align-items: center;
                                 justify-content: center;
                                 min-width: 180px;
-                                padding: 0.9rem 2.75rem;
+                                padding: 0.8rem 2rem;
                                 border-radius: 100px;
-                                background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-                                color: #ffffff;
-                                font-size: 1.15rem;
-                                font-weight: 700;
-                                letter-spacing: 0.5px;
-                                border: 1px solid rgba(255, 255, 255, 0.3);
-                                box-shadow: 0 10px 30px rgba(16, 185, 129, 0.4), inset 0 1px 1px 0 rgba(255, 255, 255, 0.35);
+                                background: rgba(16, 185, 129, 0.15);
+                                color: #34d399;
+                                font-size: 0.95rem;
+                                font-weight: 600;
+                                letter-spacing: 0.3px;
+                                border: 1px solid rgba(16, 185, 129, 0.4);
                                 text-decoration: none;
                                 cursor: pointer;
-                                transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+                                transition: all 0.25s ease;
+                                margin-top: 10px;
                             }
                             .btn:hover {
-                                background: linear-gradient(135deg, #059669 0%, #047857 100%);
-                                border-color: rgba(255, 255, 255, 0.5);
-                                box-shadow: 0 14px 35px rgba(16, 185, 129, 0.5), inset 0 1px 1px 0 rgba(255, 255, 255, 0.45);
-                                transform: translateY(-2px) scale(1.03);
-                            }
-                            .btn:active {
-                                transform: scale(0.97);
+                                background: rgba(16, 185, 129, 0.3);
+                                border-color: rgba(16, 185, 129, 0.6);
+                                color: #ffffff;
+                                transform: translateY(-2px);
                             }
                         </style>
                     </head>
                     <body>
                         <div class="card">
-                            <div class="icon-badge">🌿</div>
-                            <h2>Email Verified Successfully!</h2>
-                            <p>Welcome, <span class="org-name">${user.organizationName}</span>! Your account is now activated.</p>
-                            <p class="sub-text">Redirecting to your <strong>${user.accountType === 'ngo' || user.accountType === 'shelter' ? 'Buyer' : 'Seller'} Portal</strong>...</p>
-                            <a href="/?verified=true" class="btn">Launch Dashboard Now</a>
+                            <div class="icon-badge">✨</div>
+                            <h2>Account Verified!</h2>
+                            <p>Welcome, <span class="org-name">${user.organizationName}</span>!</p>
+                            
+                            <div style="background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 16px; padding: 18px 16px; margin: 20px 0; text-align: left;">
+                                <p style="font-size: 0.95rem; color: #6ee7b7; margin: 0 0 6px 0; font-weight: 600;">
+                                    💻 Laptop / Computer Signed In!
+                                </p>
+                                <p style="font-size: 0.86rem; color: rgba(255, 255, 255, 0.75); margin: 0; line-height: 1.55;">
+                                    Your computer detected this verification and has already signed in to your portal. You can safely close this page on your phone.
+                                </p>
+                            </div>
+
+                            <a href="/?verified=true" class="btn">Open Portal on this device instead</a>
                         </div>
                         <script>
+                            // Store tokens in case user taps "Open Portal on this device instead"
                             const userObj = ${JSON.stringify({
                                 id: user.id,
                                 email: user.email,
@@ -784,9 +791,7 @@ app.get(['/api/verify-email', '/api/verify'], (req, res) => {
                             sessionStorage.setItem('nourishToken', "${userToken}");
                             localStorage.setItem('nourishUser', JSON.stringify(userObj));
                             localStorage.setItem('nourishToken', "${userToken}");
-                            setTimeout(() => {
-                                window.location.href = '/?verified=true';
-                            }, 1200);
+                            // No auto-redirect: stays on confirmation card
                         </script>
                     </body>
                     </html>
