@@ -97,6 +97,27 @@ window.stateLiquidCal = {
     ampm: 'PM'
 };
 
+window.formatExpiryDisplay = function(isoStr) {
+    if (!isoStr) return '';
+    try {
+        const d = new Date(isoStr);
+        if (isNaN(d.getTime())) return '';
+        const yyyy = d.getFullYear();
+        const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+        const mm = monthNames[d.getMonth()];
+        const dd = String(d.getDate()).padStart(2, '0');
+        let hours24 = d.getHours();
+        const ampm = hours24 >= 12 ? 'PM' : 'AM';
+        let h12 = hours24 % 12;
+        if (h12 === 0) h12 = 12;
+        const hh = String(h12).padStart(2, '0');
+        const min = String(d.getMinutes()).padStart(2, '0');
+        return `${dd} ${mm} ${yyyy}, ${hh}:${min} ${ampm}`;
+    } catch (e) {
+        return '';
+    }
+};
+
 window.toggleLiquidGlassCalendar = function(e) {
     if (e) {
         if (e.stopPropagation) e.stopPropagation();
@@ -109,19 +130,35 @@ window.toggleLiquidGlassCalendar = function(e) {
     if (isActive) {
         card.classList.remove('active');
     } else {
+        const wrapper = card.closest('.manual-glass-input-wrapper') || card.parentElement;
+        if (wrapper) {
+            const rect = wrapper.getBoundingClientRect();
+            // If space below is less than 340px or could collide with bottom dock, open upwards
+            if (window.innerHeight - rect.bottom < 340) {
+                card.classList.add('open-upwards');
+            } else {
+                card.classList.remove('open-upwards');
+            }
+        }
+
         const expiryInput = document.getElementById('p-expiry');
         if (expiryInput && expiryInput.value) {
             window.setLiquidPickerFromISO(expiryInput.value);
-        }
-        if (!window.stateLiquidCal || !window.stateLiquidCal.selectedDate || isNaN(new Date(window.stateLiquidCal.selectedDate).getTime())) {
+        } else if (!window.stateLiquidCal || !window.stateLiquidCal.selectedDate || isNaN(new Date(window.stateLiquidCal.selectedDate).getTime())) {
             const now = new Date();
+            const future = new Date(now.getTime() + 4 * 3600 * 1000);
+            let hours24 = future.getHours();
+            let mins = Math.round(future.getMinutes() / 5) * 5;
+            if (mins >= 60) mins = 55;
+            let h12 = hours24 % 12;
+            if (h12 === 0) h12 = 12;
             window.stateLiquidCal = {
-                year: now.getFullYear(),
-                month: now.getMonth(),
-                selectedDate: now,
-                hour: '10',
-                min: '00',
-                ampm: 'PM'
+                year: future.getFullYear(),
+                month: future.getMonth(),
+                selectedDate: future,
+                hour: String(h12).padStart(2, '0'),
+                min: String(mins).padStart(2, '0'),
+                ampm: hours24 >= 12 ? 'PM' : 'AM'
             };
         }
         window.renderLiquidCalendar();
@@ -159,23 +196,53 @@ window.updateLiquidTimeFromSelect = function() {
     if (minSelect) window.stateLiquidCal.min = minSelect.value;
 };
 
+window.clearLiquidCalendar = function() {
+    const hiddenExpiry = document.getElementById('p-expiry');
+    const displayExpiry = document.getElementById('p-expiry-display');
+    if (hiddenExpiry) hiddenExpiry.value = '';
+    if (displayExpiry) displayExpiry.value = '';
+    const card = document.getElementById('liquid-calendar-card');
+    if (card) card.classList.remove('active');
+};
+
 window.resetLiquidCalendar = function() {
+    window.clearLiquidCalendar();
+};
+
+window.applyLiquidPreset = function(preset) {
     const now = new Date();
-    window.stateLiquidCal.year = now.getFullYear();
-    window.stateLiquidCal.month = now.getMonth();
-    window.stateLiquidCal.selectedDate = new Date(now.getTime() + 4 * 3600 * 1000);
-    
-    let hours24 = window.stateLiquidCal.selectedDate.getHours();
-    let mins = window.stateLiquidCal.selectedDate.getMinutes();
-    mins = Math.round(mins / 5) * 5;
+    let target = new Date();
+    if (preset === 2) {
+        target = new Date(now.getTime() + 2 * 3600 * 1000);
+    } else if (preset === 4) {
+        target = new Date(now.getTime() + 4 * 3600 * 1000);
+    } else if (preset === 'tonight') {
+        target = new Date(now);
+        target.setHours(22, 0, 0, 0);
+        if (target.getTime() <= now.getTime()) {
+            target = new Date(now.getTime() + 24 * 3600 * 1000);
+            target.setHours(22, 0, 0, 0);
+        }
+    } else if (preset === 'tomorrow') {
+        target = new Date(now.getTime() + 24 * 3600 * 1000);
+        target.setHours(12, 0, 0, 0);
+    }
+
+    let hours24 = target.getHours();
+    let mins = Math.round(target.getMinutes() / 5) * 5;
     if (mins >= 60) mins = 55;
-    
-    window.stateLiquidCal.ampm = hours24 >= 12 ? 'PM' : 'AM';
+    let ampm = hours24 >= 12 ? 'PM' : 'AM';
     let h12 = hours24 % 12;
     if (h12 === 0) h12 = 12;
-    
-    window.stateLiquidCal.hour = String(h12).padStart(2, '0');
-    window.stateLiquidCal.min = String(mins).padStart(2, '0');
+
+    window.stateLiquidCal = {
+        year: target.getFullYear(),
+        month: target.getMonth(),
+        selectedDate: target,
+        hour: String(h12).padStart(2, '0'),
+        min: String(mins).padStart(2, '0'),
+        ampm: ampm
+    };
 
     window.renderLiquidCalendar();
     window.confirmLiquidCalendar();
@@ -194,7 +261,7 @@ window.confirmLiquidCalendar = function(e) {
     const mm = String(sel.getMonth() + 1).padStart(2, '0');
     const dd = String(sel.getDate()).padStart(2, '0');
 
-    let hour12 = parseInt(window.stateLiquidCal.hour) || 10;
+    let hour12 = parseInt(window.stateLiquidCal.hour) || 12;
     let ampm = window.stateLiquidCal.ampm || 'PM';
     let hour24 = hour12;
     if (ampm === 'PM') {
@@ -209,6 +276,11 @@ window.confirmLiquidCalendar = function(e) {
     
     const hiddenExpiry = document.getElementById('p-expiry');
     if (hiddenExpiry) hiddenExpiry.value = isoStr;
+
+    const displayExpiry = document.getElementById('p-expiry-display');
+    if (displayExpiry && typeof window.formatExpiryDisplay === 'function') {
+        displayExpiry.value = window.formatExpiryDisplay(isoStr);
+    }
 
     const card = document.getElementById('liquid-calendar-card');
     if (card) card.classList.remove('active');
@@ -234,6 +306,11 @@ window.setLiquidPickerFromISO = function(isoStr) {
         if (h12 === 0) h12 = 12;
         window.stateLiquidCal.hour = String(h12).padStart(2, '0');
         window.stateLiquidCal.min = String(mins).padStart(2, '0');
+
+        const displayExpiry = document.getElementById('p-expiry-display');
+        if (displayExpiry && typeof window.formatExpiryDisplay === 'function') {
+            displayExpiry.value = window.formatExpiryDisplay(isoStr);
+        }
 
         if (document.getElementById('lg-month-year')) {
             window.renderLiquidCalendar();
@@ -317,7 +394,7 @@ document.addEventListener('click', (e) => {
     if (!card || !card.classList.contains('active')) return;
 
     const isInsideCard = card.contains(e.target);
-    const isTriggerBtn = e.target.closest('.glass-calendar-icon-btn') || e.target.closest('#glass-picker-trigger');
+    const isTriggerBtn = e.target.closest('.glass-calendar-icon-btn') || e.target.closest('.manual-glass-input-wrapper') || e.target.closest('#glass-picker-trigger');
     const isOption = e.target.tagName === 'OPTION' || e.target.tagName === 'SELECT';
 
     if (!isInsideCard && !isTriggerBtn && !isOption) {
@@ -2123,8 +2200,9 @@ document.addEventListener('DOMContentLoaded', () => {
                                 <div class="form-group" style="position: relative;">
                                      <label style="color: var(--text-primary); font-weight: 600;"><i class="fa-regular fa-clock" style="color: var(--accent-primary);"></i> Expiry Date & Time</label>
                                      
-                                     <div class="manual-glass-input-wrapper">
-                                         <input type="datetime-local" id="p-expiry" class="manual-glass-date-input" required onchange="window.setLiquidPickerFromISO(this.value)">
+                                     <div class="manual-glass-input-wrapper" onclick="window.toggleLiquidGlassCalendar(event)" style="cursor: pointer;">
+                                         <input type="text" id="p-expiry-display" class="manual-glass-date-input" placeholder="Select Expiry Date & Time..." readonly style="cursor: pointer;">
+                                         <input type="hidden" id="p-expiry" value="">
                                          <button type="button" class="glass-calendar-icon-btn" onclick="window.toggleLiquidGlassCalendar(event)" title="Open Liquid Glass Calendar">
                                              <i class="fa-regular fa-calendar-days"></i>
                                          </button>
@@ -2132,6 +2210,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
                                      <!-- Compact Liquid Glass Floating Calendar Card -->
                                      <div class="liquid-glass-calendar-card" id="liquid-calendar-card">
+                                         <!-- Quick 1-Click Presets -->
+                                         <div class="lg-cal-presets">
+                                             <button type="button" class="lg-preset-pill" onclick="window.applyLiquidPreset(2)">+2 hrs</button>
+                                             <button type="button" class="lg-preset-pill" onclick="window.applyLiquidPreset(4)">+4 hrs</button>
+                                             <button type="button" class="lg-preset-pill" onclick="window.applyLiquidPreset('tonight')">Tonight 10PM</button>
+                                             <button type="button" class="lg-preset-pill" onclick="window.applyLiquidPreset('tomorrow')">Tomorrow</button>
+                                         </div>
+
                                          <div class="lg-cal-header">
                                              <span class="lg-cal-month-year" id="lg-month-year">August 2026</span>
                                              <div class="lg-cal-nav">
@@ -2157,8 +2243,10 @@ document.addEventListener('DOMContentLoaded', () => {
                                          </div>
 
                                          <div class="lg-cal-footer">
-                                             <button type="button" class="lg-reset-btn" onclick="window.resetLiquidCalendar()">Reset</button>
-                                             <button type="button" class="lg-confirm-btn" onclick="window.confirmLiquidCalendar()"><i class="fa-solid fa-check"></i></button>
+                                             <button type="button" class="lg-reset-btn" onclick="window.clearLiquidCalendar()">Clear</button>
+                                             <button type="button" class="lg-confirm-btn" onclick="window.confirmLiquidCalendar()">
+                                                 <i class="fa-solid fa-check"></i> Set Expiry
+                                             </button>
                                          </div>
                                      </div>
                                  </div>
@@ -2278,7 +2366,12 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (item.expiry && window.isValidExpiry(item.expiry)) {
                         try {
                             const localIso = window.toLocalDateTimeLocalString(item.expiry);
-                            document.getElementById('p-expiry').value = localIso;
+                            const hiddenExp = document.getElementById('p-expiry');
+                            const dispExp = document.getElementById('p-expiry-display');
+                            if (hiddenExp) hiddenExp.value = localIso;
+                            if (dispExp && typeof window.formatExpiryDisplay === 'function') {
+                                dispExp.value = window.formatExpiryDisplay(localIso);
+                            }
                             if (typeof window.setLiquidPickerFromISO === 'function') {
                                 window.setLiquidPickerFromISO(localIso);
                             }
@@ -2634,23 +2727,12 @@ document.addEventListener('DOMContentLoaded', () => {
     function attachSellerListeners() {
         const form = document.getElementById('add-food-form');
         const cancelBtn = document.getElementById('cancel-edit-btn');
-        const expiryInput = document.getElementById('p-expiry');
-
         const resetExpiryInput = () => {
-            if (expiryInput) {
-                const now = new Date();
-                expiryInput.min = window.toLocalDateTimeLocalString(now);
-                const defaultFuture = new Date(now.getTime() + 4 * 60 * 60 * 1000);
-                expiryInput.value = window.toLocalDateTimeLocalString(defaultFuture);
-                if (typeof window.setLiquidPickerFromISO === 'function') {
-                    window.setLiquidPickerFromISO(expiryInput.value);
-                }
-            }
+            const hiddenExpiry = document.getElementById('p-expiry');
+            const displayExpiry = document.getElementById('p-expiry-display');
+            if (hiddenExpiry) hiddenExpiry.value = '';
+            if (displayExpiry) displayExpiry.value = '';
         };
-
-        if (expiryInput && !expiryInput.value) {
-            resetExpiryInput();
-        }
 
         if (cancelBtn) {
             cancelBtn.addEventListener('click', () => {
@@ -2709,6 +2791,12 @@ document.addEventListener('DOMContentLoaded', () => {
                             }
                         }
                     } catch (e) { }
+                }
+
+                if (!expiry || !window.isValidExpiry(expiry)) {
+                    showToast("Please select an expiry date & time.", "warning");
+                    window.toggleLiquidGlassCalendar();
+                    return;
                 }
 
                 if (expiry && window.isItemExpired(expiry)) {
