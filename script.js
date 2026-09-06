@@ -1474,7 +1474,15 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!email) {
                 showToast("Please enter your email to receive login approval.", "error");
                 const emailInput = document.getElementById('loginEmail');
-                if (emailInput) emailInput.focus();
+                if (emailInput) {
+                    emailInput.focus();
+                    emailInput.style.borderColor = '#ef4444';
+                    emailInput.style.boxShadow = '0 0 15px rgba(239, 68, 68, 0.4)';
+                    setTimeout(() => { 
+                        emailInput.style.borderColor = ''; 
+                        emailInput.style.boxShadow = '';
+                    }, 2500);
+                }
                 return;
             }
 
