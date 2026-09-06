@@ -62,10 +62,13 @@ window.getInitialCountdownStr = function (dateStr) {
     if (!window.isValidExpiry(dateStr)) return 'Fresh';
     const distance = new Date(dateStr).getTime() - Date.now();
     if (distance <= 0) return 'EXPIRED';
+    const days = Math.floor(distance / (1000 * 60 * 60 * 24));
     const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
     const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
     const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+    const dayPrefix = days > 0 ? `${days}d ` : '';
     return (
+        dayPrefix +
         String(hours).padStart(2, '0') + ':' +
         String(minutes).padStart(2, '0') + ':' +
         String(seconds).padStart(2, '0')
@@ -328,28 +331,86 @@ document.addEventListener('DOMContentLoaded', () => {
     const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.protocol === 'file:';
     const API_BASE = window.location.protocol === 'file:' ? 'http://localhost:3000/api' : (isLocal ? '/api' : 'https://nourish-network-4bit.onrender.com/api');
 
-    function getSmartFoodImage(name, category, customImageUrl) {
-        if (customImageUrl && customImageUrl.startsWith('/uploads')) {
-            const isLocalHost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-            return (isLocalHost ? '' : 'https://nourish-network-4bit.onrender.com') + customImageUrl;
-        }
-        if (customImageUrl && customImageUrl.includes('unsplash.com/photos/')) {
+    function resolveCustomImageUrl(rawUrl) {
+        if (!rawUrl || typeof rawUrl !== 'string') return null;
+        let url = rawUrl.trim();
+        if (!url) return null;
+
+        url = url.replace(/^["']|["']$/g, '').trim();
+
+        // 1. Google Images Search Result URL (extract real image link from imgurl param)
+        if (url.includes('google.') && url.includes('imgurl=')) {
             try {
-                const parts = customImageUrl.split('unsplash.com/photos/')[1].split('?')[0].split('-');
+                const match = url.match(/[?&]imgurl=([^&]+)/);
+                if (match && match[1]) {
+                    const decoded = decodeURIComponent(match[1]);
+                    if (/^https?:\/\//i.test(decoded)) return decoded;
+                }
+            } catch (e) { }
+        }
+
+        // 2. Google Search Redirect URL (extract url param)
+        if (url.includes('google.') && (url.includes('url=http') || url.includes('url=%'))) {
+            try {
+                const match = url.match(/[?&]url=([^&]+)/);
+                if (match && match[1]) {
+                    const decoded = decodeURIComponent(match[1]);
+                    if (/^https?:\/\//i.test(decoded)) return decoded;
+                }
+            } catch (e) { }
+        }
+
+        // 3. Google Drive view/open/share URLs
+        if (url.includes('drive.google.com')) {
+            const driveIdMatch = url.match(/\/d\/([a-zA-Z0-9_-]+)/) || url.match(/[?&]id=([a-zA-Z0-9_-]+)/);
+            if (driveIdMatch && driveIdMatch[1]) {
+                return `https://lh3.googleusercontent.com/d/${driveIdMatch[1]}`;
+            }
+        }
+
+        // 4. Google encrypted/thumbnail caches & Google user content
+        if (url.includes('encrypted-tbn0.gstatic.com') || url.includes('lh3.googleusercontent.com') || url.includes('googleusercontent.com')) {
+            return url;
+        }
+
+        // 5. Unsplash photo page to direct image
+        if (url.includes('unsplash.com/photos/')) {
+            try {
+                const parts = url.split('unsplash.com/photos/')[1].split('?')[0].split('-');
                 const photoId = parts[parts.length - 1];
                 if (photoId) {
                     return `https://images.unsplash.com/photo-${photoId}?w=600&q=80`;
                 }
             } catch (e) { }
         }
-        if (customImageUrl && customImageUrl.includes('drive.google.com')) {
-            const driveIdMatch = customImageUrl.match(/\/d\/([a-zA-Z0-9_-]+)/) || customImageUrl.match(/id=([a-zA-Z0-9_-]+)/);
-            if (driveIdMatch && driveIdMatch[1]) {
-                return `https://lh3.googleusercontent.com/d/${driveIdMatch[1]}`;
+
+        // 6. Local uploads
+        if (url.startsWith('/uploads')) {
+            const isLocalHost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+            return (isLocalHost ? '' : 'https://nourish-network-4bit.onrender.com') + url;
+        }
+
+        // 7. Add https:// if user pasted without protocol (e.g. "i.imgur.com/...")
+        if (!/^https?:\/\//i.test(url) && !url.startsWith('data:image/')) {
+            if (/^[a-zA-Z0-9-]+\.[a-zA-Z]{2,}\//.test(url)) {
+                url = 'https://' + url;
             }
         }
-        if (customImageUrl && /^https?:\/\//i.test(customImageUrl) && !customImageUrl.includes('ba9599a7e63c')) {
-            return customImageUrl;
+
+        // 8. Direct http(s) or data URL
+        if (/^(https?:\/\/|data:image\/)/i.test(url)) {
+            return url;
+        }
+
+        return null;
+    }
+
+    window.resolveCustomImageUrl = resolveCustomImageUrl;
+
+    function getSmartFoodImage(name, category, customImageUrl) {
+        const resolved = resolveCustomImageUrl(customImageUrl);
+        if (resolved && !resolved.includes('ba9599a7e63c')) {
+            return resolved;
         }
 
         const title = (name || '').toLowerCase();
@@ -1728,11 +1789,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
 
+            const days = Math.floor(distance / (1000 * 60 * 60 * 24));
             const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
             const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
             const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+            const dayPrefix = days > 0 ? `${days}d ` : '';
 
             const timeStr =
+                dayPrefix +
                 String(hours).padStart(2, '0') + ":" +
                 String(minutes).padStart(2, '0') + ":" +
                 String(seconds).padStart(2, '0');
@@ -2012,7 +2076,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                  </div>
                                 <div class="form-group">
                                     <label>Custom Image URL (Optional)</label>
-                                    <input type="url" id="p-img" class="form-control" placeholder="Paste custom photo link (e.g. https://...)">
+                                    <input type="text" id="p-img" class="form-control" placeholder="Paste photo link from Google or web (e.g. https://...)">
                                 </div>
                                 <div class="form-group full-width">
                                     <label>Short Description</label>
@@ -2081,7 +2145,7 @@ document.addEventListener('DOMContentLoaded', () => {
         container.innerHTML = myItems.map((item, idx) => `
             <div class="nn-food-card stagger-item ${item.qty <= 0 ? 'is-sold-out' : ''} ${window.isItemExpired(item.expiry) ? 'is-expired' : ''}" data-id="${item.id}" style="animation-delay: ${idx * 0.05}s">
                 <div class="nn-card-img-wrap">
-                    <img src="${item.img}" alt="${item.name}" loading="lazy">
+                    <img src="${item.img}" alt="${item.name}" loading="lazy" referrerpolicy="no-referrer" onerror="this.onerror=null; this.src=window.getSmartFoodImage ? window.getSmartFoodImage('${(item.name || '').replace(/'/g, "\\'")}', '${(item.category || '').replace(/'/g, "\\'")}', null) : 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=600&q=80';">
                     <div class="nn-card-img-overlay"></div>
                     <div class="nn-card-badges">
                         <span class="nn-badge nn-badge-cat">${item.category}</span>
@@ -2119,6 +2183,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     document.getElementById('p-qty').value = item.qty;
                     document.getElementById('p-price').value = item.price;
                     document.getElementById('p-desc').value = item.description || '';
+                    if (document.getElementById('p-img')) document.getElementById('p-img').value = item.imageUrl || item.img || '';
                     if (item.expiry && window.isValidExpiry(item.expiry)) {
                         try {
                             const localIso = window.toLocalDateTimeLocalString(item.expiry);
@@ -2264,7 +2329,7 @@ document.addEventListener('DOMContentLoaded', () => {
             <div class="nn-food-card stagger-item ${item.qty <= 0 ? 'is-sold-out' : ''} ${window.isItemExpired(item.expiry) ? 'is-expired' : ''}" data-id="${item.id}" style="animation-delay: ${idx * 0.05}s">
                 ${item.qty <= 0 ? '<div class="nn-sold-out-badge"><i class="fa-solid fa-ban"></i> Sold Out</div>' : ''}
                 <div class="nn-card-img-wrap">
-                    <img src="${item.img}" alt="${item.name}" loading="lazy">
+                    <img src="${item.img}" alt="${item.name}" loading="lazy" referrerpolicy="no-referrer" onerror="this.onerror=null; this.src=window.getSmartFoodImage ? window.getSmartFoodImage('${(item.name || '').replace(/'/g, "\\'")}', '${(item.category || '').replace(/'/g, "\\'")}', null) : 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=600&q=80';">
                     <div class="nn-card-img-overlay"></div>
                     <div class="nn-card-badges">
                         <span class="nn-badge nn-badge-cat">${item.category}</span>
@@ -2516,7 +2581,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 const price = document.getElementById('p-price').value;
                 const description = document.getElementById('p-desc').value;
                 const expiry = document.getElementById('p-expiry').value;
-                const customImg = (document.getElementById('p-img') && document.getElementById('p-img').value) ? document.getElementById('p-img').value.trim() : null;
+                const rawImg = (document.getElementById('p-img') && document.getElementById('p-img').value) ? document.getElementById('p-img').value.trim() : '';
+                const customImg = rawImg ? (window.resolveCustomImageUrl ? window.resolveCustomImageUrl(rawImg) : rawImg) : null;
 
                 if (expiry && window.isItemExpired(expiry)) {
                     showToast("Expiry date and time cannot be in the past.", "error");
