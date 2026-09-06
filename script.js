@@ -2199,7 +2199,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             <div style="flex: 1; min-width: 200px;">
                                 <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 4px;">
                                     <span style="font-size: 1.2rem; font-weight: 800; color: var(--text-primary);">${user.name || user.organizationName || 'Your Restaurant'}</span>
-                                    ${user.isVerified ? '<span style="background: linear-gradient(135deg,#f59e0b,#d97706); color:#fff; font-size:0.7rem; font-weight:700; padding:2px 10px; border-radius:20px; letter-spacing:1px;"><i class="fa-solid fa-certificate"></i> VERIFIED</span>' : ''}
+
                                 </div>
                                 ${user.bio ? `<p style="color:var(--text-muted); font-size:0.9rem; margin: 0 0 8px;">${user.bio}</p>` : ''}
                                 <div style="display: flex; flex-wrap: wrap; gap: 10px 20px; font-size: 0.82rem; color: var(--text-muted); margin-top: 6px;">
@@ -2603,7 +2603,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         <div style="display: flex; flex-direction: column; text-align: left;">
                             <div style="display: flex; align-items: center; gap: 5px;">
                                 <strong style="font-size: 0.85rem; color: white;">${item.vendorName}</strong>
-                                ${item.isVerified ? '<i class="fa-solid fa-circle-check" style="color: #fbbf24; font-size: 0.7rem;" title="Verified Partner"></i>' : ''}
+
                             </div>
                             ${item.fssaiCode ? `<div class="fssai-trust-badge" title="FSSAI Food Safety Verified: ${item.fssaiCode}"><i class="fa-solid fa-shield-halved"></i> FSSAI: ${item.fssaiCode}</div>` : bioText}
                         </div>
