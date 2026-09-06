@@ -234,7 +234,7 @@ async function sendVerificationEmail({ toEmail, name, token, accountType, hostUr
 
     return await dispatchEmail({
         toEmail,
-        subject: `Verify your Nourish Network Account 🌿`,
+        subject: `Verify your Nourish Network Account`,
         html: htmlTemplate,
         devFallbackUrl: verifyUrl
     });
@@ -288,7 +288,7 @@ async function sendPasswordResetEmail({ toEmail, name, token, hostUrl }) {
 
     return await dispatchEmail({
         toEmail,
-        subject: `Reset Your Nourish Network Password 🔑`,
+        subject: `Reset Your Nourish Network Password`,
         html: htmlTemplate,
         devFallbackUrl: resetUrl
     });
@@ -302,7 +302,7 @@ async function sendPasswordResetEmail({ toEmail, name, token, hostUrl }) {
  * @param {string} params.accountType - User account type (restaurant/vendor/ngo/shelter)
  * @param {string} [params.loginTime] - ISO string or formatted timestamp
  */
-async function sendLoginNotificationEmail({ toEmail, name, accountType, loginTime }) {
+async function sendLoginNotificationEmail({ toEmail, name, accountType, loginTime, deviceName }) {
     const formattedTime = loginTime 
         ? new Date(loginTime).toLocaleString('en-US', { dateStyle: 'full', timeStyle: 'short' })
         : new Date().toLocaleString('en-US', { dateStyle: 'full', timeStyle: 'short' });
@@ -432,8 +432,8 @@ async function sendLoginNotificationEmail({ toEmail, name, accountType, loginTim
                         <span class="detail-value">${roleLabel}</span>
                     </div>
                     <div class="detail-row">
-                        <span class="detail-label">Email Address:</span>
-                        <span class="detail-value">${toEmail}</span>
+                        <span class="detail-label">Device &amp; Browser:</span>
+                        <span class="detail-value">${deviceName || 'Desktop Browser'}</span>
                     </div>
                     <div class="detail-row">
                         <span class="detail-label">Login Timestamp:</span>
@@ -442,7 +442,7 @@ async function sendLoginNotificationEmail({ toEmail, name, accountType, loginTim
                 </div>
 
                 <div class="security-notice">
-                    <strong>🛡️ Security Note:</strong> If you recently initiated this login, you can safely disregard this notice. If you did not log in or suspect unauthorized access, please update your account password immediately.
+                    <strong>🛡️ Security Note:</strong> If you recently initiated this login on this device, you can safely disregard this notice. If you did not log in or suspect unauthorized access, please update your account password immediately.
                 </div>
             </div>
             <div class="footer">
@@ -455,7 +455,7 @@ async function sendLoginNotificationEmail({ toEmail, name, accountType, loginTim
 
     return await dispatchEmail({
         toEmail,
-        subject: `Successful Account Login - Nourish Network 🌿`,
+        subject: `Successful Account Login from ${deviceName || 'your device'} - Nourish Network`,
         html: htmlTemplate
     });
 }
@@ -620,7 +620,7 @@ async function sendPasswordChangedEmail({ toEmail, name, changedTime }) {
 
     return await dispatchEmail({
         toEmail,
-        subject: `Security Alert: Password Changed Successfully 🔒 - Nourish Network`,
+        subject: `Security Alert: Password Changed Successfully - Nourish Network`,
         html: htmlTemplate
     });
 }

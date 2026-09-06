@@ -156,6 +156,28 @@ app.post('/api/register', async (req, res) => {
     }
 });
 
+function parseDeviceName(userAgent) {
+    if (!userAgent || typeof userAgent !== 'string') return 'Desktop / Laptop Browser';
+    const ua = userAgent;
+
+    let os = 'Computer';
+    if (/windows nt/i.test(ua)) os = 'Windows PC';
+    else if (/macintosh|mac os x/i.test(ua)) os = 'MacBook / Mac';
+    else if (/iphone/i.test(ua)) os = 'iPhone';
+    else if (/ipad/i.test(ua)) os = 'iPad';
+    else if (/android/i.test(ua)) os = 'Android Phone';
+    else if (/linux/i.test(ua)) os = 'Linux Computer';
+
+    let browser = 'Browser';
+    if (/edg\//i.test(ua)) browser = 'Edge';
+    else if (/chrome|crios/i.test(ua) && !/opr|opera/i.test(ua)) browser = 'Chrome';
+    else if (/firefox|fxios/i.test(ua)) browser = 'Firefox';
+    else if (/safari/i.test(ua) && !/chrome/i.test(ua)) browser = 'Safari';
+    else if (/opera|opr/i.test(ua)) browser = 'Opera';
+
+    return `${os} (${browser})`;
+}
+
 // 2. LOGIN
 // POST /api/login
 // Body: { email, password }
@@ -166,6 +188,8 @@ app.post('/api/login', (req, res) => {
         return res.status(400).json({ error: 'Please provide email and password.' });
     }
 
+    const deviceName = parseDeviceName(req.headers['user-agent']);
+
     // --- HACKATHON DEMO LOGIN BYPASS ---
     // Professional demo accounts for judges and testers
     if (email === 'serverdemo@gmail.com' && password === 'demo123') {
@@ -174,7 +198,8 @@ app.post('/api/login', (req, res) => {
             toEmail: user.email,
             name: user.organizationName,
             accountType: user.accountType,
-            loginTime: new Date().toISOString()
+            loginTime: new Date().toISOString(),
+            deviceName
         }).catch(e => console.error("Async Login Email Error:", e));
         return res.status(200).json({
             message: 'Hackathon Demo Login Successful!',
@@ -188,7 +213,8 @@ app.post('/api/login', (req, res) => {
             toEmail: user.email,
             name: user.organizationName,
             accountType: user.accountType,
-            loginTime: new Date().toISOString()
+            loginTime: new Date().toISOString(),
+            deviceName
         }).catch(e => console.error("Async Login Email Error:", e));
         return res.status(200).json({
             message: 'Hackathon Demo Login Successful!',
@@ -231,7 +257,8 @@ app.post('/api/login', (req, res) => {
                     toEmail: user.email,
                     name: user.organizationName,
                     accountType: user.accountType,
-                    loginTime: new Date().toISOString()
+                    loginTime: new Date().toISOString(),
+                    deviceName
                 }).catch(e => console.error("Async Login Email Error:", e));
             });
 
@@ -276,27 +303,6 @@ setInterval(() => {
     }
 }, 2 * 60 * 1000);
 
-function parseDeviceName(userAgent) {
-    if (!userAgent || typeof userAgent !== 'string') return 'Desktop / Laptop Browser';
-    const ua = userAgent;
-
-    let os = 'Computer';
-    if (/windows nt/i.test(ua)) os = 'Windows PC';
-    else if (/macintosh|mac os x/i.test(ua)) os = 'MacBook / Mac';
-    else if (/iphone/i.test(ua)) os = 'iPhone';
-    else if (/ipad/i.test(ua)) os = 'iPad';
-    else if (/android/i.test(ua)) os = 'Android Phone';
-    else if (/linux/i.test(ua)) os = 'Linux Computer';
-
-    let browser = 'Browser';
-    if (/edg\//i.test(ua)) browser = 'Edge';
-    else if (/chrome|crios/i.test(ua) && !/opr|opera/i.test(ua)) browser = 'Chrome';
-    else if (/firefox|fxios/i.test(ua)) browser = 'Firefox';
-    else if (/safari/i.test(ua) && !/chrome/i.test(ua)) browser = 'Safari';
-    else if (/opera|opr/i.test(ua)) browser = 'Opera';
-
-    return `${os} (${browser})`;
-}
 
 // 2a. REQUEST CROSS-DEVICE LOGIN APPROVAL
 // POST /api/auth/request-approval-login
@@ -930,6 +936,42 @@ app.post('/api/verify-otp', (req, res) => {
                 });
             }
         );
+    });
+});
+
+// 2c-bis. CHECK ACCOUNT VERIFICATION STATUS (GET /api/check-verification)
+// Query: ?email=...
+// Used by laptop/desktop to auto-detect when mobile verification link is tapped!
+app.get('/api/check-verification', (req, res) => {
+    const { email } = req.query;
+    if (!email) return res.status(400).json({ error: 'Email address is required.' });
+
+    db.get(`SELECT * FROM users WHERE email = ?`, [email], (err, user) => {
+        if (err || !user) return res.status(404).json({ verified: false });
+
+        if (user.isVerified) {
+            const token = makeToken(user);
+            return res.status(200).json({
+                verified: true,
+                message: 'Account verified! 🎉',
+                token,
+                user: {
+                    id: user.id,
+                    email: user.email,
+                    name: user.organizationName,
+                    organizationName: user.organizationName,
+                    type: user.accountType,
+                    accountType: user.accountType,
+                    phone: user.phone || '',
+                    bio: user.bio || '',
+                    address: user.address || '',
+                    avatarUrl: user.avatarUrl || '',
+                    isVerified: 1
+                }
+            });
+        }
+
+        return res.status(200).json({ verified: false });
     });
 });
 
