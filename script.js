@@ -178,7 +178,11 @@ window.changeLiquidMonth = function(delta) {
     window.renderLiquidCalendar();
 };
 
-window.selectLiquidDay = function(year, month, day) {
+window.selectLiquidDay = function(e, year, month, day) {
+    if (e) {
+        if (e.stopPropagation) e.stopPropagation();
+        if (e.preventDefault) e.preventDefault();
+    }
     window.stateLiquidCal.selectedDate = new Date(year, month, day);
     window.renderLiquidCalendar();
 };
@@ -377,7 +381,7 @@ window.renderLiquidCalendar = function() {
         if (isToday) classes += ' today';
         if (isSel) classes += ' selected';
 
-        daysHtml += `<div class="${classes}" onclick="window.selectLiquidDay(${window.stateLiquidCal.year}, ${window.stateLiquidCal.month}, ${d})">${d}</div>`;
+        daysHtml += `<div class="${classes}" onclick="window.selectLiquidDay(event, ${window.stateLiquidCal.year}, ${window.stateLiquidCal.month}, ${d})">${d}</div>`;
     }
 
     const totalCellsSoFar = startDayIdx + totalDays;
@@ -393,8 +397,12 @@ document.addEventListener('click', (e) => {
     const card = document.getElementById('liquid-calendar-card');
     if (!card || !card.classList.contains('active')) return;
 
-    const isInsideCard = card.contains(e.target);
-    const isTriggerBtn = e.target.closest('.glass-calendar-icon-btn') || e.target.closest('.manual-glass-input-wrapper') || e.target.closest('#glass-picker-trigger');
+    const path = e.composedPath ? e.composedPath() : [];
+    const isInsideCard = card.contains(e.target) || path.includes(card);
+    const isTriggerBtn = e.target.closest('.glass-calendar-icon-btn') || 
+                         e.target.closest('.manual-glass-input-wrapper') || 
+                         e.target.closest('#glass-picker-trigger') ||
+                         path.some(el => el && el.classList && (el.classList.contains('glass-calendar-icon-btn') || el.classList.contains('manual-glass-input-wrapper')));
     const isOption = e.target.tagName === 'OPTION' || e.target.tagName === 'SELECT';
 
     if (!isInsideCard && !isTriggerBtn && !isOption) {
@@ -2209,7 +2217,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                      </div>
 
                                      <!-- Compact Liquid Glass Floating Calendar Card -->
-                                     <div class="liquid-glass-calendar-card" id="liquid-calendar-card">
+                                     <div class="liquid-glass-calendar-card" id="liquid-calendar-card" onclick="event.stopPropagation()">
                                          <!-- Quick 1-Click Presets -->
                                          <div class="lg-cal-presets">
                                              <button type="button" class="lg-preset-pill" onclick="window.applyLiquidPreset(2)">+2 hrs</button>
