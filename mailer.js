@@ -221,7 +221,7 @@ async function sendVerificationEmail({ toEmail, name, token, accountType, hostUr
                 <a href="${verifyUrl}" class="btn-verify" target="_blank">Verify Email Address & Activate</a>
 
                 <div class="info-box">
-                    <strong>Note:</strong> Clicking this button will verify your email and take you directly to your ${accountType === 'ngo' || accountType === 'shelter' ? 'Buyer' : 'Seller'} Portal.
+                    <strong>Note:</strong> If you signed up on your laptop or computer, tapping this button on your mobile phone will automatically activate your account and sign you in on your laptop!
                 </div>
             </div>
             <div class="footer">
