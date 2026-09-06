@@ -2605,7 +2605,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                 <strong style="font-size: 0.85rem; color: white;">${item.vendorName}</strong>
 
                             </div>
-                            ${item.fssaiCode ? `<div class="fssai-trust-badge" title="FSSAI Food Safety Verified: ${item.fssaiCode}"><i class="fa-solid fa-shield-halved"></i> FSSAI: ${item.fssaiCode}</div>` : bioText}
+                            ${item.fssaiCode ? `<div class="fssai-trust-badge" title="FSSAI Food Safety Certified — License verified"><i class="fa-solid fa-shield-halved"></i> FSSAI Certified</div>` : bioText}
                         </div>
                     </div>
                 </div>
