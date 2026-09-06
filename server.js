@@ -1611,72 +1611,81 @@ app.post('/api/checkout', authenticateToken, (req, res) => {
         return res.status(400).json({ error: 'No items in basket.' });
     }
 
-    // Insert each order item
-    const insertStmt = db.prepare(
-        `INSERT INTO orders (buyerId, listingId, quantity, totalPrice, notes)
-         VALUES (?, ?, ?, ?, ?)`
-    );
-
-    let insertedCount = 0;
-    let errors = [];
+    let processed = 0;
+    const errors = [];
 
     items.forEach(({ listingId, quantity, price }) => {
         const qty = parseInt(quantity) || 1;
         const totalPrice = parseFloat(price) * qty || 0;
 
-        insertStmt.run([buyerId, listingId, qty, totalPrice, notes || null], (err) => {
-            if (err) errors.push(err.message);
-            insertedCount++;
+        // Step 1: Atomically deduct quantity and mark sold if depleted
+        db.run(
+            `UPDATE food_listings
+             SET quantity = MAX(0, quantity - ?),
+                 status = CASE WHEN (quantity - ?) <= 0 THEN 'sold' ELSE status END
+             WHERE id = ? AND status = 'available'`,
+            [qty, qty, listingId],
+            function (updateErr) {
+                if (updateErr) errors.push(updateErr.message);
 
-            if (insertedCount === items.length) {
-                insertStmt.finalize();
-                if (errors.length > 0) {
-                    return res.status(500).json({ error: errors.join(', ') });
-                }
+                // Step 2: Insert order record
+                db.run(
+                    `INSERT INTO orders (buyerId, listingId, quantity, totalPrice, notes)
+                     VALUES (?, ?, ?, ?, ?)`,
+                    [buyerId, listingId, qty, totalPrice, notes || null],
+                    (insertErr) => {
+                        if (insertErr) errors.push(insertErr.message);
 
-                // Mark all claimed listings as 'sold'
-                const ids = items.map(i => i.listingId).join(',');
-                db.run(`UPDATE food_listings SET status = 'sold' WHERE id IN (${ids})`, (err) => {
-                    if (err) console.error('Status update error:', err.message);
-                });
-
-                // Notify each seller via email asynchronously
-                const hostUrl = `${req.protocol}://${req.get('host')}`;
-                setImmediate(() => {
-                    items.forEach(({ listingId, quantity, price }) => {
-                        db.get(
-                            `SELECT f.name as foodName, f.price, u.email as sellerEmail, u.organizationName as sellerName 
-                             FROM food_listings f 
-                             JOIN users u ON f.vendorId = u.id 
-                             WHERE f.id = ?`,
-                            [listingId],
-                            (sErr, row) => {
-                                if (!sErr && row && row.sellerEmail) {
-                                    sendSellerOrderNotificationEmail({
-                                        sellerEmail: row.sellerEmail,
-                                        sellerName: row.sellerName,
-                                        buyerName: req.user.name || 'Community Partner',
-                                        buyerEmail: req.user.email,
-                                        foodName: row.foodName,
-                                        quantity: quantity || 1,
-                                        totalPrice: (parseFloat(price || row.price) * (parseInt(quantity) || 1)) || 0,
-                                        notes,
-                                        hostUrl
-                                    }).catch(e => console.error("Async Seller Order Email Error:", e));
-                                }
+                        processed++;
+                        if (processed === items.length) {
+                            if (errors.length > 0) {
+                                return res.status(500).json({ error: errors.join(', ') });
                             }
-                        );
-                    });
-                });
 
-                res.status(201).json({
-                    message: 'Order placed successfully! Thank you for reducing food waste. 🌱',
-                    count: insertedCount
-                });
+                            // Notify sellers asynchronously (non-blocking)
+                            const hostUrl = `${req.protocol}://${req.get('host')}`;
+                            setImmediate(() => {
+                                items.forEach(({ listingId, quantity, price }) => {
+                                    db.get(
+                                        `SELECT f.name as foodName, f.price, u.email as sellerEmail, u.organizationName as sellerName
+                                         FROM food_listings f
+                                         JOIN users u ON f.vendorId = u.id
+                                         WHERE f.id = ?`,
+                                        [listingId],
+                                        (sErr, row) => {
+                                            if (!sErr && row && row.sellerEmail) {
+                                                sendSellerOrderNotificationEmail({
+                                                    sellerEmail: row.sellerEmail,
+                                                    sellerName: row.sellerName,
+                                                    buyerName: req.user.name || 'Community Partner',
+                                                    buyerEmail: req.user.email,
+                                                    foodName: row.foodName,
+                                                    quantity: quantity || 1,
+                                                    totalPrice: (parseFloat(price || row.price) * (parseInt(quantity) || 1)) || 0,
+                                                    notes,
+                                                    hostUrl
+                                                }).catch(e => console.error("Async Seller Order Email Error:", e));
+                                            }
+                                        }
+                                    );
+                                });
+                            });
+
+                            // ✅ Response sent INSIDE the final UPDATE callback —
+                            // guarantees DB is committed before client calls refreshState
+                            res.status(201).json({
+                                message: 'Order placed successfully! Thank you for reducing food waste. 🌱',
+                                count: processed
+                            });
+                        }
+                    }
+                );
             }
-        });
+        );
     });
 });
+
+
 
 // 13. GET ORDER HISTORY
 // GET /api/orders
