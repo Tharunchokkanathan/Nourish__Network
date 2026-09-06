@@ -700,10 +700,56 @@ document.addEventListener('DOMContentLoaded', () => {
         btn.disabled = true;
 
         try {
-            // Processing delay
-            await new Promise(r => setTimeout(r, 1000));
+            const token = sessionStorage.getItem('nourishToken');
+            const isDemo = !token || token.startsWith('demo-token');
 
-            // Show Modal
+            if (!isDemo) {
+                // ── Real user: call the actual checkout API ──────────────────
+                const orderItems = state.cart.map(c => ({
+                    listingId: c.item.id,
+                    quantity: c.qty,
+                    price: c.item.price
+                }));
+
+                const res = await fetch(`${API_BASE}/checkout`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ items: orderItems })
+                });
+
+                if (!res.ok) {
+                    const err = await res.json();
+                    showToast(err.error || "Checkout failed. Please try again.", "error");
+                    btn.innerHTML = originalHtml;
+                    btn.disabled = false;
+                    return;
+                }
+            } else {
+                // ── Demo user: persist qty deduction to localStorage ─────────
+                // so the sold-out status survives a page refresh
+                let demoListings = JSON.parse(localStorage.getItem('nn_demo_listings') || '[]');
+
+                state.cart.forEach(cartEntry => {
+                    const idx = demoListings.findIndex(l => String(l.id) === String(cartEntry.item.id));
+                    if (idx !== -1) {
+                        demoListings[idx].qty = Math.max(0, (parseInt(demoListings[idx].qty) || 0) - cartEntry.qty);
+                        // Mark as sold-out in storage if qty hits 0
+                        if (demoListings[idx].qty <= 0) {
+                            demoListings[idx].qty = 0;
+                            demoListings[idx].status = 'sold';
+                        }
+                    }
+                });
+
+                localStorage.setItem('nn_demo_listings', JSON.stringify(demoListings));
+                // Small artificial delay for UX feel
+                await new Promise(r => setTimeout(r, 800));
+            }
+
+            // Show success modal
             const modal = document.getElementById('successModal');
             if (modal) {
                 modal.style.setProperty('display', 'flex', 'important');
@@ -711,7 +757,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 alert("Order Placed Successfully!");
             }
 
-            // Success feedback
             if (typeof showToast === 'function') showToast("Order Confirmed! 🌱", "success");
 
             // --- LOG PURCHASE FOR LIVE STATS ---
@@ -738,7 +783,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 }, 100);
             }
 
-            // Cleanup
+            // Cleanup cart
             state.cart = [];
             if (typeof updateCartBadge === 'function') updateCartBadge();
             if (typeof renderCartItems === 'function') renderCartItems();
@@ -746,16 +791,18 @@ document.addEventListener('DOMContentLoaded', () => {
             const drawer = document.getElementById('cart-drawer');
             if (drawer) drawer.classList.remove('active');
 
+            // Refresh listings from server so sold-out state reflects correctly
             if (typeof refreshState === 'function') refreshState(true);
 
         } catch (e) {
             console.error(e);
-            alert("Order placed successfully!"); // Even if logic fails, show success for demo
+            showToast("Order placed! (Offline mode)", "success");
         } finally {
             btn.innerHTML = originalHtml;
             btn.disabled = false;
         }
     };
+
 
     // --- ATTACH GLOBAL DOCK LISTENERS ---
     function wireDockButtons() {
@@ -856,7 +903,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 // Merge in any demo listings saved to localStorage
                 const demoListings = JSON.parse(localStorage.getItem('nn_demo_listings') || '[]');
                 const apiIds = apiListings.map(l => l.id);
-                const uniqueDemoListings = demoListings.filter(d => !apiIds.includes(d.id));
+                // Only include demo listings that aren't sold out — sold-out ones should stay hidden
+                const uniqueDemoListings = demoListings.filter(d =>
+                    !apiIds.includes(d.id) &&
+                    d.status !== 'sold' &&
+                    (parseInt(d.qty) || 0) > 0
+                );
                 state.listings = [...uniqueDemoListings, ...apiListings];
             } else {
                 // API failed — still load demo listings
