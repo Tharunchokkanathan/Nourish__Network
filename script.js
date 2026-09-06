@@ -727,24 +727,41 @@ document.addEventListener('DOMContentLoaded', () => {
                     btn.disabled = false;
                     return;
                 }
+                // Small delay so DB write is fully committed before refreshState fetches
+                await new Promise(r => setTimeout(r, 300));
+
             } else {
-                // ── Demo user: persist qty deduction to localStorage ─────────
-                // so the sold-out status survives a page refresh
+                // ── Demo user: persist purchase to localStorage ──────────────
+                // 1. Update nn_demo_listings (for demo-seller-posted items)
                 let demoListings = JSON.parse(localStorage.getItem('nn_demo_listings') || '[]');
+                // 2. Track purchased IDs for real API items too
+                let purchasedIds = JSON.parse(localStorage.getItem('nn_demo_purchased_ids') || '[]');
 
                 state.cart.forEach(cartEntry => {
-                    const idx = demoListings.findIndex(l => String(l.id) === String(cartEntry.item.id));
+                    const itemId = String(cartEntry.item.id);
+
+                    // Patch demo listing if it exists
+                    const idx = demoListings.findIndex(l => String(l.id) === itemId);
                     if (idx !== -1) {
                         demoListings[idx].qty = Math.max(0, (parseInt(demoListings[idx].qty) || 0) - cartEntry.qty);
-                        // Mark as sold-out in storage if qty hits 0
                         if (demoListings[idx].qty <= 0) {
                             demoListings[idx].qty = 0;
                             demoListings[idx].status = 'sold';
                         }
                     }
+
+                    // Always record purchased ID so real API items also stay hidden on refresh
+                    // Store as { id, qtyLeft } to support partial purchases
+                    const existing = purchasedIds.find(p => p.id === itemId);
+                    if (existing) {
+                        existing.qtyBought = (existing.qtyBought || 0) + cartEntry.qty;
+                    } else {
+                        purchasedIds.push({ id: itemId, qtyBought: cartEntry.qty, totalQty: cartEntry.item.qty + cartEntry.qty });
+                    }
                 });
 
                 localStorage.setItem('nn_demo_listings', JSON.stringify(demoListings));
+                localStorage.setItem('nn_demo_purchased_ids', JSON.stringify(purchasedIds));
                 // Small artificial delay for UX feel
                 await new Promise(r => setTimeout(r, 800));
             }
@@ -791,7 +808,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const drawer = document.getElementById('cart-drawer');
             if (drawer) drawer.classList.remove('active');
 
-            // Refresh listings from server so sold-out state reflects correctly
+            // Refresh listings — DB is now committed (real) or localStorage patched (demo)
             if (typeof refreshState === 'function') refreshState(true);
 
         } catch (e) {
@@ -903,16 +920,28 @@ document.addEventListener('DOMContentLoaded', () => {
                 // Merge in any demo listings saved to localStorage
                 const demoListings = JSON.parse(localStorage.getItem('nn_demo_listings') || '[]');
                 const apiIds = apiListings.map(l => l.id);
-                // Only include demo listings that aren't sold out — sold-out ones should stay hidden
+                // Only include demo listings that aren't sold out
                 const uniqueDemoListings = demoListings.filter(d =>
                     !apiIds.includes(d.id) &&
                     d.status !== 'sold' &&
                     (parseInt(d.qty) || 0) > 0
                 );
-                state.listings = [...uniqueDemoListings, ...apiListings];
+
+                // Apply demo-user purchases to real API listings
+                // (demo users can't call the real checkout, so we track purchases in localStorage)
+                const demoPurchasedIds = JSON.parse(localStorage.getItem('nn_demo_purchased_ids') || '[]');
+                const filteredApiListings = apiListings.map(l => {
+                    const purchase = demoPurchasedIds.find(p => String(p.id) === String(l.id));
+                    if (!purchase) return l;
+                    const remainingQty = Math.max(0, (parseInt(l.qty) || 0) - (purchase.qtyBought || 0));
+                    return { ...l, qty: remainingQty, status: remainingQty <= 0 ? 'sold' : l.status };
+                }).filter(l => l.status !== 'sold' && (parseInt(l.qty) || 0) > 0);
+
+                state.listings = [...uniqueDemoListings, ...filteredApiListings];
             } else {
-                // API failed — still load demo listings
-                state.listings = JSON.parse(localStorage.getItem('nn_demo_listings') || '[]');
+                // API failed — still load demo listings (filter sold-out ones)
+                const allDemo = JSON.parse(localStorage.getItem('nn_demo_listings') || '[]');
+                state.listings = allDemo.filter(d => d.status !== 'sold' && (parseInt(d.qty) || 0) > 0);
             }
 
             const statsRes = await fetch(`${API_BASE}/stats`);
