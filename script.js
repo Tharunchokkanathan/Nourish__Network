@@ -3367,15 +3367,18 @@ document.addEventListener('DOMContentLoaded', () => {
         const settingsModal = document.getElementById('settingsModal');
         const closeSettingsModal = document.getElementById('closeSettingsModal');
         const settingsForm = document.getElementById('settingsForm');
+        const orgNameInput = document.getElementById('orgNameInput');
+        const emailInput = document.getElementById('emailInput');
+        const accountTypeInput = document.getElementById('accountTypeInput');
         const bioInput = document.getElementById('bioInput');
         const locationInput = document.getElementById('locationInput');
         const contactPersonInput = document.getElementById('contactPersonInput');
         const publicPhoneInput = document.getElementById('publicPhoneInput');
         const websiteInput = document.getElementById('websiteInput');
         const fssaiInput = document.getElementById('fssaiInput');
+        const fssaiFieldWrap = document.getElementById('fssaiFieldWrap');
         const pickupWindowInput = document.getElementById('pickupWindowInput');
         const pickupInstructionsInput = document.getElementById('pickupInstructionsInput');
-        const verificationBadge = document.getElementById('verificationBadgeContainer');
         const avatarInput = document.getElementById('avatarInput');
         const avatarPreview = document.getElementById('avatarPreview');
 
@@ -3383,42 +3386,72 @@ document.addEventListener('DOMContentLoaded', () => {
 
         async function loadProfile() {
             try {
-                const user = JSON.parse(sessionStorage.getItem('nourishUser') || '{}');
-
-                // Fallback to local session data if API fails or if it's a demo account
+                const user = JSON.parse(sessionStorage.getItem('nourishUser') || localStorage.getItem('nourishUser') || '{}');
                 const profile = user;
 
+                // 1. Account & Identity Fields
+                if (orgNameInput) orgNameInput.value = profile.organizationName || profile.name || '';
+                if (emailInput) emailInput.value = profile.email || '';
+                if (accountTypeInput) {
+                    const role = profile.accountType || profile.type || profile.role || (state.activePortal === 'seller' ? 'Vendor' : 'NGO');
+                    accountTypeInput.value = role.toUpperCase();
+                }
+
+                // Show FSSAI field only for food vendors/sellers
+                const isSeller = (profile.accountType || profile.role || '').toLowerCase().includes('restaurant') ||
+                                 (profile.accountType || profile.role || '').toLowerCase().includes('vendor') ||
+                                 state.activePortal === 'seller';
+                if (fssaiFieldWrap) fssaiFieldWrap.style.display = isSeller ? 'block' : 'none';
+
+                // 2. Contact & Logistics Fields (Pre-fill from cached session)
                 if (bioInput) bioInput.value = profile.bio || '';
                 if (locationInput) locationInput.value = profile.address || '';
                 if (contactPersonInput) contactPersonInput.value = profile.contactPerson || '';
-                if (publicPhoneInput) publicPhoneInput.value = profile.publicPhone || '';
+                if (publicPhoneInput) publicPhoneInput.value = profile.publicPhone || profile.phone || '';
                 if (websiteInput) websiteInput.value = profile.website || '';
                 if (fssaiInput) fssaiInput.value = profile.fssaiCode || '';
                 if (pickupWindowInput) pickupWindowInput.value = profile.pickupWindow || '';
                 if (pickupInstructionsInput) pickupInstructionsInput.value = profile.pickupInstructions || '';
 
-                if (verificationBadge) {
-                    verificationBadge.style.display = profile.isVerified ? 'block' : 'none';
-                }
-
                 if (profile.avatarUrl && avatarPreview) {
                     avatarPreview.src = profile.avatarUrl;
                 }
 
-                // Still try to fetch live data if token is NOT a demo token
-                const token = sessionStorage.getItem('nourishToken');
-                if (token && !token.startsWith('demo-token')) {
+                // 3. Fetch latest live data from database
+                const token = sessionStorage.getItem('nourishToken') || localStorage.getItem('nourishToken');
+                if (token) {
                     const res = await fetch(`${API_BASE}/user/me`, {
                         headers: { 'Authorization': `Bearer ${token}` }
                     });
                     if (res.ok) {
                         const liveProfile = await res.json();
-                        // Update UI with live data if available
-                        if (bioInput) bioInput.value = liveProfile.bio || bioInput.value;
-                        // ... (and so on for other fields if needed, but for demo we prioritize the pre-filled ones)
+                        if (liveProfile) {
+                            if (orgNameInput && liveProfile.organizationName) orgNameInput.value = liveProfile.organizationName;
+                            if (emailInput && liveProfile.email) emailInput.value = liveProfile.email;
+                            if (accountTypeInput && (liveProfile.accountType || liveProfile.type)) {
+                                accountTypeInput.value = (liveProfile.accountType || liveProfile.type).toUpperCase();
+                            }
+                            if (bioInput) bioInput.value = liveProfile.bio || '';
+                            if (locationInput) locationInput.value = liveProfile.address || '';
+                            if (contactPersonInput) contactPersonInput.value = liveProfile.contactPerson || '';
+                            if (publicPhoneInput) publicPhoneInput.value = liveProfile.publicPhone || liveProfile.phone || '';
+                            if (websiteInput) websiteInput.value = liveProfile.website || '';
+                            if (fssaiInput) fssaiInput.value = liveProfile.fssaiCode || '';
+                            if (pickupWindowInput) pickupWindowInput.value = liveProfile.pickupWindow || '';
+                            if (pickupInstructionsInput) pickupInstructionsInput.value = liveProfile.pickupInstructions || '';
+
+                            if (liveProfile.avatarUrl && avatarPreview) {
+                                avatarPreview.src = liveProfile.avatarUrl;
+                            }
+
+                            // Cache latest liveProfile in storage so it persists
+                            const merged = { ...user, ...liveProfile };
+                            sessionStorage.setItem('nourishUser', JSON.stringify(merged));
+                            localStorage.setItem('nourishUser', JSON.stringify(merged));
+                        }
                     }
                 }
-            } catch (e) { console.error(e); }
+            } catch (e) { console.error("Error loading profile:", e); }
         }
 
         const settingsToggleDock = document.getElementById('settings-toggle-dock');
@@ -3427,7 +3460,6 @@ document.addEventListener('DOMContentLoaded', () => {
         if (settingsToggleDock) {
             settingsToggleDock.onclick = (e) => {
                 e.preventDefault();
-                console.log("Settings DOCK clicked");
                 loadProfile();
                 settingsModal.style.display = 'flex';
             };
@@ -3436,7 +3468,6 @@ document.addEventListener('DOMContentLoaded', () => {
         if (settingsToggleNav) {
             settingsToggleNav.onclick = (e) => {
                 e.preventDefault();
-                console.log("Settings NAV clicked");
                 loadProfile();
                 settingsModal.style.display = 'flex';
             };
@@ -3463,7 +3494,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     const formData = new FormData();
                     formData.append('image', file);
                     try {
-                        const token = sessionStorage.getItem('nourishToken');
+                        const token = sessionStorage.getItem('nourishToken') || localStorage.getItem('nourishToken');
                         const uploadRes = await fetch(`${API_BASE}/upload`, {
                             method: 'POST',
                             headers: { 'Authorization': `Bearer ${token}` },
@@ -3488,8 +3519,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 saveBtn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Saving...';
                 saveBtn.disabled = true;
 
-                const bio = bioInput.value.trim();
-                const address = locationInput.value.trim();
+                const orgName = orgNameInput ? orgNameInput.value.trim() : '';
+                const bio = bioInput ? bioInput.value.trim() : '';
+                const address = locationInput ? locationInput.value.trim() : '';
                 const contactPerson = contactPersonInput ? contactPersonInput.value.trim() : '';
                 const publicPhone = publicPhoneInput ? publicPhoneInput.value.trim() : '';
                 const website = websiteInput ? websiteInput.value.trim() : '';
@@ -3503,7 +3535,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
 
                 try {
-                    const token = sessionStorage.getItem('nourishToken');
+                    const token = sessionStorage.getItem('nourishToken') || localStorage.getItem('nourishToken');
                     const res = await fetch(`${API_BASE}/user/me`, {
                         method: 'PUT',
                         headers: {
@@ -3511,6 +3543,8 @@ document.addEventListener('DOMContentLoaded', () => {
                             'Authorization': `Bearer ${token}`
                         },
                         body: JSON.stringify({
+                            organizationName: orgName,
+                            name: orgName,
                             bio, address, avatarUrl, contactPerson,
                             publicPhone, website, fssaiCode,
                             pickupWindow, pickupInstructions
@@ -3518,17 +3552,43 @@ document.addEventListener('DOMContentLoaded', () => {
                     });
 
                     if (res.ok) {
-                        showToast("Profile updated successfully!", "success");
+                        const data = await res.json();
+                        const prevUser = JSON.parse(sessionStorage.getItem('nourishUser') || localStorage.getItem('nourishUser') || '{}');
+                        const updatedUser = {
+                            ...prevUser,
+                            ...(data.user || {}),
+                            organizationName: orgName || prevUser.organizationName || prevUser.name,
+                            name: orgName || prevUser.name,
+                            bio,
+                            address,
+                            contactPerson,
+                            publicPhone,
+                            phone: publicPhone || prevUser.phone,
+                            website,
+                            fssaiCode,
+                            pickupWindow,
+                            pickupInstructions,
+                            avatarUrl: avatarUrl || prevUser.avatarUrl
+                        };
+                        sessionStorage.setItem('nourishUser', JSON.stringify(updatedUser));
+                        localStorage.setItem('nourishUser', JSON.stringify(updatedUser));
+
+                        showToast("Profile updated successfully! ✨", "success");
                         settingsModal.style.display = 'none';
+
                         // Update navbar avatar immediately
                         const navImg = document.getElementById('nav-avatar-img');
                         if (navImg && avatarUrl) navImg.src = avatarUrl;
-                        refreshState(true);
+
+                        if (typeof refreshState === 'function') {
+                            refreshState(true);
+                        }
                     } else {
                         showToast("Failed to update profile.", "error");
                     }
                 } catch (err) {
-                    showToast("Network error.", "error");
+                    console.error("Save settings error:", err);
+                    showToast("Network error. Please try again.", "error");
                 } finally {
                     saveBtn.innerText = originalText;
                     saveBtn.disabled = false;

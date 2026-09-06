@@ -1110,26 +1110,30 @@ app.put('/api/user/me', (req, res) => {
 
     if (!token) return res.status(401).json({ error: 'Access token required' });
 
-    const { organizationName, phone, bio, address, avatarUrl, contactPerson, publicPhone, website, fssaiCode, pickupInstructions } = req.body;
+    const { organizationName, name, phone, bio, address, avatarUrl, contactPerson, publicPhone, website, fssaiCode, pickupInstructions, pickupWindow } = req.body;
+    const org = organizationName || name || null;
+    const pubPhone = publicPhone || phone || null;
 
     if (token.startsWith('demo-token') || token.includes('demo')) {
         return res.status(200).json({
             message: 'Profile updated successfully!',
             user: {
                 id: 888,
-                organizationName: organizationName || 'Elite Catering Services',
-                email: 'serverdemo@gmail.com',
+                organizationName: org || 'Elite Catering Services',
+                name: org || 'Elite Catering Services',
+                email: req.body.email || 'user@nourishnetwork.com',
                 accountType: 'restaurant',
-                phone: publicPhone || phone || '+91 98765 43210',
+                phone: pubPhone || '',
                 bio: bio || '',
                 address: address || '',
-                contactPerson: contactPerson || 'Chef Marco Rossi',
-                publicPhone: publicPhone || '+91 98765 43210',
-                website: website || 'www.elitecatering.com',
-                fssaiCode: fssaiCode || '12345678901234',
+                contactPerson: contactPerson || '',
+                publicPhone: pubPhone || '',
+                website: website || '',
+                fssaiCode: fssaiCode || '',
                 pickupInstructions: pickupInstructions || '',
+                pickupWindow: pickupWindow || '',
                 avatarUrl: avatarUrl || 'assets/default-avatar.jpg',
-                isVerified: 1
+                isVerified: 0
             }
         });
     }
@@ -1147,12 +1151,13 @@ app.put('/api/user/me', (req, res) => {
                 publicPhone = COALESCE(?, publicPhone),
                 website = COALESCE(?, website),
                 fssaiCode = COALESCE(?, fssaiCode),
-                pickupInstructions = COALESCE(?, pickupInstructions)
+                pickupInstructions = COALESCE(?, pickupInstructions),
+                pickupWindow = COALESCE(?, pickupWindow)
             WHERE id = ?`,
-            [organizationName, phone, bio, address, avatarUrl, contactPerson, publicPhone, website, fssaiCode, pickupInstructions, decoded.id],
+            [org, pubPhone, bio || null, address || null, avatarUrl || null, contactPerson || null, pubPhone, website || null, fssaiCode || null, pickupInstructions || null, pickupWindow || null, decoded.id],
             function (err) {
                 if (err) return res.status(500).json({ error: err.message });
-                db.get(`SELECT id, email, organizationName, accountType, phone, bio, address, avatarUrl, contactPerson, publicPhone, website, fssaiCode, pickupInstructions, isVerified FROM users WHERE id = ?`, [decoded.id], (err, updatedUser) => {
+                db.get(`SELECT id, email, organizationName, accountType, phone, bio, address, avatarUrl, contactPerson, publicPhone, website, fssaiCode, pickupWindow, pickupInstructions, isVerified FROM users WHERE id = ?`, [decoded.id], (err, updatedUser) => {
                     res.status(200).json({
                         message: 'Profile updated successfully!',
                         user: updatedUser
