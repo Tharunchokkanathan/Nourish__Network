@@ -4723,30 +4723,39 @@ button:active,
 
 .manual-glass-date-input {
     width: 100% !important;
-    background: rgba(10, 25, 20, 0.6) !important;
-    border: 1px solid rgba(255, 255, 255, 0.12) !important;
-    border-radius: 16px !important;
-    padding: 0.85rem 3.5rem 0.85rem 1.1rem !important;
-    color: var(--text-primary) !important;
-    font-size: 0.98rem !important;
-    font-weight: 600 !important;
+    padding: 0.75rem 3rem 0.75rem 1rem !important;
+    background-color: rgba(255, 255, 255, 0.04) !important;
+    color: #f8fafc !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    border-radius: 12px !important;
+    font-size: 0.92rem !important;
+    font-family: inherit !important;
+    font-weight: 500 !important;
     cursor: pointer !important;
     user-select: none;
-    backdrop-filter: blur(16px) !important;
-    -webkit-backdrop-filter: blur(16px) !important;
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2), inset 0 1px 1px rgba(255, 255, 255, 0.1) !important;
-    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1) !important;
-}
-
-[data-theme='light'] .manual-glass-date-input {
-    background: rgba(255, 255, 255, 0.85) !important;
-    border-color: rgba(0, 0, 0, 0.12) !important;
-    color: #0f172a !important;
+    box-shadow: none !important;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+    box-sizing: border-box;
 }
 
 .manual-glass-date-input:focus {
+    background-color: rgba(255, 255, 255, 0.07) !important;
     border-color: var(--accent-primary) !important;
-    box-shadow: 0 0 20px rgba(16, 185, 129, 0.25) !important;
+    box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.18) !important;
+    outline: none !important;
+}
+
+[data-theme='light'] .manual-glass-date-input {
+    background-color: rgba(255, 255, 255, 0.95) !important;
+    color: #0f172a !important;
+    border: 1px solid rgba(0, 0, 0, 0.16) !important;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05), inset 0 1px 2px rgba(0, 0, 0, 0.02) !important;
+}
+
+[data-theme='light'] .manual-glass-date-input:focus {
+    background-color: #ffffff !important;
+    border-color: var(--accent-primary) !important;
+    box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.22) !important;
 }
 
 /* Hide native icon so custom calendar trigger button is used */
@@ -4772,13 +4781,13 @@ button:active,
     right: 8px;
     top: 50%;
     transform: translateY(-50%);
-    width: 36px;
-    height: 36px;
-    border-radius: 12px;
-    background: rgba(59, 130, 246, 0.15);
-    border: 1px solid rgba(59, 130, 246, 0.3);
+    width: 30px;
+    height: 30px;
+    border-radius: 8px;
+    background: rgba(59, 130, 246, 0.12);
+    border: 1px solid rgba(59, 130, 246, 0.25);
     color: #3b82f6;
-    font-size: 1.05rem;
+    font-size: 0.95rem;
     display: flex;
     align-items: center;
     justify-content: center;
