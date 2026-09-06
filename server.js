@@ -103,7 +103,7 @@ app.post('/api/register', async (req, res) => {
         const verificationTokenExpires = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(); // 24 Hours
 
         const sql = `INSERT INTO users (accountType, organizationName, email, password, phone, address, isVerified, verificationToken, verificationTokenExpires, verificationOtp)
-                    VALUES (?, ?, ?, ?, ?, ?, 1, ?, ?, ?)`;
+                    VALUES (?, ?, ?, ?, ?, ?, 0, ?, ?, ?)`;
 
         db.run(sql, [
             accountType,
@@ -129,12 +129,11 @@ app.post('/api/register', async (req, res) => {
                 accountType,
                 organizationName,
                 email,
-                isVerified: 1
+                isVerified: 0
             };
-            const token = makeToken(user);
 
-            // Send registration welcome email in background on immediate microtick
-            const hostUrl = `${req.protocol}://${req.get('host')}`;
+            // Send registration verification email in background on immediate microtick
+            const hostUrl = req.headers.origin || (req.headers.host ? `${req.headers['x-forwarded-proto'] || req.protocol || 'http'}://${req.headers.host}` : 'https://nourish-network-4bit.onrender.com');
             setImmediate(() => {
                 sendVerificationEmail({
                     toEmail: email,
@@ -146,9 +145,9 @@ app.post('/api/register', async (req, res) => {
             });
 
             res.status(201).json({
-                message: 'Account created successfully! Welcome to Nourish Network 🎉',
-                token,
-                user: { id: userId, email, name: organizationName, type: accountType, isVerified: 1 }
+                message: 'Account created! Please check your email to activate your account.',
+                requiresVerification: true,
+                email
             });
         });
     } catch (err) {
@@ -248,6 +247,14 @@ app.post('/api/login', (req, res) => {
         try {
             const match = await bcrypt.compare(password, user.password);
             if (!match) return res.status(401).json({ error: 'Invalid email or password.' });
+
+            if (!user.isVerified) {
+                return res.status(403).json({
+                    error: 'Please verify your email address before signing in. Check your inbox for the activation link.',
+                    unverified: true,
+                    email: user.email
+                });
+            }
 
             const token = makeToken(user);
 
@@ -462,8 +469,8 @@ app.get('/api/auth/deny-login', (req, res) => {
     return res.redirect(`/approve-login.html?status=denied&device=${encodeURIComponent(dev)}`);
 });
 
-// 2b. EMAIL VERIFICATION VIA LINK (GET /api/verify-email?token=...)
-app.get('/api/verify-email', (req, res) => {
+// 2b. EMAIL VERIFICATION VIA LINK (GET /api/verify-email?token=... or /api/verify?token=...)
+app.get(['/api/verify-email', '/api/verify'], (req, res) => {
     res.setHeader('Content-Type', 'text/html');
     const { token } = req.query;
 
