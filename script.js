@@ -2076,7 +2076,10 @@ document.addEventListener('DOMContentLoaded', () => {
                                  </div>
                                 <div class="form-group">
                                     <label>Custom Image URL (Optional)</label>
-                                    <input type="text" id="p-img" class="form-control" placeholder="Paste photo link from Google or web (e.g. https://...)">
+                                    <input type="text" id="p-img" class="form-control" placeholder="Paste photo link or Google image address">
+                                    <small style="font-size: 0.76rem; color: #7cb88b; display: block; margin-top: 4px; opacity: 0.9;">
+                                        <i class="fa-solid fa-circle-info"></i> Tip: On Google, right-click (or touch & hold) photo & choose <strong>"Copy image address"</strong>
+                                    </small>
                                 </div>
                                 <div class="form-group full-width">
                                     <label>Short Description</label>
@@ -2571,6 +2574,29 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }
 
+        const pImgInput = document.getElementById('p-img');
+        if (pImgInput) {
+            const handleImageLinkResolve = async () => {
+                const val = (pImgInput.value || '').trim();
+                if (!val) return;
+                if (val.includes('share.google') || val.includes('goo.gl') || val.includes('bit.ly') || val.includes('tinyurl.com')) {
+                    try {
+                        showToast("Resolving Google image link...", "info");
+                        const res = await fetch(`${API_BASE}/resolve-image?url=${encodeURIComponent(val)}`);
+                        if (res.ok) {
+                            const data = await res.json();
+                            if (data.resolvedUrl && data.resolvedUrl !== val) {
+                                pImgInput.value = data.resolvedUrl;
+                                showToast("Google image link resolved! 🖼️", "success");
+                            }
+                        }
+                    } catch (err) { }
+                }
+            };
+            pImgInput.addEventListener('change', handleImageLinkResolve);
+            pImgInput.addEventListener('blur', handleImageLinkResolve);
+        }
+
         if (form) {
             form.addEventListener('submit', async (e) => {
                 e.preventDefault();
@@ -2582,7 +2608,20 @@ document.addEventListener('DOMContentLoaded', () => {
                 const description = document.getElementById('p-desc').value;
                 const expiry = document.getElementById('p-expiry').value;
                 const rawImg = (document.getElementById('p-img') && document.getElementById('p-img').value) ? document.getElementById('p-img').value.trim() : '';
-                const customImg = rawImg ? (window.resolveCustomImageUrl ? window.resolveCustomImageUrl(rawImg) : rawImg) : null;
+                let customImg = rawImg ? (window.resolveCustomImageUrl ? window.resolveCustomImageUrl(rawImg) : rawImg) : null;
+
+                if (rawImg && (rawImg.includes('share.google') || rawImg.includes('goo.gl') || rawImg.includes('bit.ly') || rawImg.includes('tinyurl.com'))) {
+                    try {
+                        const resolveRes = await fetch(`${API_BASE}/resolve-image?url=${encodeURIComponent(rawImg)}`);
+                        if (resolveRes.ok) {
+                            const data = await resolveRes.json();
+                            if (data.resolvedUrl) {
+                                customImg = data.resolvedUrl;
+                                if (document.getElementById('p-img')) document.getElementById('p-img').value = data.resolvedUrl;
+                            }
+                        }
+                    } catch (e) { }
+                }
 
                 if (expiry && window.isItemExpired(expiry)) {
                     showToast("Expiry date and time cannot be in the past.", "error");
