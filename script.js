@@ -1426,159 +1426,79 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // 1b. Cross-Device Mobile / Gmail Login Approval
-    const magicApprovalBtn = document.getElementById('magicApprovalBtn');
-    const loginViewContainer = document.getElementById('loginViewContainer');
-    const registerViewContainer = document.getElementById('registerViewContainer');
-    const approvalViewContainer = document.getElementById('approvalViewContainer');
-    const cancelApprovalBtn = document.getElementById('cancelApprovalBtn');
-    const approvalTargetEmailDisplay = document.getElementById('approvalTargetEmailDisplay');
-    const approvalDeviceText = document.getElementById('approvalDeviceText');
+    // 1b. Cross-Device Account Verification Auto-Sync
+    // When a user signs up on laptop and opens their email on phone to tap verify,
+    // this polling loop auto-detects it and signs the laptop in immediately!
+    let verificationPollInterval = null;
 
-    let approvalPollInterval = null;
-
-    function stopApprovalPolling() {
-        if (approvalPollInterval) {
-            clearInterval(approvalPollInterval);
-            approvalPollInterval = null;
+    function stopVerificationPolling() {
+        if (verificationPollInterval) {
+            clearInterval(verificationPollInterval);
+            verificationPollInterval = null;
         }
     }
 
-    function returnToLoginForm() {
-        stopApprovalPolling();
-        if (approvalViewContainer) approvalViewContainer.style.display = 'none';
-        if (registerViewContainer) registerViewContainer.style.display = 'none';
-        if (loginViewContainer) loginViewContainer.style.display = 'block';
-    }
+    function startVerificationPolling(email) {
+        stopVerificationPolling();
+        if (!email) return;
 
-    if (cancelApprovalBtn) {
-        cancelApprovalBtn.addEventListener('click', () => {
-            returnToLoginForm();
-            showToast("Login approval request cancelled.", "info");
-        });
-    }
+        const startTime = Date.now();
+        const maxTimeoutMs = 15 * 60 * 1000; // 15 minutes
 
-    const modalCloseBtn = document.getElementById('closeModal');
-    if (modalCloseBtn) {
-        modalCloseBtn.addEventListener('click', () => {
-            stopApprovalPolling();
-            setTimeout(returnToLoginForm, 300);
-        });
-    }
-
-    if (magicApprovalBtn) {
-        magicApprovalBtn.addEventListener('click', async () => {
-            const email = (document.getElementById('loginEmail') ? document.getElementById('loginEmail').value : '').trim();
-            const password = (document.getElementById('loginPassword') ? document.getElementById('loginPassword').value : '').trim();
-
-            if (!email) {
-                showToast("Please enter your email to receive login approval.", "error");
-                const emailInput = document.getElementById('loginEmail');
-                if (emailInput) {
-                    emailInput.focus();
-                    emailInput.style.borderColor = '#ef4444';
-                    emailInput.style.boxShadow = '0 0 15px rgba(239, 68, 68, 0.4)';
-                    setTimeout(() => { 
-                        emailInput.style.borderColor = ''; 
-                        emailInput.style.boxShadow = '';
-                    }, 2500);
-                }
+        verificationPollInterval = setInterval(async () => {
+            if (Date.now() - startTime > maxTimeoutMs) {
+                stopVerificationPolling();
                 return;
             }
 
-            const originalHtml = magicApprovalBtn.innerHTML;
-            magicApprovalBtn.disabled = true;
-            magicApprovalBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Sending Request...';
-
             try {
-                const res = await fetch(`${API_BASE}/auth/request-approval-login`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ email, password: password || undefined })
-                });
-
+                const res = await fetch(`${API_BASE}/check-verification?email=${encodeURIComponent(email)}`);
+                if (!res.ok) return;
                 const data = await res.json();
 
-                if (!res.ok) {
-                    showToast(data.error || "Failed to send approval email.", "error");
-                    return;
+                if (data.verified && data.token) {
+                    stopVerificationPolling();
+
+                    // Close email verification modal
+                    const emailModal = document.getElementById('emailVerifyModal');
+                    if (emailModal) emailModal.classList.remove('active');
+
+                    // Save session and log user in automatically!
+                    localStorage.setItem('last_login_email', email);
+                    sessionStorage.setItem('nourishUser', JSON.stringify(data.user));
+                    sessionStorage.setItem('nourishToken', data.token);
+                    document.documentElement.classList.add('user-logged-in');
+
+                    if (data.user) {
+                        const t = (data.user.type || data.user.accountType || data.user.role || '').toLowerCase();
+                        state.activePortal = (t === 'restaurant' || t === 'vendor' || t === 'seller') ? 'seller' : 'buyer';
+                    }
+
+                    showToast(`✨ Account verified via mobile! Welcome, ${data.user.name || email}! 🎉`, "success");
+                    refreshState();
                 }
-
-                // Switch seamlessly to the approval view INSIDE authModal
-                if (loginViewContainer) loginViewContainer.style.display = 'none';
-                if (registerViewContainer) registerViewContainer.style.display = 'none';
-                if (approvalTargetEmailDisplay) approvalTargetEmailDisplay.textContent = email;
-                if (approvalDeviceText) approvalDeviceText.textContent = data.deviceName || 'This Computer';
-                if (approvalViewContainer) approvalViewContainer.style.display = 'block';
-
-                showToast("Approval email sent! Check your phone's Gmail. 📱", "success");
-
-                // Start polling every 2 seconds
-                stopApprovalPolling();
-                const sessionId = data.sessionId;
-                const startTime = Date.now();
-                const maxTimeoutMs = 10 * 60 * 1000; // 10 minutes
-
-                approvalPollInterval = setInterval(async () => {
-                    if (Date.now() - startTime > maxTimeoutMs) {
-                        returnToLoginForm();
-                        showToast("Login approval request timed out. Please try again.", "error");
-                        return;
-                    }
-
-                    try {
-                        const pollRes = await fetch(`${API_BASE}/auth/login-session-status?sessionId=${sessionId}`);
-                        if (!pollRes.ok) return;
-                        const pollData = await pollRes.json();
-
-                        if (pollData.status === 'approved' && pollData.token) {
-                            stopApprovalPolling();
-
-                            // Save credentials and login!
-                            localStorage.setItem('last_login_email', email);
-                            sessionStorage.setItem('nourishUser', JSON.stringify(pollData.user));
-                            sessionStorage.setItem('nourishToken', pollData.token);
-                            document.documentElement.classList.add('user-logged-in');
-
-                            if (approvalViewContainer) {
-                                approvalViewContainer.innerHTML = `
-                                    <div style="width: 72px; height: 72px; border-radius: 50%; background: rgba(16, 185, 129, 0.2); border: 2px solid #10b981; display: flex; align-items: center; justify-content: center; margin: 0 auto 1.25rem; box-shadow: 0 0 35px rgba(16, 185, 129, 0.4);">
-                                        <i class="fa-solid fa-check" style="color: #10b981; font-size: 2rem;"></i>
-                                    </div>
-                                    <h2 class="minimal-auth-heading" style="color: #34d399;">Approved on Phone! 🌱</h2>
-                                    <p style="color: rgba(255,255,255,0.7); font-size: 0.95rem; margin-bottom: 1rem;">
-                                        Welcome back, <strong>${pollData.user.name || email}</strong>! Signing you in...
-                                    </p>
-                                `;
-                            }
-
-                            setTimeout(() => {
-                                if (authModal) authModal.classList.remove('active');
-                                if (pollData.user) {
-                                    const t = (pollData.user.type || pollData.user.accountType || pollData.user.role || '').toLowerCase();
-                                    state.activePortal = (t === 'restaurant' || t === 'vendor' || t === 'seller') ? 'seller' : 'buyer';
-                                }
-                                showToast(`Welcome back, ${pollData.user.name || email}! 🎉`);
-                                refreshState();
-                            }, 1200);
-                        } else if (pollData.status === 'rejected') {
-                            returnToLoginForm();
-                            showToast("Sign-in request was rejected.", "error");
-                        } else if (pollData.status === 'expired') {
-                            returnToLoginForm();
-                            showToast("Approval link expired.", "error");
-                        }
-                    } catch (pollErr) {
-                        console.warn("Poll check error:", pollErr.message);
-                    }
-                }, 2000);
-
             } catch (err) {
-                showToast("Network error while requesting approval.", "error");
-            } finally {
-                magicApprovalBtn.disabled = false;
-                magicApprovalBtn.innerHTML = originalHtml;
+                // Silently ignore transient network errors during background poll
             }
+        }, 2000);
+    }
+
+    // Modal close listeners to cancel verification polling
+    const closeEmailVerifyBtn = document.getElementById('closeEmailVerifyModal');
+    if (closeEmailVerifyBtn) {
+        closeEmailVerifyBtn.addEventListener('click', () => {
+            stopVerificationPolling();
+            const emailModal = document.getElementById('emailVerifyModal');
+            if (emailModal) emailModal.classList.remove('active');
+        });
+    }
+
+    const dismissEmailVerifyBtn = document.getElementById('dismissEmailVerifyModal');
+    if (dismissEmailVerifyBtn) {
+        dismissEmailVerifyBtn.addEventListener('click', () => {
+            stopVerificationPolling();
+            const emailModal = document.getElementById('emailVerifyModal');
+            if (emailModal) emailModal.classList.remove('active');
         });
     }
 
@@ -1619,6 +1539,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 const emailModal = document.getElementById('emailVerifyModal');
                 if (emailModal) emailModal.classList.add('active');
+
+                // Start cross-device verification polling: when user taps verify on phone,
+                // this browser will automatically log in!
+                startVerificationPolling(email);
 
                 showToast("Account created! Please check your email to activate.", "success");
             } else {
