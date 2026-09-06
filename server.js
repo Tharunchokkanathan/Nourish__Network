@@ -1205,15 +1205,6 @@ app.delete('/api/listings/:id', authenticateToken, (req, res) => {
     });
 });
 
-// 🔄 Automatic Cleanup Task: Purge Expired Food Listings from DB every 60 seconds
-setInterval(() => {
-    db.run(`DELETE FROM food_listings WHERE expiryTime IS NOT NULL AND expiryTime < CURRENT_TIMESTAMP`, [], function (err) {
-        if (!err && this.changes > 0) {
-            console.log(`🧹 Auto-cleaned ${this.changes} expired food listing(s) from database.`);
-        }
-    });
-}, 60000);
-
 // 11. CLAIM A LISTING (NGO only)
 // POST /api/listings/claim
 // Body: { listingId }
