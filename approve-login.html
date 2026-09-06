@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="referrer" content="no-referrer">
+    <title>Sign-In Approval - Nourish Network</title>
+    <link rel="icon" type="image/png" href="https://img.icons8.com/color/96/000000/leaf.png">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --bg: #07100b;
+            --card-bg: rgba(17, 31, 24, 0.85);
+            --card-border: rgba(16, 185, 129, 0.25);
+            --primary: #10b981;
+            --primary-glow: rgba(16, 185, 129, 0.35);
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: radial-gradient(circle at 50% 20%, #0d281a 0%, var(--bg) 70%);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            overflow-x: hidden;
+        }
+
+        .ambient-glow {
+            position: fixed;
+            top: 20%;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 320px;
+            height: 320px;
+            background: radial-gradient(circle, var(--primary-glow) 0%, transparent 70%);
+            filter: blur(80px);
+            pointer-events: none;
+            z-index: 0;
+            transition: background 0.5s ease;
+        }
+
+        .approval-card {
+            position: relative;
+            z-index: 1;
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 28px;
+            padding: 45px 35px;
+            max-width: 460px;
+            width: 100%;
+            text-align: center;
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+            box-shadow: 0 30px 70px rgba(0, 0, 0, 0.6);
+            animation: cardAppear 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+
+        @keyframes cardAppear {
+            from {
+                opacity: 0;
+                transform: translateY(25px) scale(0.96);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        .icon-wrap {
+            width: 88px;
+            height: 88px;
+            border-radius: 50%;
+            margin: 0 auto 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 40px;
+            position: relative;
+            transition: all 0.4s ease;
+        }
+
+        .state-approved .icon-wrap {
+            background: rgba(16, 185, 129, 0.15);
+            color: var(--primary);
+            border: 2px solid rgba(16, 185, 129, 0.4);
+            box-shadow: 0 0 30px rgba(16, 185, 129, 0.3);
+            animation: pulseSuccess 2s infinite ease-in-out;
+        }
+
+        .state-denied .icon-wrap {
+            background: rgba(239, 68, 68, 0.15);
+            color: var(--danger);
+            border: 2px solid rgba(239, 68, 68, 0.4);
+            box-shadow: 0 0 30px rgba(239, 68, 68, 0.3);
+        }
+
+        .state-expired .icon-wrap {
+            background: rgba(245, 158, 11, 0.15);
+            color: var(--warning);
+            border: 2px solid rgba(245, 158, 11, 0.4);
+            box-shadow: 0 0 30px rgba(245, 158, 11, 0.3);
+        }
+
+        @keyframes pulseSuccess {
+            0%, 100% { transform: scale(1); box-shadow: 0 0 25px rgba(16, 185, 129, 0.3); }
+            50% { transform: scale(1.06); box-shadow: 0 0 45px rgba(16, 185, 129, 0.5); }
+        }
+
+        h1 {
+            font-size: 24px;
+            font-weight: 800;
+            margin-bottom: 12px;
+            letter-spacing: -0.5px;
+        }
+
+        p.desc {
+            font-size: 15px;
+            color: var(--text-muted);
+            line-height: 1.6;
+            margin-bottom: 26px;
+        }
+
+        .device-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 10px 18px;
+            font-size: 13.5px;
+            font-weight: 600;
+            color: #cbd5e1;
+            margin-bottom: 28px;
+        }
+
+        .device-pill i {
+            color: var(--primary);
+        }
+
+        .close-hint {
+            font-size: 13px;
+            color: #64748b;
+            padding-top: 18px;
+            border-top: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .btn-home {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 20px;
+            padding: 12px 26px;
+            background: rgba(16, 185, 129, 0.15);
+            border: 1px solid rgba(16, 185, 129, 0.35);
+            border-radius: 12px;
+            color: #10b981;
+            text-decoration: none;
+            font-weight: 700;
+            font-size: 14px;
+            transition: all 0.2s ease;
+        }
+
+        .btn-home:hover {
+            background: rgba(16, 185, 129, 0.25);
+            transform: translateY(-2px);
+        }
+    </style>
+</head>
+<body>
+    <div class="ambient-glow" id="ambientGlow"></div>
+
+    <div class="approval-card" id="cardContainer">
+        <div class="icon-wrap" id="statusIcon">
+            <i class="fa-solid fa-spinner fa-spin"></i>
+        </div>
+        <h1 id="statusTitle">Verifying Request...</h1>
+        <p class="desc" id="statusDesc">Please wait while we process your login authorization.</p>
+
+        <div class="device-pill" id="deviceBox" style="display: none;">
+            <i class="fa-solid fa-laptop" id="deviceIcon"></i>
+            <span id="deviceName">Windows Laptop</span>
+        </div>
+
+        <div class="close-hint" id="closeHint">
+            Connecting to Nourish Network Secure Gateway...
+        </div>
+
+        <a href="/" class="btn-home" id="homeBtn" style="display: none;">
+            <i class="fa-solid fa-house"></i> Open Nourish Network
+        </a>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const params = new URLSearchParams(window.location.search);
+            const status = params.get('status') || 'approved';
+            const device = params.get('device') || 'Your Laptop';
+
+            const card = document.getElementById('cardContainer');
+            const icon = document.getElementById('statusIcon');
+            const title = document.getElementById('statusTitle');
+            const desc = document.getElementById('statusDesc');
+            const deviceBox = document.getElementById('deviceBox');
+            const deviceName = document.getElementById('deviceName');
+            const deviceIcon = document.getElementById('deviceIcon');
+            const closeHint = document.getElementById('closeHint');
+            const homeBtn = document.getElementById('homeBtn');
+            const ambient = document.getElementById('ambientGlow');
+
+            deviceBox.style.display = 'inline-flex';
+            deviceName.textContent = decodeURIComponent(device);
+            homeBtn.style.display = 'inline-flex';
+
+            const lowerDev = device.toLowerCase();
+            if (lowerDev.includes('phone') || lowerDev.includes('android') || lowerDev.includes('iphone')) {
+                deviceIcon.className = 'fa-solid fa-mobile-screen';
+            } else if (lowerDev.includes('mac') || lowerDev.includes('apple')) {
+                deviceIcon.className = 'fa-solid fa-laptop';
+            } else {
+                deviceIcon.className = 'fa-solid fa-laptop';
+            }
+
+            if (status === 'approved') {
+                card.className = 'approval-card state-approved';
+                icon.innerHTML = '<i class="fa-solid fa-check"></i>';
+                title.textContent = 'Sign-In Approved! 🌱';
+                desc.textContent = 'Your session has been authorized. Your laptop has been signed in automatically within seconds.';
+                closeHint.innerHTML = '<i class="fa-regular fa-circle-check" style="color:#10b981;"></i> You can safely close this browser window on your phone.';
+            } else if (status === 'denied') {
+                card.className = 'approval-card state-denied';
+                ambient.style.background = 'radial-gradient(circle, rgba(239, 68, 68, 0.35) 0%, transparent 70%)';
+                icon.innerHTML = '<i class="fa-solid fa-shield-halved"></i>';
+                title.textContent = 'Sign-In Blocked 🛡️';
+                desc.textContent = 'The sign-in request was denied. The session on that device has been permanently blocked.';
+                closeHint.innerHTML = '<i class="fa-solid fa-lock" style="color:#ef4444;"></i> Your account remains secure. No access was granted.';
+            } else {
+                card.className = 'approval-card state-expired';
+                ambient.style.background = 'radial-gradient(circle, rgba(245, 158, 11, 0.35) 0%, transparent 70%)';
+                icon.innerHTML = '<i class="fa-solid fa-clock-rotate-left"></i>';
+                title.textContent = 'Link Expired or Invalid ⏳';
+                desc.textContent = 'This sign-in authorization has expired or was already used. Please start a new login on your device.';
+                closeHint.innerHTML = 'Sign-in approval links are valid for 10 minutes for your security.';
+            }
+        });
+    </script>
+</body>
+</html>
