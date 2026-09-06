@@ -2431,6 +2431,55 @@ input:checked + .slider:before { transform: translateX(20px); }
     margin-bottom: 2.5rem;
 }
 
+/* Lively animated cart close button */
+.cart-close-btn {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    border: 2px solid rgba(239, 68, 68, 0.4);
+    background: rgba(239, 68, 68, 0.08);
+    color: #f87171;
+    font-size: 1rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+    flex-shrink: 0;
+    outline: none;
+}
+
+.cart-close-btn::before {
+    content: '';
+    position: absolute;
+    inset: -4px;
+    border-radius: 50%;
+    border: 1.5px solid rgba(239, 68, 68, 0.25);
+    animation: cart-close-pulse 2s ease-in-out infinite;
+}
+
+@keyframes cart-close-pulse {
+    0%, 100% { transform: scale(1); opacity: 0.6; }
+    50% { transform: scale(1.18); opacity: 0; }
+}
+
+.cart-close-btn:hover {
+    background: rgba(239, 68, 68, 0.2);
+    border-color: #ef4444;
+    color: #ffffff;
+    transform: scale(1.12) rotate(90deg);
+    box-shadow: 0 0 18px rgba(239, 68, 68, 0.45), 0 0 6px rgba(239, 68, 68, 0.3);
+}
+
+.cart-close-btn:hover i {
+    animation: none;
+}
+
+.cart-close-btn:active {
+    transform: scale(0.92) rotate(90deg);
+}
+
 .cart-items-list {
     flex: 1;
     overflow-y: auto;
