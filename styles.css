@@ -1825,7 +1825,7 @@ button.btn-primary {
     display: flex;
     flex-direction: column-reverse; /* Newest on top */
     gap: 0.8rem;
-    z-index: 10000;
+    z-index: 9999999 !important;
     pointer-events: none;
 }
 
@@ -3915,6 +3915,7 @@ select.form-control option {
         transform: translateX(-50%) !important;
         width: calc(100vw - 2rem) !important;
         bottom: max(85px, calc(75px + env(safe-area-inset-bottom, 0px))) !important;
+        z-index: 9999999 !important;
     }
 
     .toast {
