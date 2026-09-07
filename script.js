@@ -1462,7 +1462,8 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // Check if user is already logged in
-    const user = JSON.parse(sessionStorage.getItem('nourishUser'));
+    const user = JSON.parse(sessionStorage.getItem('nourishUser') || localStorage.getItem('nourishUser') || 'null');
+    const token = sessionStorage.getItem('nourishToken') || localStorage.getItem('nourishToken');
     if (user) {
         // Also update any "Join Now" or "Donate Food" buttons on the landing page
         const heroActions = document.querySelectorAll('.hero-action a, .action-card button');
@@ -1476,6 +1477,27 @@ document.addEventListener('DOMContentLoaded', () => {
                 updateLiquidIndicator();
             };
         });
+
+        // Always sync latest profile from database on startup so FSSAI/DARPAN badges are 100% up to date!
+        if (token && (!token.startsWith('demo-token'))) {
+            fetch(`${API_BASE}/user/me`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            })
+            .then(res => res.ok ? res.json() : null)
+            .then(liveUser => {
+                if (liveUser && liveUser.id) {
+                    const merged = { ...user, ...liveUser };
+                    sessionStorage.setItem('nourishUser', JSON.stringify(merged));
+                    localStorage.setItem('nourishUser', JSON.stringify(merged));
+                    if (state.activePortal === 'seller') {
+                        renderSellerPortal();
+                    } else if (state.activePortal === 'buyer') {
+                        renderBuyerPortal();
+                    }
+                }
+            })
+            .catch(() => {});
+        }
     }
 
     // --- Demo Login Fillers ---
@@ -3831,6 +3853,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             const merged = { ...user, ...liveProfile };
                             sessionStorage.setItem('nourishUser', JSON.stringify(merged));
                             localStorage.setItem('nourishUser', JSON.stringify(merged));
+                            renderPortal();
                         }
                     }
                 }
@@ -3976,9 +3999,8 @@ document.addEventListener('DOMContentLoaded', () => {
                         const navImg = document.getElementById('nav-avatar-img');
                         if (navImg && avatarUrl) navImg.src = avatarUrl;
 
-                        if (typeof refreshState === 'function') {
-                            refreshState(true);
-                        }
+                        // Re-render portal to immediately show FSSAI badge!
+                        renderPortal();
                     } else {
                         showToast("Failed to update profile.", "error");
                     }

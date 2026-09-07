@@ -788,8 +788,19 @@ app.get(['/api/verify-email', '/api/verify'], (req, res) => {
                                 id: user.id,
                                 email: user.email,
                                 name: user.organizationName,
+                                organizationName: user.organizationName,
                                 type: user.accountType,
                                 accountType: user.accountType,
+                                fssaiCode: user.fssaiCode || '',
+                                darpanId: user.darpanId || '',
+                                bio: user.bio || '',
+                                address: user.address || '',
+                                contactPerson: user.contactPerson || '',
+                                publicPhone: user.publicPhone || user.phone || '',
+                                website: user.website || '',
+                                pickupWindow: user.pickupWindow || '',
+                                pickupInstructions: user.pickupInstructions || '',
+                                avatarUrl: user.avatarUrl || '',
                                 isVerified: 1
                             })};
                             sessionStorage.setItem('nourishUser', JSON.stringify(userObj));
@@ -948,7 +959,26 @@ app.post('/api/verify-otp', (req, res) => {
 
                 res.status(200).json({
                     message: 'Email verified successfully! 🎉',
-                    user: { id: user.id, email: user.email, name: user.organizationName, type: user.accountType, isVerified: 1 },
+                    user: {
+                        id: user.id,
+                        email: user.email,
+                        name: user.organizationName,
+                        organizationName: user.organizationName,
+                        type: user.accountType,
+                        accountType: user.accountType,
+                        phone: user.phone || '',
+                        bio: user.bio || '',
+                        address: user.address || '',
+                        avatarUrl: user.avatarUrl || '',
+                        contactPerson: user.contactPerson || '',
+                        publicPhone: user.publicPhone || user.phone || '',
+                        website: user.website || '',
+                        fssaiCode: user.fssaiCode || '',
+                        darpanId: user.darpanId || '',
+                        pickupWindow: user.pickupWindow || '',
+                        pickupInstructions: user.pickupInstructions || '',
+                        isVerified: 1
+                    },
                     token
                 });
             }
@@ -983,6 +1013,13 @@ app.get('/api/check-verification', (req, res) => {
                     bio: user.bio || '',
                     address: user.address || '',
                     avatarUrl: user.avatarUrl || '',
+                    contactPerson: user.contactPerson || '',
+                    publicPhone: user.publicPhone || user.phone || '',
+                    website: user.website || '',
+                    fssaiCode: user.fssaiCode || '',
+                    darpanId: user.darpanId || '',
+                    pickupWindow: user.pickupWindow || '',
+                    pickupInstructions: user.pickupInstructions || '',
                     isVerified: 1
                 }
             });
@@ -1090,7 +1127,7 @@ app.get('/api/user/me', (req, res) => {
 
     try {
         const decoded = jwt.verify(token, JWT_SECRET);
-        db.get(`SELECT id, email, organizationName, accountType, phone, bio, address, avatarUrl, contactPerson, publicPhone, website, fssaiCode, pickupInstructions, isVerified FROM users WHERE id = ?`, [decoded.id], (err, user) => {
+        db.get(`SELECT id, email, organizationName, accountType, phone, bio, address, avatarUrl, contactPerson, publicPhone, website, fssaiCode, darpanId, pickupWindow, pickupInstructions, isVerified FROM users WHERE id = ?`, [decoded.id], (err, user) => {
             if (err) return res.status(500).json({ error: err.message });
             if (!user) {
                 return res.status(200).json({
@@ -1115,7 +1152,7 @@ app.put('/api/user/me', (req, res) => {
 
     if (!token) return res.status(401).json({ error: 'Access token required' });
 
-    const { organizationName, name, phone, bio, address, avatarUrl, contactPerson, publicPhone, website, fssaiCode, pickupInstructions, pickupWindow } = req.body;
+    const { organizationName, name, phone, bio, address, avatarUrl, contactPerson, publicPhone, website, fssaiCode, darpanId, pickupInstructions, pickupWindow } = req.body;
     const org = organizationName || name || null;
     const pubPhone = publicPhone || phone || null;
 
@@ -1135,6 +1172,7 @@ app.put('/api/user/me', (req, res) => {
                 publicPhone: pubPhone || '',
                 website: website || '',
                 fssaiCode: fssaiCode || '',
+                darpanId: darpanId || '',
                 pickupInstructions: pickupInstructions || '',
                 pickupWindow: pickupWindow || '',
                 avatarUrl: avatarUrl || 'assets/default-avatar.jpg',
@@ -1156,13 +1194,14 @@ app.put('/api/user/me', (req, res) => {
                 publicPhone = COALESCE(?, publicPhone),
                 website = COALESCE(?, website),
                 fssaiCode = COALESCE(?, fssaiCode),
+                darpanId = COALESCE(?, darpanId),
                 pickupInstructions = COALESCE(?, pickupInstructions),
                 pickupWindow = COALESCE(?, pickupWindow)
             WHERE id = ?`,
-            [org, pubPhone, bio || null, address || null, avatarUrl || null, contactPerson || null, pubPhone, website || null, fssaiCode || null, pickupInstructions || null, pickupWindow || null, decoded.id],
+            [org, pubPhone, bio || null, address || null, avatarUrl || null, contactPerson || null, pubPhone, website || null, fssaiCode || null, darpanId || null, pickupInstructions || null, pickupWindow || null, decoded.id],
             function (err) {
                 if (err) return res.status(500).json({ error: err.message });
-                db.get(`SELECT id, email, organizationName, accountType, phone, bio, address, avatarUrl, contactPerson, publicPhone, website, fssaiCode, pickupWindow, pickupInstructions, isVerified FROM users WHERE id = ?`, [decoded.id], (err, updatedUser) => {
+                db.get(`SELECT id, email, organizationName, accountType, phone, bio, address, avatarUrl, contactPerson, publicPhone, website, fssaiCode, darpanId, pickupWindow, pickupInstructions, isVerified FROM users WHERE id = ?`, [decoded.id], (err, updatedUser) => {
                     res.status(200).json({
                         message: 'Profile updated successfully!',
                         user: updatedUser
