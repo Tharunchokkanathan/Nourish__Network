@@ -485,6 +485,19 @@
                         <i class="fa-regular fa-eye-slash toggle-password-icon minimal-eye-icon" data-target="regPassword" title="Show/Hide Password"></i>
                     </div>
 
+                    <!-- Dynamic Role-Based Verification Section -->
+                    <!-- For Food Vendor: 14-Digit FSSAI License -->
+                    <div id="regFssaiWrap" class="minimal-input-wrap">
+                        <input type="text" id="regFssai" class="minimal-input" placeholder="14-Digit FSSAI License Code (e.g. 13326001000001)" maxlength="14" autocomplete="off">
+                        <div id="regFssaiFeedback" style="display: none; font-size: 0.78rem; margin-top: 6px; padding: 6px 12px; border-radius: 8px; text-align: left; line-height: 1.4;"></div>
+                    </div>
+
+                    <!-- For NGO / Shelter: NITI Aayog DARPAN ID -->
+                    <div id="regDarpanWrap" class="minimal-input-wrap" style="display: none;">
+                        <input type="text" id="regDarpan" class="minimal-input" placeholder="NITI Aayog DARPAN ID (e.g. TN/2026/0123456)" maxlength="16" autocomplete="off">
+                        <div id="regDarpanFeedback" style="display: none; font-size: 0.78rem; margin-top: 6px; padding: 6px 12px; border-radius: 8px; text-align: left; line-height: 1.4;"></div>
+                    </div>
+
                     <button type="submit" class="minimal-pill-btn">Sign Up</button>
 
                     <div class="minimal-auth-footer">

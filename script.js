@@ -146,6 +146,31 @@ window.validateFSSAI = function (code) {
     };
 };
 
+// ---- NITI AAYOG NGO DARPAN VALIDATION HELPER ----
+window.validateDARPAN = function (code) {
+    if (!code) return { valid: false, message: 'NITI Aayog DARPAN ID is required' };
+    const clean = code.trim().toUpperCase();
+    const regex = /^([A-Z]{2})\/(\d{4})\/(\d{7})$/;
+    const match = clean.match(regex);
+    if (!match) {
+        return { valid: false, message: 'Format: State/Year/7-digits (e.g. TN/2026/0123456)' };
+    }
+    const stateCode = match[1];
+    const year = parseInt(match[2], 10);
+    const stateName = FSSAI_STATES[stateCode] || stateCode;
+    if (year < 1990 || year > 2027) {
+        return { valid: false, message: 'Registration year must be between 1990 and 2027' };
+    }
+    return {
+        valid: true,
+        clean,
+        stateCode,
+        year,
+        stateName,
+        message: `✓ Valid DARPAN: ${stateName} · Year ${year}`
+    };
+};
+
 window.toLocalDateTimeLocalString = function (dateInput) {
     if (!dateInput) return '';
     const d = new Date(dateInput);
@@ -1758,6 +1783,76 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    // Dynamic Role-Based Compliance Fields (FSSAI vs DARPAN)
+    const regAccountTypeRadios = document.querySelectorAll('input[name="accountType"]');
+    const regFssaiWrap = document.getElementById('regFssaiWrap');
+    const regDarpanWrap = document.getElementById('regDarpanWrap');
+    const regFssai = document.getElementById('regFssai');
+    const regDarpan = document.getElementById('regDarpan');
+    const regFssaiFeedback = document.getElementById('regFssaiFeedback');
+    const regDarpanFeedback = document.getElementById('regDarpanFeedback');
+
+    function updateRegComplianceVisibility() {
+        const selected = document.querySelector('input[name="accountType"]:checked');
+        const isVendor = selected ? (selected.value === 'restaurant' || selected.value === 'vendor') : true;
+        if (regFssaiWrap) regFssaiWrap.style.display = isVendor ? 'block' : 'none';
+        if (regDarpanWrap) regDarpanWrap.style.display = isVendor ? 'none' : 'block';
+    }
+
+    regAccountTypeRadios.forEach(r => r.addEventListener('change', updateRegComplianceVisibility));
+
+    // Live validation for FSSAI on register input
+    if (regFssai) {
+        regFssai.addEventListener('input', () => {
+            const clean = regFssai.value.replace(/\D/g, '').slice(0, 14);
+            regFssai.value = clean;
+            if (!regFssaiFeedback) return;
+            if (!clean) {
+                regFssaiFeedback.style.display = 'none';
+                return;
+            }
+            const res = window.validateFSSAI(clean);
+            regFssaiFeedback.style.display = 'block';
+            if (res.valid) {
+                regFssaiFeedback.style.color = '#34d399';
+                regFssaiFeedback.style.background = 'rgba(16, 185, 129, 0.12)';
+                regFssaiFeedback.style.border = '1px solid rgba(16, 185, 129, 0.3)';
+                regFssaiFeedback.innerHTML = `<i class="fa-solid fa-circle-check"></i> <strong>Valid FSSAI</strong>: ${res.stateName} · ${res.typeStr} (${res.year})`;
+            } else {
+                regFssaiFeedback.style.color = '#f87171';
+                regFssaiFeedback.style.background = 'rgba(239, 68, 68, 0.12)';
+                regFssaiFeedback.style.border = '1px solid rgba(239, 68, 68, 0.3)';
+                regFssaiFeedback.innerHTML = `<i class="fa-solid fa-circle-xmark"></i> ${res.message}`;
+            }
+        });
+    }
+
+    // Live validation for DARPAN ID on register input
+    if (regDarpan) {
+        regDarpan.addEventListener('input', () => {
+            let val = regDarpan.value.trim().toUpperCase();
+            regDarpan.value = val;
+            if (!regDarpanFeedback) return;
+            if (!val) {
+                regDarpanFeedback.style.display = 'none';
+                return;
+            }
+            const res = window.validateDARPAN(val);
+            regDarpanFeedback.style.display = 'block';
+            if (res.valid) {
+                regDarpanFeedback.style.color = '#34d399';
+                regDarpanFeedback.style.background = 'rgba(16, 185, 129, 0.12)';
+                regDarpanFeedback.style.border = '1px solid rgba(16, 185, 129, 0.3)';
+                regDarpanFeedback.innerHTML = `<i class="fa-solid fa-circle-check"></i> <strong>Valid NITI Aayog DARPAN</strong>: ${res.stateName} (${res.year})`;
+            } else {
+                regDarpanFeedback.style.color = '#f87171';
+                regDarpanFeedback.style.background = 'rgba(239, 68, 68, 0.12)';
+                regDarpanFeedback.style.border = '1px solid rgba(239, 68, 68, 0.3)';
+                regDarpanFeedback.innerHTML = `<i class="fa-solid fa-circle-xmark"></i> ${res.message}`;
+            }
+        });
+    }
+
     // 2. Registration Form Submit
     registerForm.addEventListener('submit', async (e) => {
         e.preventDefault();
@@ -1766,10 +1861,30 @@ document.addEventListener('DOMContentLoaded', () => {
         const organizationName = document.getElementById('regName').value.trim();
         const email = document.getElementById('regEmail').value.trim();
         const password = document.getElementById('regPassword').value.trim();
+        const fssaiCode = regFssai ? regFssai.value.trim() : '';
+        const darpanId = regDarpan ? regDarpan.value.trim() : '';
 
         if (!organizationName || !email || !password) {
             showToast("Please fill in all required fields, including a password.", "error");
             return;
+        }
+
+        // Validate FSSAI if provided for Vendor
+        if ((accountType === 'restaurant' || accountType === 'vendor') && fssaiCode) {
+            const fssaiRes = window.validateFSSAI(fssaiCode);
+            if (!fssaiRes.valid) {
+                showToast(fssaiRes.message || "Invalid 14-digit FSSAI code.", "warning");
+                return;
+            }
+        }
+
+        // Validate DARPAN if provided for NGO
+        if ((accountType === 'ngo' || accountType === 'shelter') && darpanId) {
+            const darpanRes = window.validateDARPAN(darpanId);
+            if (!darpanRes.valid) {
+                showToast(darpanRes.message || "Invalid NITI Aayog DARPAN ID format.", "warning");
+                return;
+            }
         }
 
         const submitBtn = registerForm.querySelector('button[type="submit"]');
@@ -1781,7 +1896,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const response = await fetch(`${API_BASE}/register`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ accountType, organizationName, email, password })
+                body: JSON.stringify({ accountType, organizationName, email, password, fssaiCode, darpanId })
             });
 
             const data = await response.json();

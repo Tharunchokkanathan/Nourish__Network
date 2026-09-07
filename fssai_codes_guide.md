@@ -119,3 +119,23 @@ Valid years: **2010 → 2027** (digits 4–5 must be `10` to `27`)
 
 ❌ `12345678910111` fails because digits 4–5 = `45` = year 2045 (future)
 ✅ `13326001000001` passes — year `26` = 2026
+
+---
+
+## 🏛️ NITI Aayog NGO DARPAN Codes (Copy-Paste Ready)
+
+Format: `[State Code] / [Registration Year] / [7-Digit Serial Number]`
+
+| State / Region | DARPAN Code | What it represents |
+| :--- | :--- | :--- |
+| **Tamil Nadu (Chennai)** | `TN/2026/0123456` | Registered NGO, Tamil Nadu, 2026 |
+| **Tamil Nadu (Coimbatore)** | `TN/2025/0098765` | Registered NGO, Tamil Nadu, 2025 |
+| **Karnataka (Bengaluru)** | `KA/2026/0456789` | Registered NGO, Karnataka, 2026 |
+| **Kerala (Kochi)** | `KL/2026/0321456` | Registered NGO, Kerala, 2026 |
+| **Maharashtra (Mumbai)** | `MH/2026/0654321` | Registered NGO, Maharashtra, 2026 |
+| **Delhi (NCR)** | `DL/2026/0789123` | Registered NGO, Delhi, 2026 |
+| **Telangana (Hyderabad)** | `TS/2026/0147258` | Registered NGO, Telangana, 2026 |
+| **Andhra Pradesh** | `AP/2026/0258369` | Registered NGO, Andhra Pradesh, 2026 |
+| **West Bengal (Kolkata)** | `WB/2026/0369147` | Registered NGO, West Bengal, 2026 |
+| **Gujarat (Ahmedabad)** | `GJ/2026/0159753` | Registered NGO, Gujarat, 2026 |
+

@@ -84,7 +84,7 @@ function makeToken(user) {
 // POST /api/register
 // Body: { accountType, organizationName, email, password, phone?, address? }
 app.post('/api/register', async (req, res) => {
-    const { accountType, organizationName, email, password, phone, address } = req.body;
+    const { accountType, organizationName, email, password, phone, address, fssaiCode, darpanId } = req.body;
 
     if (!accountType || !organizationName || !email || !password) {
         return res.status(400).json({ error: 'Please provide all required fields.' });
@@ -102,8 +102,8 @@ app.post('/api/register', async (req, res) => {
         const verificationOtp = Math.floor(100000 + Math.random() * 900000).toString();
         const verificationTokenExpires = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(); // 24 Hours
 
-        const sql = `INSERT INTO users (accountType, organizationName, email, password, phone, address, isVerified, verificationToken, verificationTokenExpires, verificationOtp)
-                    VALUES (?, ?, ?, ?, ?, ?, 0, ?, ?, ?)`;
+        const sql = `INSERT INTO users (accountType, organizationName, email, password, phone, address, fssaiCode, darpanId, isVerified, verificationToken, verificationTokenExpires, verificationOtp)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?)`;
 
         db.run(sql, [
             accountType,
@@ -112,6 +112,8 @@ app.post('/api/register', async (req, res) => {
             hashed,
             phone || null,
             address || null,
+            fssaiCode || null,
+            darpanId || null,
             verificationToken,
             verificationTokenExpires,
             verificationOtp
@@ -129,6 +131,8 @@ app.post('/api/register', async (req, res) => {
                 accountType,
                 organizationName,
                 email,
+                fssaiCode: fssaiCode || '',
+                darpanId: darpanId || '',
                 isVerified: 0
             };
 
@@ -286,6 +290,7 @@ app.post('/api/login', (req, res) => {
                     publicPhone: user.publicPhone || user.phone || '',
                     website: user.website || '',
                     fssaiCode: user.fssaiCode || '',
+                    darpanId: user.darpanId || '',
                     pickupInstructions: user.pickupInstructions || '',
                     avatarUrl: user.avatarUrl || '',
                     isVerified: user.isVerified || 1
