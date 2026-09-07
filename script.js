@@ -1018,14 +1018,41 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- SESSION PERSISTENCE ---
     function checkSession() {
         console.log("Checking session...");
-        const userStr = sessionStorage.getItem('nourishUser');
-        const token = sessionStorage.getItem('nourishToken');
+        const userStr = sessionStorage.getItem('nourishUser') || localStorage.getItem('nourishUser');
+        const token = sessionStorage.getItem('nourishToken') || localStorage.getItem('nourishToken');
         if (userStr && token) {
             const user = JSON.parse(userStr);
             const type = (user.type || user.accountType || user.role || '').toLowerCase();
             state.activePortal = (type === 'restaurant' || type === 'vendor' || type === 'seller') ? 'seller' : 'buyer';
             console.log("Session found, active portal:", state.activePortal);
+            sessionStorage.setItem('nourishUser', JSON.stringify(user));
+            sessionStorage.setItem('nourishToken', token);
+            localStorage.setItem('nourishUser', JSON.stringify(user));
+            localStorage.setItem('nourishToken', token);
+            document.documentElement.classList.add('user-logged-in');
             refreshState();
+
+            // Auto-fetch fresh profile from DB to ensure badges (FSSAI/DARPAN) are always up-to-date
+            if (!token.startsWith('demo-token')) {
+                fetch(`${API_BASE}/user/me`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                })
+                .then(r => r.ok ? r.json() : null)
+                .then(liveUser => {
+                    if (liveUser && liveUser.id) {
+                        const merged = { 
+                            ...user, 
+                            ...liveUser,
+                            fssaiCode: liveUser.fssaiCode || liveUser.fssaicode || user.fssaiCode || user.fssaicode || '',
+                            darpanId: liveUser.darpanId || liveUser.darpanid || user.darpanId || user.darpanid || ''
+                        };
+                        sessionStorage.setItem('nourishUser', JSON.stringify(merged));
+                        localStorage.setItem('nourishUser', JSON.stringify(merged));
+                        renderPortal();
+                    }
+                })
+                .catch(() => {});
+            }
         } else {
             console.log("No session found.");
             refreshState();
@@ -2400,8 +2427,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
     function renderSellerPortal() {
-        const user = JSON.parse(sessionStorage.getItem('nourishUser') || '{}');
+        const user = JSON.parse(sessionStorage.getItem('nourishUser') || localStorage.getItem('nourishUser') || '{}');
         const sellerListings = state.listings.filter(l => l.vendorId == user.id);
+        const fssai = user.fssaiCode || user.fssaicode || '';
 
         let totalMealsDonated = 0;
         sellerListings.forEach(item => { totalMealsDonated += parseFloat(item.qty) || 0; });
@@ -2428,11 +2456,11 @@ document.addEventListener('DOMContentLoaded', () => {
                             <div style="flex: 1; min-width: 200px;">
                                 <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 4px;">
                                     <span style="font-size: 1.2rem; font-weight: 800; color: var(--text-primary);">${user.name || user.organizationName || 'Your Restaurant'}</span>
-
+                                    <span class="badge ${badgeClass}" style="font-size: 0.72rem; padding: 3px 8px; border-radius: 8px; font-weight: 700;">${badgeName}</span>
                                 </div>
                                 ${user.bio ? `<p style="color:var(--text-muted); font-size:0.9rem; margin: 0 0 8px;">${user.bio}</p>` : ''}
                                 <div style="display: flex; flex-wrap: wrap; gap: 10px 20px; font-size: 0.82rem; color: var(--text-muted); margin-top: 6px;">
-                                    ${user.fssaiCode ? `<span class="fssai-trust-badge" style="font-size:0.75rem; padding: 3px 10px; border-radius: 12px;" title="FSSAI Food Safety Verified"><i class="fa-solid fa-shield-halved"></i> <strong style="font-family:monospace; letter-spacing:1px;">${user.fssaiCode}</strong> <span style="font-weight:700;">FSSAI</span></span>` : '<span style="color:#f59e0b;"><i class="fa-solid fa-triangle-exclamation"></i> FSSAI not set — update in Settings</span>'}
+                                    ${fssai ? `<span class="fssai-trust-badge" style="font-size:0.75rem; padding: 3px 10px; border-radius: 12px;" title="FSSAI Food Safety Verified"><i class="fa-solid fa-shield-halved"></i> <strong style="font-family:monospace; letter-spacing:1px;">${fssai}</strong> <span style="font-weight:700;">FSSAI</span></span>` : '<span style="color:#f59e0b;"><i class="fa-solid fa-triangle-exclamation"></i> FSSAI not set — update in Settings</span>'}
                                     ${user.address ? `<span><i class="fa-solid fa-location-dot" style="color:var(--accent-primary);"></i> ${user.address}</span>` : ''}
                                     ${user.publicPhone ? `<span><i class="fa-solid fa-phone" style="color:var(--accent-primary);"></i> ${user.publicPhone}</span>` : ''}
                                     ${user.contactPerson ? `<span><i class="fa-solid fa-user-tie" style="color:var(--accent-primary);"></i> ${user.contactPerson}</span>` : ''}
@@ -2747,11 +2775,39 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function renderBuyerPortal() {
+        const user = JSON.parse(sessionStorage.getItem('nourishUser') || localStorage.getItem('nourishUser') || '{}');
+        const darpan = user.darpanId || user.darpanid || '';
+
         portalsRoot.innerHTML = `
-            <div class="buyer-portal-layout animate-reveal" style="padding-top: 120px;">
-                <div class="container" style="max-width: 1300px; margin: 0 auto;">
-                    <h1 class="seller-page-title"><span class="premium-title">BUYER'S DASHBOARD</span></h1>
-                    <p style="margin-bottom: 2rem; color: var(--text-muted); font-size: 1.1rem;">Fresh, freshly prepared meals from local restaurants — ready for you to claim.</p>
+            <div class="buyer-portal-layout animate-reveal" style="padding-top: 100px; min-height: 100vh;">
+                <div class="container" style="max-width: 1300px; margin: 0 auto; padding: 1.5rem 2rem 3rem;">
+                    <h1 class="seller-page-title" style="display: flex; align-items: center; gap: 20px;">
+                        <span class="premium-title">BUYER'S DASHBOARD</span>
+                    </h1>
+
+                    <!-- NGO Bio / Profile Card -->
+                    <div class="seller-form-card" style="margin-bottom: 2rem; padding: 1.5rem 2rem;">
+                        <div style="display: flex; align-items: center; gap: 1.5rem; flex-wrap: wrap;">
+                            <img src="${user.avatarUrl || 'assets/default-avatar.jpg'}" alt="NGO Avatar"
+                                style="width: 72px; height: 72px; border-radius: 50%; object-fit: cover; border: 2px solid #38bdf8; flex-shrink: 0;">
+                            <div style="flex: 1; min-width: 200px;">
+                                <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 4px;">
+                                    <span style="font-size: 1.2rem; font-weight: 800; color: var(--text-primary);">${user.name || user.organizationName || 'Your NGO Organization'}</span>
+                                    <span class="badge" style="background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; padding: 3px 8px; border-radius: 8px; font-weight: 700;">Verified NGO</span>
+                                </div>
+                                ${user.bio ? `<p style="color:var(--text-muted); font-size:0.9rem; margin: 0 0 8px;">${user.bio}</p>` : ''}
+                                <div style="display: flex; flex-wrap: wrap; gap: 10px 20px; font-size: 0.82rem; color: var(--text-muted); margin-top: 6px;">
+                                    ${darpan ? `<span class="darpan-trust-badge" style="font-size:0.75rem; padding: 3px 10px; border-radius: 12px; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.35); display: inline-flex; align-items: center; gap: 5px;" title="NITI Aayog DARPAN Verified NGO"><i class="fa-solid fa-building-ngo"></i> <strong style="font-family:monospace; letter-spacing:1px;">${darpan}</strong> <span style="font-weight:700;">DARPAN</span></span>` : '<span style="color:#f59e0b;"><i class="fa-solid fa-triangle-exclamation"></i> DARPAN ID not set — update in Settings</span>'}
+                                    ${user.address ? `<span><i class="fa-solid fa-location-dot" style="color:#38bdf8;"></i> ${user.address}</span>` : ''}
+                                    ${(user.publicPhone || user.phone) ? `<span><i class="fa-solid fa-phone" style="color:#38bdf8;"></i> ${user.publicPhone || user.phone}</span>` : ''}
+                                    ${user.contactPerson ? `<span><i class="fa-solid fa-user-tie" style="color:#38bdf8;"></i> ${user.contactPerson}</span>` : ''}
+                                </div>
+                            </div>
+                            <button onclick="window.openSettings()" style="background: none; border: 1px solid var(--border-glow); border-radius: 10px; padding: 8px 16px; color: var(--text-muted); font-size: 0.82rem; cursor: pointer; white-space: nowrap; flex-shrink: 0;">
+                                <i class="fa-solid fa-pen-to-square"></i> Edit Profile
+                            </button>
+                        </div>
+                    </div>
 
                     <!-- Portal Tabs -->
                     <div class="portal-tabs" style="display:flex; gap: 0.5rem; margin-bottom: 2.5rem; border-bottom: 1px solid var(--border-glow); padding-bottom: 0;">
@@ -3709,12 +3765,16 @@ document.addEventListener('DOMContentLoaded', () => {
             modal.style.display = 'flex';
             // Role-specific field visibility
             const fssaiWrap = document.getElementById('fssaiFieldWrap');
+            const darpanWrap = document.getElementById('darpanFieldWrap');
             const subtitle = modal.querySelector('p');
-            const isSeller = state.activePortal === 'seller';
+            const user = JSON.parse(sessionStorage.getItem('nourishUser') || localStorage.getItem('nourishUser') || '{}');
+            const role = (user.accountType || user.type || user.role || (state.activePortal === 'seller' ? 'vendor' : 'ngo')).toLowerCase();
+            const isSeller = role.includes('restaurant') || role.includes('vendor') || role.includes('seller') || state.activePortal === 'seller';
             if (fssaiWrap) fssaiWrap.style.display = isSeller ? 'block' : 'none';
+            if (darpanWrap) darpanWrap.style.display = isSeller ? 'none' : 'block';
             if (subtitle) subtitle.textContent = isSeller
                 ? "Manage your restaurant's profile, compliance & pickup details"
-                : "Manage your NGO's profile and pickup details";
+                : "Manage your NGO's profile, compliance & pickup details";
             document.dispatchEvent(new CustomEvent('load-profile-data'));
         }
     };
@@ -3736,6 +3796,10 @@ document.addEventListener('DOMContentLoaded', () => {
         const fssaiFieldWrap = document.getElementById('fssaiFieldWrap');
         const fssaiFeedback = document.getElementById('fssaiFeedback');
         const fssaiStateTag = document.getElementById('fssaiStateTag');
+        const darpanInput = document.getElementById('darpanInput');
+        const darpanFieldWrap = document.getElementById('darpanFieldWrap');
+        const darpanFeedback = document.getElementById('darpanFeedback');
+        const darpanStateTag = document.getElementById('darpanStateTag');
         const pickupWindowInput = document.getElementById('pickupWindowInput');
         const pickupInstructionsInput = document.getElementById('pickupInstructionsInput');
         const avatarInput = document.getElementById('avatarInput');
@@ -3783,6 +3847,46 @@ document.addEventListener('DOMContentLoaded', () => {
             fssaiInput.addEventListener('input', updateFssaiFeedback);
         }
 
+        function updateDarpanFeedback() {
+            if (!darpanInput) return;
+            const clean = darpanInput.value.trim().toUpperCase();
+            darpanInput.value = clean;
+
+            if (!darpanFeedback) return;
+
+            if (!clean) {
+                darpanFeedback.style.display = 'none';
+                darpanFeedback.className = '';
+                darpanFeedback.innerHTML = '';
+                if (darpanStateTag) darpanStateTag.style.display = 'none';
+                return;
+            }
+
+            const res = window.validateDARPAN(clean);
+            darpanFeedback.style.display = 'block';
+
+            if (res.valid) {
+                darpanFeedback.className = 'darpan-feedback-valid';
+                darpanFeedback.innerHTML = `<i class="fa-solid fa-circle-check"></i> <strong>Valid DARPAN ID</strong>: ${res.stateName} · Registered Year ${res.year}`;
+                if (darpanStateTag) {
+                    darpanStateTag.style.display = 'inline-block';
+                    darpanStateTag.textContent = `${res.stateName} • ${res.year}`;
+                }
+            } else if (clean.length < 14) {
+                darpanFeedback.className = 'darpan-feedback-warning';
+                darpanFeedback.innerHTML = `<i class="fa-solid fa-circle-info"></i> Format: <strong>[State]/[Year]/[7-Digits]</strong> (e.g. <code>TN/2026/0123456</code>)`;
+                if (darpanStateTag) darpanStateTag.style.display = 'none';
+            } else {
+                darpanFeedback.className = 'darpan-feedback-invalid';
+                darpanFeedback.innerHTML = `<i class="fa-solid fa-triangle-exclamation"></i> ${res.message}`;
+                if (darpanStateTag) darpanStateTag.style.display = 'none';
+            }
+        }
+
+        if (darpanInput) {
+            darpanInput.addEventListener('input', updateDarpanFeedback);
+        }
+
         async function loadProfile() {
             try {
                 const user = JSON.parse(sessionStorage.getItem('nourishUser') || localStorage.getItem('nourishUser') || '{}');
@@ -3796,11 +3900,13 @@ document.addEventListener('DOMContentLoaded', () => {
                     accountTypeInput.value = role.toUpperCase();
                 }
 
-                // Show FSSAI field only for food vendors/sellers
-                const isSeller = (profile.accountType || profile.role || '').toLowerCase().includes('restaurant') ||
-                                 (profile.accountType || profile.role || '').toLowerCase().includes('vendor') ||
+                // Show FSSAI field for food vendors, DARPAN for NGOs
+                const isSeller = (profile.accountType || profile.role || profile.type || '').toLowerCase().includes('restaurant') ||
+                                 (profile.accountType || profile.role || profile.type || '').toLowerCase().includes('vendor') ||
+                                 (profile.accountType || profile.role || profile.type || '').toLowerCase().includes('seller') ||
                                  state.activePortal === 'seller';
                 if (fssaiFieldWrap) fssaiFieldWrap.style.display = isSeller ? 'block' : 'none';
+                if (darpanFieldWrap) darpanFieldWrap.style.display = isSeller ? 'none' : 'block';
 
                 // 2. Contact & Logistics Fields (Pre-fill from cached session)
                 if (bioInput) bioInput.value = profile.bio || '';
@@ -3809,8 +3915,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (publicPhoneInput) publicPhoneInput.value = profile.publicPhone || profile.phone || '';
                 if (websiteInput) websiteInput.value = profile.website || '';
                 if (fssaiInput) {
-                    fssaiInput.value = profile.fssaiCode || '';
+                    fssaiInput.value = profile.fssaiCode || profile.fssaicode || '';
                     updateFssaiFeedback();
+                }
+                if (darpanInput) {
+                    darpanInput.value = profile.darpanId || profile.darpanid || '';
+                    updateDarpanFeedback();
                 }
                 if (pickupWindowInput) pickupWindowInput.value = profile.pickupWindow || '';
                 if (pickupInstructionsInput) pickupInstructionsInput.value = profile.pickupInstructions || '';
@@ -3839,8 +3949,12 @@ document.addEventListener('DOMContentLoaded', () => {
                             if (publicPhoneInput) publicPhoneInput.value = liveProfile.publicPhone || liveProfile.phone || '';
                             if (websiteInput) websiteInput.value = liveProfile.website || '';
                             if (fssaiInput) {
-                                fssaiInput.value = liveProfile.fssaiCode || '';
+                                fssaiInput.value = liveProfile.fssaiCode || liveProfile.fssaicode || '';
                                 updateFssaiFeedback();
+                            }
+                            if (darpanInput) {
+                                darpanInput.value = liveProfile.darpanId || liveProfile.darpanid || '';
+                                updateDarpanFeedback();
                             }
                             if (pickupWindowInput) pickupWindowInput.value = liveProfile.pickupWindow || '';
                             if (pickupInstructionsInput) pickupInstructionsInput.value = liveProfile.pickupInstructions || '';
@@ -3850,7 +3964,12 @@ document.addEventListener('DOMContentLoaded', () => {
                             }
 
                             // Cache latest liveProfile in storage so it persists
-                            const merged = { ...user, ...liveProfile };
+                            const merged = { 
+                                ...user, 
+                                ...liveProfile,
+                                fssaiCode: liveProfile.fssaiCode || liveProfile.fssaicode || user.fssaiCode || user.fssaicode || '',
+                                darpanId: liveProfile.darpanId || liveProfile.darpanid || user.darpanId || user.darpanid || ''
+                            };
                             sessionStorage.setItem('nourishUser', JSON.stringify(merged));
                             localStorage.setItem('nourishUser', JSON.stringify(merged));
                             renderPortal();
@@ -3934,6 +4053,19 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                 }
 
+                const darpanCode = darpanInput ? darpanInput.value.trim().toUpperCase() : '';
+                if (darpanCode) {
+                    const validation = window.validateDARPAN(darpanCode);
+                    if (!validation.valid) {
+                        showToast(`Invalid DARPAN ID: ${validation.message}`, "error");
+                        if (darpanInput) {
+                            darpanInput.focus();
+                            darpanInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        }
+                        return;
+                    }
+                }
+
                 const saveBtn = document.getElementById('saveSettingsBtn');
                 const originalText = saveBtn.innerText;
                 saveBtn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Saving...';
@@ -3965,7 +4097,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             organizationName: orgName,
                             name: orgName,
                             bio, address, avatarUrl, contactPerson,
-                            publicPhone, website, fssaiCode,
+                            publicPhone, website, fssaiCode, darpanId: darpanCode,
                             pickupWindow, pickupInstructions
                         })
                     });
@@ -3984,7 +4116,8 @@ document.addEventListener('DOMContentLoaded', () => {
                             publicPhone,
                             phone: publicPhone || prevUser.phone,
                             website,
-                            fssaiCode,
+                            fssaiCode: fssaiCode || (data.user && (data.user.fssaiCode || data.user.fssaicode)) || prevUser.fssaiCode || prevUser.fssaicode || '',
+                            darpanId: darpanCode || (data.user && (data.user.darpanId || data.user.darpanid)) || prevUser.darpanId || prevUser.darpanid || '',
                             pickupWindow,
                             pickupInstructions,
                             avatarUrl: avatarUrl || prevUser.avatarUrl
@@ -3999,7 +4132,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         const navImg = document.getElementById('nav-avatar-img');
                         if (navImg && avatarUrl) navImg.src = avatarUrl;
 
-                        // Re-render portal to immediately show FSSAI badge!
+                        // Re-render portal to immediately show FSSAI or DARPAN badge!
                         renderPortal();
                     } else {
                         showToast("Failed to update profile.", "error");
