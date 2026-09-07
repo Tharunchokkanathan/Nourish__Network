@@ -1294,10 +1294,9 @@ app.get('/api/stats', (req, res) => {
 // ─────────────────────────────────────────────────────────────────────────────
 
 // 6. GET MY PROFILE
-// 6. GET MY PROFILE
 // GET /api/user/me
 app.get('/api/user/me', authenticateToken, (req, res) => {
-    db.get(`SELECT id, accountType, organizationName, email, phone, address, bio, avatarUrl, isVerified, contactPerson, publicPhone, website, fssaiCode, pickupWindow, pickupInstructions, createdAt
+    db.get(`SELECT id, accountType, organizationName, email, phone, address, bio, avatarUrl, isVerified, contactPerson, publicPhone, website, fssaiCode, darpanId, pickupWindow, pickupInstructions, createdAt
             FROM users WHERE id = ?`, [req.user.id], (err, user) => {
         if (err) return res.status(500).json({ error: err.message });
         if (!user) return res.status(404).json({ error: 'User not found.' });
@@ -1310,7 +1309,7 @@ app.get('/api/user/me', authenticateToken, (req, res) => {
 app.put('/api/user/me', authenticateToken, (req, res) => {
     const {
         organizationName, phone, address, bio, avatarUrl,
-        contactPerson, publicPhone, website, fssaiCode,
+        contactPerson, publicPhone, website, fssaiCode, darpanId,
         pickupWindow, pickupInstructions
     } = req.body;
 
@@ -1325,6 +1324,7 @@ app.put('/api/user/me', authenticateToken, (req, res) => {
             publicPhone        = COALESCE(?, publicPhone),
             website            = COALESCE(?, website),
             fssaiCode          = COALESCE(?, fssaiCode),
+            darpanId           = COALESCE(?, darpanId),
             pickupWindow       = COALESCE(?, pickupWindow),
             pickupInstructions = COALESCE(?, pickupInstructions)
         WHERE id = ?
@@ -1340,6 +1340,7 @@ app.put('/api/user/me', authenticateToken, (req, res) => {
         publicPhone || null,
         website || null,
         fssaiCode || null,
+        darpanId || null,
         pickupWindow || null,
         pickupInstructions || null,
         req.user.id

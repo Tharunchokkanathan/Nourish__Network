@@ -5313,3 +5313,74 @@ button:active,
     border-color: #fecaca;
 }
 
+/* =========================================
+   NITI Aayog DARPAN Trust Badges & Styles
+   ========================================= */
+.darpan-trust-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 0.68rem;
+    font-weight: 700;
+    color: #38bdf8;
+    background: rgba(56, 189, 248, 0.12);
+    border: 1px solid rgba(56, 189, 248, 0.3);
+    padding: 2px 8px;
+    border-radius: 12px;
+    letter-spacing: 0.5px;
+    white-space: nowrap;
+    transition: all 0.2s ease;
+}
+
+.darpan-trust-badge i {
+    font-size: 0.65rem;
+    color: #38bdf8;
+}
+
+.darpan-feedback-valid {
+    background: rgba(16, 185, 129, 0.12);
+    color: #34d399;
+    border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.darpan-feedback-warning {
+    background: rgba(245, 158, 11, 0.12);
+    color: #fbbf24;
+    border: 1px solid rgba(245, 158, 11, 0.3);
+}
+
+.darpan-feedback-invalid {
+    background: rgba(239, 68, 68, 0.12);
+    color: #f87171;
+    border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+[data-theme='light'] .darpan-trust-badge {
+    background: rgba(14, 165, 233, 0.12);
+    border-color: rgba(14, 165, 233, 0.35);
+    color: #0284c7;
+}
+
+[data-theme='light'] .darpan-trust-badge i {
+    color: #0284c7;
+}
+
+[data-theme='light'] .darpan-feedback-valid {
+    background: #ecfdf5;
+    color: #065f46;
+    border-color: #a7f3d0;
+}
+
+[data-theme='light'] .darpan-feedback-warning {
+    background: #fffbeb;
+    color: #92400e;
+    border-color: #fde68a;
+}
+
+[data-theme='light'] .darpan-feedback-invalid {
+    background: #fef2f2;
+    color: #991b1b;
+    border-color: #fecaca;
+}
+
+
