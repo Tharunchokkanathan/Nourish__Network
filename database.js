@@ -14,6 +14,7 @@ function normalizeRow(row) {
         contactperson: 'contactPerson',
         publicphone: 'publicPhone',
         fssaicode: 'fssaiCode',
+        darpanid: 'darpanId',
         pickupwindow: 'pickupWindow',
         pickupinstructions: 'pickupInstructions',
         isverified: 'isVerified',
@@ -156,6 +157,7 @@ if (dbUrl) {
                     publicphone TEXT,
                     website TEXT,
                     fssaicode TEXT,
+                    darpanid TEXT,
                     pickupwindow TEXT,
                     pickupinstructions TEXT,
                     isverified INTEGER DEFAULT 0,
@@ -166,6 +168,9 @@ if (dbUrl) {
                     resettokenexpires TEXT,
                     createdat TIMESTAMP NOT NULL DEFAULT NOW()
                 );
+
+                -- Safe migration: ensure darpanid exists
+                ALTER TABLE users ADD COLUMN IF NOT EXISTS darpanid TEXT;
 
                 CREATE TABLE IF NOT EXISTS contacts (
                     id SERIAL PRIMARY KEY,
@@ -244,6 +249,7 @@ if (dbUrl) {
                 publicPhone             TEXT,
                 website                 TEXT,
                 fssaiCode               TEXT,
+                darpanId                TEXT,
                 pickupWindow            TEXT,
                 pickupInstructions     TEXT,
                 isVerified              INTEGER  DEFAULT 0,
@@ -254,7 +260,11 @@ if (dbUrl) {
                 resetTokenExpires       TEXT,
                 createdAt               TEXT     NOT NULL DEFAULT (datetime('now'))
             )
-        `, logErr('users'));
+        `, (err) => {
+            logErr('users')(err);
+            // Safe migration for SQLite to add darpanId column if it doesn't exist
+            db.run('ALTER TABLE users ADD COLUMN darpanId TEXT;', () => {});
+        });
 
         db.run(`
             CREATE TABLE IF NOT EXISTS contacts (
