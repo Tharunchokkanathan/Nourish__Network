@@ -1135,10 +1135,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     (parseInt(d.qty) || 0) > 0
                 );
 
-                // Apply demo-user purchases to real API listings
-                // (demo users can't call the real checkout, so we track purchases in localStorage)
+                // Only apply local purchase deductions to synthetic demo-only listings (not real PostgreSQL listings which are already atomically deducted in the database)
                 const demoPurchasedIds = JSON.parse(localStorage.getItem('nn_demo_purchased_ids') || '[]');
                 const filteredApiListings = apiListings.map(l => {
+                    if (!String(l.id).startsWith('demo-')) return l;
                     const purchase = demoPurchasedIds.find(p => String(p.id) === String(l.id));
                     if (!purchase) return l;
                     const remainingQty = Math.max(0, (parseInt(l.qty) || 0) - (purchase.qtyBought || 0));
@@ -1177,13 +1177,21 @@ document.addEventListener('DOMContentLoaded', () => {
             const hasChanged = state._lastListingsSnapshot !== newSnapshot;
             state._lastListingsSnapshot = newSnapshot;
 
-            // In-place updates: Never nuke the portal DOM if already active
-            if (state.activePortal === 'seller') {
-                if (typeof renderSellerListings === 'function') renderSellerListings();
-            } else if (state.activePortal === 'buyer') {
-                if (typeof renderExchangeGrid === 'function') renderExchangeGrid();
-            } else if (!silent) {
+            // Guard against unrendered or desynced portal DOM
+            const root = portalsRoot || document.getElementById('nn-portals-root');
+            const isPortalVisible = root && root.style.display !== 'none' && root.dataset.activePortal === state.activePortal;
+
+            if (!isPortalVisible && state.activePortal !== 'home') {
+                // Portal was not rendered yet (e.g. freshly logged in) — mount it immediately
                 renderPortal();
+                syncDock();
+            } else if (hasChanged || !silent) {
+                // Only re-render listings if data has actually changed or an explicit non-silent refresh was requested
+                if (state.activePortal === 'seller') {
+                    if (typeof renderSellerListings === 'function') renderSellerListings();
+                } else if (state.activePortal === 'buyer') {
+                    if (typeof renderExchangeGrid === 'function') renderExchangeGrid();
+                }
             }
 
             // Silently refresh history if history modal is currently open
@@ -1751,6 +1759,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     state.activePortal = 'seller';
                     authModal.classList.remove('active');
                     showToast("Welcome back, Chef Marco! 🍽️");
+                    renderPortal();
+                    syncDock();
                     refreshState();
                 } else {
                     showToast(data.error || "Demo login failed", "error");
@@ -1796,6 +1806,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     state.activePortal = 'buyer';
                     authModal.classList.remove('active');
                     showToast("Welcome back, Sarah! 🤝");
+                    renderPortal();
+                    syncDock();
                     refreshState();
                 } else {
                     showToast(data.error || "Demo login failed", "error");
@@ -1926,6 +1938,8 @@ document.addEventListener('DOMContentLoaded', () => {
                         const t = (data.user.type || data.user.accountType || data.user.role || '').toLowerCase();
                         state.activePortal = (t === 'restaurant' || t === 'vendor' || t === 'seller') ? 'seller' : 'buyer';
                     }
+                    renderPortal();
+                    syncDock();
                     refreshState();
                 }, 1000);
             } else if (response.status === 403 && data.unverified) {
@@ -1995,6 +2009,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
 
                     showToast(`✨ Account verified via mobile! Welcome, ${data.user.name || email}! 🎉`, "success");
+                    renderPortal();
+                    syncDock();
                     refreshState();
                 }
             } catch (err) {
@@ -2263,6 +2279,8 @@ document.addEventListener('DOMContentLoaded', () => {
                         state.activePortal = (t === 'restaurant' || t === 'vendor' || t === 'seller') ? 'seller' : 'buyer';
                     }
                     showToast("Password updated successfully! Welcome back 🎉", "success");
+                    renderPortal();
+                    syncDock();
                     refreshState();
                 } else {
                     showToast(data.error || "Failed to update password.", "error");
@@ -2901,8 +2919,10 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
+        const isInitialMount = container.children.length === 0;
+
         container.innerHTML = myItems.map((item, idx) => `
-            <div class="nn-food-card stagger-item ${item.qty <= 0 ? 'is-sold-out' : ''} ${window.isItemExpired(item.expiry) ? 'is-expired' : ''}" data-id="${item.id}" style="animation-delay: ${idx * 0.05}s">
+            <div class="nn-food-card ${isInitialMount ? 'stagger-item' : ''} ${item.qty <= 0 ? 'is-sold-out' : ''} ${window.isItemExpired(item.expiry) ? 'is-expired' : ''}" data-id="${item.id}" ${isInitialMount ? `style="animation-delay: ${idx * 0.05}s"` : ''}>
                 <div class="nn-card-img-wrap">
                     <img src="${item.img}" alt="${item.name}" loading="lazy" referrerpolicy="no-referrer" onerror="this.onerror=null; this.src=window.getSmartFoodImage ? window.getSmartFoodImage('${(item.name || '').replace(/'/g, "\\'")}', '${(item.category || '').replace(/'/g, "\\'")}', null) : 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=600&q=80';">
                     <div class="nn-card-img-overlay"></div>
@@ -3098,16 +3118,25 @@ document.addEventListener('DOMContentLoaded', () => {
         const grid = document.getElementById('exchange-grid');
         if (!grid) return;
 
+        // Preserve in-progress stepper selections across data syncs
+        const currentStepperVals = {};
+        grid.querySelectorAll('.nn-food-card').forEach(card => {
+            const id = card.dataset.id;
+            const span = card.querySelector('.stepper-val');
+            if (id && span) {
+                currentStepperVals[id] = parseInt(span.textContent || span.innerText, 10) || 1;
+            }
+        });
+        const isInitialMount = grid.children.length === 0;
+
         // Filter out expired items, sold-out items, or garbage demo items for the buyer view
-        // Sold-out listings are completely cleared on refresh
         const validListings = state.listings.filter(item => {
             if (item.name === 'lp.okijuh' || item.name === 'lp,okijuh' || item.name === 'wesrdtfgybh') return false;
             if (item.status === 'sold' || item.status === 'claimed') return false;
 
             const inCart = (state.cart || []).find(c => String(c.item.id) === String(item.id));
-            const cartQty = inCart ? (parseInt(inCart.qty) || 0) : 0;
-            const originalStock = item.originalQty != null ? item.originalQty : ((parseInt(item.qty) || 0) + cartQty);
-            // If the listing originally had 0 or was depleted before cart, filter out
+            const cartQty = inCart ? (parseInt(inCart.qty, 10) || 0) : 0;
+            const originalStock = item.originalQty != null ? parseInt(item.originalQty, 10) : ((parseInt(item.qty != null ? item.qty : item.quantity, 10) || 0) + cartQty);
             if (originalStock <= 0) return false;
 
             if (!item.expiry || !window.isValidExpiry(item.expiry)) return true;
@@ -3130,14 +3159,17 @@ document.addEventListener('DOMContentLoaded', () => {
             const bioText = item.vendorBio ? `<div style="font-size: 0.75rem; color: #cbd5e1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 150px;">${item.vendorBio}</div>` : '';
 
             const inCart = (state.cart || []).find(c => String(c.item.id) === String(item.id));
-            const cartQty = inCart ? (parseInt(inCart.qty) || 0) : 0;
-            const totalStock = item.originalQty != null ? item.originalQty : ((parseInt(item.qty) || 0) + cartQty);
+            const cartQty = inCart ? (parseInt(inCart.qty, 10) || 0) : 0;
+            const totalStock = item.originalQty != null ? parseInt(item.originalQty, 10) : ((parseInt(item.qty != null ? item.qty : item.quantity, 10) || 0) + cartQty);
             const remainingLive = Math.max(0, totalStock - cartQty);
             const isAllInBasket = (remainingLive <= 0);
             const isExpired = window.isItemExpired(item.expiry);
 
+            const savedVal = currentStepperVals[item.id] || 1;
+            const stepperVal = isAllInBasket ? 0 : Math.max(1, Math.min(savedVal, remainingLive));
+
             return `
-            <div class="nn-food-card stagger-item ${isAllInBasket ? 'is-sold-out' : ''} ${isExpired ? 'is-expired' : ''}" data-id="${item.id}" style="animation-delay: ${idx * 0.05}s">
+            <div class="nn-food-card ${isInitialMount ? 'stagger-item' : ''} ${isAllInBasket ? 'is-sold-out' : ''} ${isExpired ? 'is-expired' : ''}" data-id="${item.id}" ${isInitialMount ? `style="animation-delay: ${idx * 0.05}s"` : ''}>
                 ${isAllInBasket ? '<div class="nn-sold-out-badge"><i class="fa-solid fa-basket-shopping"></i> All Portions in Basket</div>' : ''}
                 <div class="nn-card-img-wrap">
                     <img src="${item.img}" alt="${item.name}" loading="lazy" referrerpolicy="no-referrer" onerror="this.onerror=null; this.src=window.getSmartFoodImage ? window.getSmartFoodImage('${(item.name || '').replace(/'/g, "\\'")}', '${(item.category || '').replace(/'/g, "\\'")}', null) : 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=600&q=80';">
@@ -3171,7 +3203,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 <div class="nn-card-footer nn-card-footer-buyer">
                     <div class="nn-stepper">
                         <button class="nn-step-btn stepper-btn minus" data-id="${item.id}" ${isAllInBasket || isExpired ? 'disabled' : ''}><i class="fa-solid fa-minus"></i></button>
-                        <span class="nn-step-val stepper-val" id="stepper-${item.id}">${isAllInBasket ? 0 : 1}</span>
+                        <span class="nn-step-val stepper-val" id="stepper-${item.id}">${stepperVal}</span>
                         <button class="nn-step-btn stepper-btn plus" data-id="${item.id}" ${isAllInBasket || isExpired ? 'disabled' : ''}><i class="fa-solid fa-plus"></i></button>
                     </div>
                     <button class="nn-add-btn add-btn" data-id="${item.id}" ${(isAllInBasket || isExpired) ? 'disabled' : ''}>
@@ -3201,8 +3233,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (!item) return;
 
                 const inCart = (state.cart || []).find(c => String(c.item.id) === String(id));
-                const inCartQty = inCart ? (parseInt(inCart.qty) || 0) : 0;
-                const totalStock = item.originalQty != null ? item.originalQty : ((parseInt(item.qty || item.quantity) || 0) + inCartQty);
+                const inCartQty = inCart ? (parseInt(inCart.qty, 10) || 0) : 0;
+                const totalStock = item.originalQty != null ? parseInt(item.originalQty, 10) : ((parseInt(item.qty != null ? item.qty : item.quantity, 10) || 0) + inCartQty);
                 const maxAvailable = Math.max(0, totalStock - inCartQty);
 
                 if (btn.classList.contains('plus')) {
