@@ -12,8 +12,8 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
     }
 
-    // API Configuration
-    const API_BASE = 'https://nourish-network-4bit.onrender.com/api';
+    // API Configuration - relative path so it works on any hosted domain or localhost
+    const API_BASE = window.location.protocol === 'file:' ? 'http://localhost:3000/api' : '/api';
 
     // Scroll Animation Logic
     const observerOptions = { threshold: 0.1, rootMargin: '0px 0px -50px 0px' };
