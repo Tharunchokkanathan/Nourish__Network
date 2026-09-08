@@ -36,22 +36,17 @@ transporter.verify((error) => {
 function sanitizeHtmlForEmail(html) {
     if (!html) return '';
     return html
-        .replace(/🌿/g, '&#127807;')
-        .replace(/🔑/g, '&#128273;')
-        .replace(/🔒/g, '&#128274;')
-        .replace(/🛡️/g, '&#128737;')
-        .replace(/🛡/g, '&#128737;')
-        .replace(/✅/g, '&#9989;')
-        .replace(/⚠️/g, '&#9888;&#65039;')
-        .replace(/🎉/g, '&#127881;')
-        .replace(/🤝/g, '&#129309;')
-        .replace(/🌱/g, '&#127793;');
+        .replace(/\p{Extended_Pictographic}|\p{Emoji_Presentation}|\p{Emoji}|[\uFE00-\uFE0F]|[\u{1F300}-\u{1FAFF}]|[\u{2600}-\u{27BF}]|[\u{1F900}-\u{1F9FF}]|[\u{D800}-\u{DFFF}]|\uFFFD/gu, '')
+        .replace(/&#(?:9\d{3}|[1-9]\d{4,}|x[0-9a-fA-F]{3,});/gi, '')
+        .replace(/&#127807;|&#128273;|&#128274;|&#128737;|&#9989;|&#9888;&#65039;|&#127881;|&#129309;|&#127793;|&#9888;/g, '')
+        .trim();
 }
 
 function sanitizeSubjectForEmail(subject) {
     if (!subject) return '';
     return subject
-        .replace(/[\u{1F300}-\u{1FAFF}]|[\u{2600}-\u{27BF}]|[\u{FE00}-\u{FE0F}]|[\u{1F900}-\u{1F9FF}]|[\u{D800}-\u{DFFF}]/gu, '')
+        .replace(/\p{Extended_Pictographic}|\p{Emoji_Presentation}|\p{Emoji}|[\uFE00-\uFE0F]|[\u{1F300}-\u{1FAFF}]|[\u{2600}-\u{27BF}]|[\u{1F900}-\u{1F9FF}]|[\u{D800}-\u{DFFF}]|\uFFFD/gu, '')
+        .replace(/&#(?:9\d{3}|[1-9]\d{4,}|x[0-9a-fA-F]{3,});/gi, '')
         .replace(/[^\x20-\x7E]/g, '')
         .replace(/\s+/g, ' ')
         .trim();
@@ -210,7 +205,7 @@ async function sendVerificationEmail({ toEmail, name, token, accountType, hostUr
     <body>
         <div class="email-container">
             <div class="header">
-                <h1>🌿 Nourish Network</h1>
+                <h1>Nourish Network</h1>
             </div>
             <div class="content">
                 <h2 class="welcome-title">Welcome, ${name}!</h2>
@@ -264,7 +259,7 @@ async function sendPasswordResetEmail({ toEmail, name, token, hostUrl }) {
     <body>
         <div class="email-container">
             <div class="header">
-                <h1>🌿 Nourish Network</h1>
+                <h1>Nourish Network</h1>
             </div>
             <div class="content">
                 <h2 class="welcome-title">Password Reset Request</h2>
@@ -413,7 +408,7 @@ async function sendLoginNotificationEmail({ toEmail, name, accountType, loginTim
     <body>
         <div class="email-container">
             <div class="header">
-                <h1>🌿 Nourish Network</h1>
+                <h1>Nourish Network</h1>
             </div>
             <div class="content">
                 <h2 class="welcome-title">You've Logged In Successfully</h2>
@@ -442,7 +437,7 @@ async function sendLoginNotificationEmail({ toEmail, name, accountType, loginTim
                 </div>
 
                 <div class="security-notice">
-                    <strong>🛡️ Security Note:</strong> If you recently initiated this login on this device, you can safely disregard this notice. If you did not log in or suspect unauthorized access, please update your account password immediately.
+                    <strong>Security Note:</strong> If you recently initiated this login on this device, you can safely disregard this notice. If you did not log in or suspect unauthorized access, please update your account password immediately.
                 </div>
             </div>
             <div class="footer">
@@ -577,10 +572,10 @@ async function sendPasswordChangedEmail({ toEmail, name, changedTime }) {
     <body>
         <div class="email-container">
             <div class="header">
-                <h1>🌿 Nourish Network</h1>
+                <h1>Nourish Network</h1>
             </div>
             <div class="content">
-                <h2 class="welcome-title">Password Changed Successfully 🔒</h2>
+                <h2 class="welcome-title">Password Changed Successfully</h2>
                 <p class="message-text">
                     Hello <strong>${name || 'Partner'}</strong>,<br><br>
                     This is a confirmation that the password for your <strong>Nourish Network</strong> account has been updated successfully. Your new credentials are active immediately.
@@ -601,12 +596,12 @@ async function sendPasswordChangedEmail({ toEmail, name, changedTime }) {
                     </div>
                     <div class="detail-row">
                         <span class="detail-label">Security Status:</span>
-                        <span class="detail-value" style="color: #10b981;">Updated & Protected ✅</span>
+                        <span class="detail-value" style="color: #10b981;">Updated &amp; Protected</span>
                     </div>
                 </div>
 
                 <div class="security-alert">
-                    <strong>⚠️ Didn't request this change?</strong><br>
+                    <strong>Did not request this change?</strong><br>
                     If you did not initiate this password update, your account may be at risk. Please contact our support team immediately or perform another password reset to secure your account.
                 </div>
             </div>
@@ -635,7 +630,7 @@ async function sendFoodPublishedBroadcastEmail({ buyers, sellerName, foodItem, h
     const formattedExpiry = foodItem.expiryTime 
         ? new Date(foodItem.expiryTime).toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' })
         : 'Available Today';
-    const priceDisplay = (parseFloat(foodItem.price) === 0 || !foodItem.price) ? 'Free Donation (₹0)' : `₹${foodItem.price} / portion`;
+    const priceDisplay = (parseFloat(foodItem.price) === 0 || !foodItem.price) ? 'Free Donation (Rs. 0)' : `Rs. ${foodItem.price} / portion`;
 
     const results = [];
     for (const buyer of buyers) {
@@ -743,10 +738,10 @@ async function sendFoodPublishedBroadcastEmail({ buyers, sellerName, foodItem, h
         <body>
             <div class="email-container">
                 <div class="header">
-                    <h1>🌿 Nourish Network</h1>
+                    <h1>Nourish Network</h1>
                 </div>
                 <div class="content">
-                    <h2 class="welcome-title">Fresh Surplus Food Available! 🍲</h2>
+                    <h2 class="welcome-title">Fresh Surplus Food Available</h2>
                     <p class="message-text">
                         Hello <strong>${buyer.organizationName || 'Partner'}</strong>,<br><br>
                         <strong>${sellerName || 'A local partner'}</strong> has just listed fresh surplus food on Nourish Network ready to be claimed and distributed.
@@ -779,7 +774,7 @@ async function sendFoodPublishedBroadcastEmail({ buyers, sellerName, foodItem, h
                         </div>
                     </div>
 
-                    <a href="${dashboardUrl}" class="btn-cta" target="_blank">Check Food & Claim in Dashboard 🚀</a>
+                    <a href="${dashboardUrl}" class="btn-cta" target="_blank">Check Food &amp; Claim in Dashboard</a>
                 </div>
                 <div class="footer">
                     &copy; ${new Date().getFullYear()} Nourish Network. Connecting fresh food with communities in need.
@@ -910,13 +905,13 @@ async function sendSellerOrderNotificationEmail({ sellerEmail, sellerName, buyer
     <body>
         <div class="email-container">
             <div class="header">
-                <h1>🌿 Nourish Network</h1>
+                <h1>Nourish Network</h1>
             </div>
             <div class="content">
-                <h2 class="welcome-title">New Food Order Received! 🎉</h2>
+                <h2 class="welcome-title">New Food Order Received</h2>
                 <p class="message-text">
                     Hello <strong>${sellerName || 'Partner'}</strong>,<br><br>
-                    <strong>${buyerName || 'A Community Partner'}</strong> has just placed an order / claimed meals from your food listing!
+                    <strong>${buyerName || 'A Community Partner'}</strong> has just placed an order / claimed meals from your food listing.
                 </p>
 
                 <div class="details-card">
@@ -938,7 +933,7 @@ async function sendSellerOrderNotificationEmail({ sellerEmail, sellerName, buyer
                     </div>
                     <div class="detail-row">
                         <span class="detail-label">Total Amount:</span>
-                        <span class="detail-value">${parseFloat(totalPrice) === 0 ? 'Free Donation (₹0)' : '₹' + totalPrice}</span>
+                        <span class="detail-value">${parseFloat(totalPrice) === 0 ? 'Free Donation (Rs. 0)' : 'Rs. ' + totalPrice}</span>
                     </div>
                     <div class="detail-row">
                         <span class="detail-label">Order Timestamp:</span>
@@ -951,7 +946,7 @@ async function sendSellerOrderNotificationEmail({ sellerEmail, sellerName, buyer
                     </div>` : ''}
                 </div>
 
-                <a href="${dashboardUrl}" class="btn-cta" target="_blank">View Orders in Seller Dashboard 📋</a>
+                <a href="${dashboardUrl}" class="btn-cta" target="_blank">View Orders in Seller Dashboard</a>
             </div>
             <div class="footer">
                 &copy; ${new Date().getFullYear()} Nourish Network. Connecting fresh food with communities in need.
@@ -1125,7 +1120,6 @@ async function sendLoginApprovalEmail({
     <body>
         <div class="email-container">
             <div class="header">
-                <div class="header-icon">&#128274;</div>
                 <h1>Sign-In Approval Request</h1>
             </div>
             <div class="content">
@@ -1151,12 +1145,12 @@ async function sendLoginApprovalEmail({
                 </div>
 
                 <div class="actions-wrap">
-                    <a href="${approveUrl}" class="btn-approve" target="_blank">&#9989; Approve Sign-In</a>
-                    <a href="${denyUrl}" class="deny-link" target="_blank">&#128737; Deny &amp; Block Sign-In</a>
+                    <a href="${approveUrl}" class="btn-approve" target="_blank">Approve Sign-In</a>
+                    <a href="${denyUrl}" class="deny-link" target="_blank">Deny &amp; Block Sign-In</a>
                 </div>
 
                 <div class="note-box">
-                    <strong>&#9888;&#65039; Cross-Device Flow:</strong>
+                    <strong>Cross-Device Flow:</strong>
                     Tapping "Approve" from your mobile phone will automatically and securely log in your laptop session within 2 seconds.
                     If you did not request this login, tap "Deny &amp; Block" immediately.
                 </div>
