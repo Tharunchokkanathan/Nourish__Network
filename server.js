@@ -102,58 +102,107 @@ app.post('/api/register', async (req, res) => {
         const verificationOtp = Math.floor(100000 + Math.random() * 900000).toString();
         const verificationTokenExpires = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(); // 24 Hours
 
-        const sql = `INSERT INTO users (accountType, organizationName, email, password, phone, address, fssaiCode, darpanId, ngoRegType, isVerified, verificationToken, verificationTokenExpires, verificationOtp)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?)`;
+        const hostUrl = req.headers.origin || (req.headers.host ? `${req.headers['x-forwarded-proto'] || req.protocol || 'http'}://${req.headers.host}` : 'https://nourish-network-4bit.onrender.com');
 
-        db.run(sql, [
-            accountType,
-            organizationName,
-            email,
-            hashed,
-            phone || null,
-            address || null,
-            fssaiCode || null,
-            darpanId || null,
-            ngoRegType || (darpanId ? 'darpan' : null),
-            verificationToken,
-            verificationTokenExpires,
-            verificationOtp
-        ], async function (err) {
-            if (err) {
-                if (err.message.includes('UNIQUE constraint failed') || err.message.includes('unique constraint') || err.message.includes('duplicate key')) {
+        // Check if email already exists
+        db.get('SELECT id, isVerified FROM users WHERE email = ?', [email], async (lookupErr, existing) => {
+            if (lookupErr) return res.status(500).json({ error: lookupErr.message });
+
+            if (existing) {
+                if (existing.isVerified) {
+                    // Fully verified account — block re-registration
                     return res.status(409).json({ error: 'An account with this email already exists. Please log in.' });
                 }
-                return res.status(500).json({ error: err.message });
+
+                // Unverified pending account — overwrite with new details and resend verification
+                const updateSql = `UPDATE users SET
+                    accountType = ?, organizationName = ?, password = ?, phone = ?, address = ?,
+                    fssaiCode = ?, darpanId = ?, ngoRegType = ?,
+                    verificationToken = ?, verificationTokenExpires = ?, verificationOtp = ?
+                    WHERE email = ?`;
+
+                db.run(updateSql, [
+                    accountType, organizationName, hashed,
+                    phone || null, address || null,
+                    fssaiCode || null, darpanId || null,
+                    ngoRegType || (darpanId ? 'darpan' : null),
+                    verificationToken, verificationTokenExpires, verificationOtp,
+                    email
+                ], async function (updateErr) {
+                    if (updateErr) return res.status(500).json({ error: updateErr.message });
+
+                    setImmediate(() => {
+                        sendVerificationEmail({
+                            toEmail: email,
+                            name: organizationName,
+                            token: verificationToken,
+                            accountType,
+                            hostUrl
+                        }).catch(e => console.error("Async Email Error:", e));
+                    });
+
+                    return res.status(201).json({
+                        message: 'Verification email resent! Please check your inbox to activate your account.',
+                        requiresVerification: true,
+                        email
+                    });
+                });
+                return;
             }
 
-            const userId = this.lastID;
-            const user = {
-                id: userId,
+            // New email — insert fresh account
+            const sql = `INSERT INTO users (accountType, organizationName, email, password, phone, address, fssaiCode, darpanId, ngoRegType, isVerified, verificationToken, verificationTokenExpires, verificationOtp)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?)`;
+
+            db.run(sql, [
                 accountType,
                 organizationName,
                 email,
-                fssaiCode: fssaiCode || '',
-                darpanId: darpanId || '',
-                ngoRegType: ngoRegType || (darpanId ? 'darpan' : ''),
-                isVerified: 0
-            };
+                hashed,
+                phone || null,
+                address || null,
+                fssaiCode || null,
+                darpanId || null,
+                ngoRegType || (darpanId ? 'darpan' : null),
+                verificationToken,
+                verificationTokenExpires,
+                verificationOtp
+            ], async function (err) {
+                if (err) {
+                    if (err.message.includes('UNIQUE constraint failed') || err.message.includes('unique constraint') || err.message.includes('duplicate key')) {
+                        return res.status(409).json({ error: 'An account with this email already exists. Please log in.' });
+                    }
+                    return res.status(500).json({ error: err.message });
+                }
 
-            // Send registration verification email in background on immediate microtick
-            const hostUrl = req.headers.origin || (req.headers.host ? `${req.headers['x-forwarded-proto'] || req.protocol || 'http'}://${req.headers.host}` : 'https://nourish-network-4bit.onrender.com');
-            setImmediate(() => {
-                sendVerificationEmail({
-                    toEmail: email,
-                    name: organizationName,
-                    token: verificationToken,
+                const userId = this.lastID;
+                const user = {
+                    id: userId,
                     accountType,
-                    hostUrl
-                }).catch(e => console.error("Async Email Error:", e));
-            });
+                    organizationName,
+                    email,
+                    fssaiCode: fssaiCode || '',
+                    darpanId: darpanId || '',
+                    ngoRegType: ngoRegType || (darpanId ? 'darpan' : ''),
+                    isVerified: 0
+                };
 
-            res.status(201).json({
-                message: 'Account created! Please check your email to activate your account.',
-                requiresVerification: true,
-                email
+                // Send registration verification email in background on immediate microtick
+                setImmediate(() => {
+                    sendVerificationEmail({
+                        toEmail: email,
+                        name: organizationName,
+                        token: verificationToken,
+                        accountType,
+                        hostUrl
+                    }).catch(e => console.error("Async Email Error:", e));
+                });
+
+                res.status(201).json({
+                    message: 'Account created! Please check your email to activate your account.',
+                    requiresVerification: true,
+                    email
+                });
             });
         });
     } catch (err) {
