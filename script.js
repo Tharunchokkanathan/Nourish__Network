@@ -603,6 +603,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // 1. Configuration - Dynamic API Detection (works on localhost, Render, or any domain)
     const API_BASE = window.location.protocol === 'file:' ? 'http://localhost:3000/api' : '/api';
+    const portalsRoot = document.getElementById('nn-portals-root');
+    const homePortal = document.getElementById('home-portal');
 
     function resolveCustomImageUrl(rawUrl) {
         if (!rawUrl || typeof rawUrl !== 'string') return null;
@@ -1029,8 +1031,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    wireDockButtons();
-
     // --- BACKEND SYNC ENGINE ---
     async function refreshState(silent = false) {
         try {
@@ -1129,8 +1129,6 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
     }
-
-    checkSession();
 
     // --- SESSION PERSISTENCE ---
     function checkSession() {
@@ -2307,8 +2305,6 @@ document.addEventListener('DOMContentLoaded', () => {
     // =========================================
 
     // 2. Selectors
-    const portalsRoot = document.getElementById('nn-portals-root');
-    const homePortal = document.getElementById('home-portal');
     const swHome = document.getElementById('sw-home');
     const swSeller = document.getElementById('sw-seller');
     const swBuyer = document.getElementById('sw-buyer');
@@ -2458,27 +2454,29 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // 4. Rendering Engine
     function renderPortal() {
+        const root = portalsRoot || document.getElementById('nn-portals-root');
+        const home = homePortal || document.getElementById('home-portal');
         syncDock();
         syncPortalSwitcher();
         if (state.activePortal === 'home') {
-            if (homePortal) homePortal.style.display = 'block';
-            if (portalsRoot) {
-                portalsRoot.style.display = 'none';
-                delete portalsRoot.dataset.activePortal;
+            if (home) home.style.display = 'block';
+            if (root) {
+                root.style.display = 'none';
+                delete root.dataset.activePortal;
             }
             // Re-render slider + wall so any new comments from portals show up instantly
             renderReviewsSlider();
             renderCommunityWall();
         } else {
-            if (homePortal) homePortal.style.display = 'none';
-            if (portalsRoot) {
-                portalsRoot.style.display = 'block';
+            if (home) home.style.display = 'none';
+            if (root) {
+                root.style.display = 'block';
                 // Only trigger the portalEnter transition when switching portals or on initial entry
-                if (portalsRoot.dataset.activePortal !== state.activePortal) {
-                    portalsRoot.dataset.activePortal = state.activePortal;
-                    portalsRoot.classList.remove('portal-reveal');
-                    void portalsRoot.offsetWidth; // Trigger reflow
-                    portalsRoot.classList.add('portal-reveal');
+                if (root.dataset.activePortal !== state.activePortal) {
+                    root.dataset.activePortal = state.activePortal;
+                    root.classList.remove('portal-reveal');
+                    void root.offsetWidth; // Trigger reflow
+                    root.classList.add('portal-reveal');
                 }
             }
             if (state.activePortal === 'seller') {
@@ -2586,7 +2584,10 @@ document.addEventListener('DOMContentLoaded', () => {
         else if (totalMealsDonated >= 100) { badgeName = 'Gold'; badgeClass = 'badge-gold'; }
         else if (totalMealsDonated >= 50) { badgeName = 'Silver Partner'; badgeClass = 'badge-silver'; }
 
-        portalsRoot.innerHTML = `
+        const root = portalsRoot || document.getElementById('nn-portals-root');
+        if (!root) return;
+
+        root.innerHTML = `
             <div class="portal-wrapper" style="padding-top: 80px; min-height: 100vh;">
                 <div class="container" style="max-width: 1300px; margin: 0 auto; padding: 1.5rem 2rem 3rem;">
 
@@ -2924,7 +2925,10 @@ document.addEventListener('DOMContentLoaded', () => {
         const user = JSON.parse(sessionStorage.getItem('nourishUser') || '{}');
         const darpan = user.darpanId || user.darpanid || '';
 
-        portalsRoot.innerHTML = `
+        const root = portalsRoot || document.getElementById('nn-portals-root');
+        if (!root) return;
+
+        root.innerHTML = `
             <div class="buyer-portal-layout animate-reveal" style="padding-top: 100px; min-height: 100vh;">
                 <div class="container" style="max-width: 1300px; margin: 0 auto; padding: 1.5rem 2rem 3rem;">
                     <h1 class="seller-page-title" style="display: flex; align-items: center; gap: 20px;">
@@ -4082,7 +4086,7 @@ document.addEventListener('DOMContentLoaded', () => {
     renderReviewsSlider();
     renderCommunityWall();
     updateCartBadge();
-
+    wireDockButtons();
     checkSession();
 
     window.placeOrderDemo = async () => {
