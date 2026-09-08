@@ -171,33 +171,6 @@ window.validateDARPAN = function (code) {
     };
 };
 
-// ---- SECTION 8 COMPANY (MCA CIN) VALIDATOR ----
-window.validateSection8CIN = function (cin) {
-    if (!cin) return { valid: false, message: 'Section 8 MCA CIN is required' };
-    const clean = cin.trim().toUpperCase();
-    const regex = /^([UL])(\d{5})([A-Z]{2})(\d{4})(NPL|PTC|SGC|PLC)(\d{6})$/;
-    const match = clean.match(regex);
-    if (!match) {
-        if (clean.length !== 21) {
-            return { valid: false, message: 'MCA CIN must be exactly 21 characters (e.g. U85300DL2021NPL123456)' };
-        }
-        return { valid: false, message: 'Invalid MCA CIN structure (must contain state and entity category)' };
-    }
-    const stateCode = match[3];
-    const year = match[4];
-    const category = match[5];
-    const stateName = FSSAI_STATES[stateCode] || stateCode;
-    const isSection8 = category === 'NPL';
-    return {
-        valid: true,
-        clean,
-        stateName,
-        year,
-        isSection8,
-        message: `✓ Valid MCA CIN: ${stateName} · ${isSection8 ? 'Section 8 Non-Profit (NPL)' : category} · Year ${year}`
-    };
-};
-
 // ---- STATE SOCIETY / TRUST DEED VALIDATOR ----
 window.validateTrustDeed = function (code) {
     if (!code) return { valid: false, message: 'Registration or Deed Number is required' };
@@ -215,30 +188,12 @@ window.validateTrustDeed = function (code) {
     };
 };
 
-// ---- INCOME TAX 12A / 80G URN VALIDATOR ----
-window.validateTax12A = function (code) {
-    if (!code) return { valid: false, message: '12A/80G Unique Registration Number (URN) is required' };
-    const clean = code.trim().toUpperCase().replace(/[^A-Z0-9]/g, '');
-    if (clean.length !== 16) {
-        return { valid: false, message: 'CBDT 12A/80G URN must be exactly 16 alphanumeric characters' };
-    }
-    return {
-        valid: true,
-        clean,
-        message: `✓ Valid CBDT Tax-Exempt Non-Profit URN: ${clean}`
-    };
-};
-
 // ---- UNIFIED NGO COMPLIANCE VALIDATOR ----
 window.validateNGOCompliance = function (type, code) {
     if (!code) return { valid: true, optional: true, message: 'Optional field (leaves account unaccredited until provided)' };
     switch (type) {
-        case 'cin':
-            return window.validateSection8CIN(code);
         case 'trust':
             return window.validateTrustDeed(code);
-        case 'tax12a':
-            return window.validateTax12A(code);
         case 'darpan':
         default:
             return window.validateDARPAN(code);
@@ -248,18 +203,12 @@ window.validateNGOCompliance = function (type, code) {
 // ---- DYNAMIC NGO TRUST BADGE RENDERER ----
 window.renderNgoTrustBadge = function (user) {
     const code = user.darpanId || user.darpanid || '';
-    const type = user.ngoRegType || (code.includes('/') ? 'darpan' : (code.length === 21 ? 'cin' : 'trust'));
+    const type = user.ngoRegType || (code.includes('/') ? 'darpan' : 'trust');
     if (!code) {
         return '<span style="color:#f59e0b; font-size:0.75rem;"><i class="fa-solid fa-triangle-exclamation"></i> Accreditation not set — update in Settings</span>';
     }
-    if (type === 'cin') {
-        return `<span class="section8-trust-badge" style="font-size:0.75rem; padding: 3px 10px; border-radius: 12px; background: rgba(99, 102, 241, 0.15); color: #818cf8; border: 1px solid rgba(99, 102, 241, 0.35); display: inline-flex; align-items: center; gap: 5px;" title="Ministry of Corporate Affairs (MCA) Section 8 Non-Profit"><i class="fa-solid fa-building-columns"></i> <strong style="font-family:monospace; letter-spacing:1px;">${code}</strong> <span style="font-weight:700;">SEC 8 CIN</span></span>`;
-    }
-    if (type === 'tax12a') {
-        return `<span class="tax-trust-badge" style="font-size:0.75rem; padding: 3px 10px; border-radius: 12px; background: rgba(245, 158, 11, 0.15); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.35); display: inline-flex; align-items: center; gap: 5px;" title="Income Tax Department 12A/80G URN"><i class="fa-solid fa-file-invoice-dollar"></i> <strong style="font-family:monospace; letter-spacing:1px;">${code}</strong> <span style="font-weight:700;">12A/80G</span></span>`;
-    }
     if (type === 'trust') {
-        return `<span class="grassroots-trust-badge" style="font-size:0.75rem; padding: 3px 10px; border-radius: 12px; background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.35); display: inline-flex; align-items: center; gap: 5px;" title="Registered Charitable Trust / Society Deed"><i class="fa-solid fa-hand-holding-heart"></i> <strong style="font-family:monospace; letter-spacing:1px;">${code}</strong> <span style="font-weight:700;">TRUST/SOCIETY</span></span>`;
+        return `<span class="grassroots-trust-badge" style="font-size:0.75rem; padding: 3px 10px; border-radius: 12px; background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.35); display: inline-flex; align-items: center; gap: 5px;" title="Registered State Society / Trust Deed"><i class="fa-solid fa-hand-holding-heart"></i> <strong style="font-family:monospace; letter-spacing:1px;">${code}</strong> <span style="font-weight:700;">TRUST/SOCIETY</span></span>`;
     }
     return `<span class="darpan-trust-badge" style="font-size:0.75rem; padding: 3px 10px; border-radius: 12px; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.35); display: inline-flex; align-items: center; gap: 5px;" title="NITI Aayog DARPAN Verified NGO"><i class="fa-solid fa-building-ngo"></i> <strong style="font-family:monospace; letter-spacing:1px;">${code}</strong> <span style="font-weight:700;">DARPAN</span></span>`;
 };
@@ -2050,9 +1999,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const NGO_PLACEHOLDERS = {
         darpan: 'NITI Aayog DARPAN ID (e.g. TN/2026/0123456)',
-        cin: 'Section 8 Company MCA CIN (e.g. U85300DL2021NPL123456)',
-        trust: 'State Society / Trust Deed (e.g. SOC/TN/2022/04812)',
-        tax12a: 'CBDT 12A/80G URN (16-Digit URN)'
+        trust: 'State Society / Trust Deed No. (e.g. SOC/TN/2022/04812)'
     };
 
     function updateRegComplianceVisibility() {
