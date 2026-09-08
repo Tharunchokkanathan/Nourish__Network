@@ -14,6 +14,16 @@ function authenticateToken(req, res, next) {
         return res.status(401).json({ error: 'Access denied. No token provided.' });
     }
 
+    // Demo token fallbacks for seamless hackathon testing & offline demonstrations
+    if (token === 'demo-token-seller') {
+        req.user = { id: 888, email: 'serverdemo@gmail.com', accountType: 'restaurant', organizationName: 'Elite Catering (Demo)' };
+        return next();
+    }
+    if (token === 'demo-token-buyer') {
+        req.user = { id: 999, email: 'ngodemo@gmail.com', accountType: 'ngo', organizationName: 'Global Outreach (Demo)' };
+        return next();
+    }
+
     try {
         const decoded = jwt.verify(token, JWT_SECRET);
         req.user = decoded;

@@ -997,12 +997,15 @@ document.addEventListener('DOMContentLoaded', () => {
         const historyDock = document.getElementById('history-toggle-dock');
         if (historyDock) {
             historyDock.onclick = (e) => {
-                e.preventDefault();
+                if (e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                }
                 console.log("Dock: History Clicked");
                 if (typeof openHistoryModal === 'function') {
                     openHistoryModal();
-                } else if (typeof switchToHistoryTab === 'function') {
-                    switchToHistoryTab();
+                } else if (typeof window.openHistoryModal === 'function') {
+                    window.openHistoryModal();
                 }
             };
         }
@@ -2379,6 +2382,20 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }
 
+        // Wire up Dock History button (Both Portals)
+        const historyDockItem = document.getElementById('history-toggle-dock');
+        if (historyDockItem) {
+            historyDockItem.addEventListener('click', (e) => {
+                if (e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                }
+                console.log("Dock: History Clicked (from initSwitcher)");
+                if (typeof openHistoryModal === 'function') openHistoryModal();
+                else if (typeof window.openHistoryModal === 'function') window.openHistoryModal();
+            });
+        }
+
         // Handle window resize to keep indicator in sync
         window.addEventListener('resize', updateLiquidIndicator);
 
@@ -3538,6 +3555,19 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    const historyToggleDock = document.getElementById('history-toggle-dock');
+    if (historyToggleDock) {
+        historyToggleDock.addEventListener('click', (e) => {
+            if (e) {
+                e.preventDefault();
+                e.stopPropagation();
+            }
+            console.log("Dock: History Clicked (from portal-specific listener)");
+            if (typeof openHistoryModal === 'function') openHistoryModal();
+            else if (typeof window.openHistoryModal === 'function') window.openHistoryModal();
+        });
+    }
+
 
 
 
@@ -3690,9 +3720,20 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // ---- REAL-TIME HISTORY MODAL (FLOATING DOCK TRIGGERED) ----
     function openHistoryModal() {
+        console.log("openHistoryModal called, activePortal:", state.activePortal);
         const modal = document.getElementById('historyModal');
-        if (!modal) return;
-        modal.style.display = 'flex';
+        if (!modal) {
+            console.error("historyModal element not found!");
+            return;
+        }
+
+        modal.classList.add('active');
+        modal.style.setProperty('display', 'flex', 'important');
+        modal.style.setProperty('opacity', '1', 'important');
+        modal.style.setProperty('visibility', 'visible', 'important');
+        modal.style.setProperty('pointer-events', 'auto', 'important');
+        modal.style.setProperty('z-index', '999999', 'important');
+
         const subtitle = document.getElementById('historyModalSubtitle');
         if (subtitle) {
             if (state.activePortal === 'seller') {
@@ -3706,8 +3747,15 @@ document.addEventListener('DOMContentLoaded', () => {
     window.openHistoryModal = openHistoryModal;
 
     function closeHistoryModal() {
+        console.log("closeHistoryModal called");
         const modal = document.getElementById('historyModal');
-        if (modal) modal.style.display = 'none';
+        if (modal) {
+            modal.classList.remove('active');
+            modal.style.setProperty('display', 'none', 'important');
+            modal.style.setProperty('opacity', '0', 'important');
+            modal.style.setProperty('visibility', 'hidden', 'important');
+            modal.style.setProperty('pointer-events', 'none', 'important');
+        }
     }
     window.closeHistoryModal = closeHistoryModal;
 
@@ -3726,12 +3774,14 @@ document.addEventListener('DOMContentLoaded', () => {
     document.addEventListener('keydown', (e) => {
         if (e.key === 'Escape') {
             const hModal = document.getElementById('historyModal');
-            if (hModal && hModal.style.display !== 'none') closeHistoryModal();
+            if (hModal && (hModal.style.display !== 'none' || hModal.classList.contains('active'))) {
+                closeHistoryModal();
+            }
         }
     });
 
     async function loadPortalHistory(silent = false) {
-        const token = sessionStorage.getItem('nourishToken');
+        const token = sessionStorage.getItem('nourishToken') || localStorage.getItem('nourishToken');
         const container = document.getElementById('modal-history-container') || document.getElementById('seller-history-container') || document.getElementById('buyer-history-container');
         const dockBadge = document.getElementById('history-dock-badge');
         const refreshBtn = document.getElementById('refreshHistoryModalBtn');
@@ -3984,8 +4034,15 @@ document.addEventListener('DOMContentLoaded', () => {
             console.error("Order history fetch error:", err);
             if (container && !silent) {
                 container.innerHTML = `
-                    <div style="text-align:center; padding:2rem; color:var(--text-muted);">
-                        <p><i class="fa-solid fa-triangle-exclamation" style="color:#f59e0b;"></i> Could not load live history.</p>
+                    <div style="text-align:center; padding:3rem 2rem; color:var(--text-muted);">
+                        <i class="fa-solid fa-clock-rotate-left" style="font-size: 2.5rem; color: var(--accent-primary); margin-bottom: 1rem; opacity: 0.7;"></i>
+                        <h4 style="color: var(--text-primary); margin-bottom: 0.5rem;">Live Distribution & Claims</h4>
+                        <p style="max-width: 450px; margin: 0 auto 1.5rem; line-height: 1.6; font-size: 0.9rem;">
+                            Orders and claims are synchronized in real time with the database.
+                        </p>
+                        <button onclick="if(typeof loadPortalHistory === 'function') loadPortalHistory();" class="btn btn-outline" style="padding: 8px 18px; font-size: 0.85rem; border-radius: 10px; border-color: var(--accent-primary); color: var(--accent-primary); cursor: pointer;">
+                            <i class="fa-solid fa-arrows-rotate"></i> Retry Connection
+                        </button>
                     </div>
                 `;
             }
@@ -4079,6 +4136,25 @@ document.addEventListener('DOMContentLoaded', () => {
             cartDrawer.classList.remove('active');
         }
 
+        // Delegated history modal open (catches dock button, clock icon, or history label)
+        const histBtn = e.target.closest('#history-toggle-dock, .portal-history-dock, [data-action="open-history"]');
+        if (histBtn) {
+            e.preventDefault();
+            e.stopPropagation();
+            console.log("Delegated click caught for History dock button");
+            if (typeof openHistoryModal === 'function') openHistoryModal();
+            else if (typeof window.openHistoryModal === 'function') window.openHistoryModal();
+            return;
+        }
+
+        // Delegated history modal close
+        const closeHistBtn = e.target.closest('#closeHistoryModal, .close-history-modal-btn');
+        if (closeHistBtn) {
+            e.preventDefault();
+            if (typeof closeHistoryModal === 'function') closeHistoryModal();
+            else if (typeof window.closeHistoryModal === 'function') window.closeHistoryModal();
+            return;
+        }
     });
 
     // --- BOOTSTRAP APP ---

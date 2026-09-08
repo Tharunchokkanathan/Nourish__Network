@@ -5640,7 +5640,26 @@ button:active,
 
 /* History Modal Glassmorphic Styling */
 #historyModal {
+    z-index: 999999 !important;
+}
+
+#historyModal.active,
+#historyModal[style*="display: flex"] {
+    display: flex !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+    pointer-events: auto !important;
     animation: historyFadeIn 0.25s ease forwards;
+}
+
+.portal-history-dock {
+    cursor: pointer !important;
+    position: relative !important;
+}
+
+.portal-history-dock i,
+.portal-history-dock span {
+    pointer-events: none;
 }
 
 @keyframes historyFadeIn {
