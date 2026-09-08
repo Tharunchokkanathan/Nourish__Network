@@ -31,6 +31,10 @@
     <script>
         (function () {
             try {
+                if (!sessionStorage.getItem('nourishUser') && localStorage.getItem('nourishUser')) {
+                    localStorage.removeItem('nourishUser');
+                    localStorage.removeItem('nourishToken');
+                }
                 const user = sessionStorage.getItem('nourishUser');
                 const token = sessionStorage.getItem('nourishToken');
                 if (user && token) {

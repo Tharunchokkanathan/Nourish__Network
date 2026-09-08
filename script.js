@@ -1109,8 +1109,14 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- SESSION PERSISTENCE ---
     function checkSession() {
         console.log("Checking session...");
-        const userStr = sessionStorage.getItem('nourishUser') || localStorage.getItem('nourishUser');
-        const token = sessionStorage.getItem('nourishToken') || localStorage.getItem('nourishToken');
+        // Auto-purge stale localStorage if no active tab session exists
+        if (!sessionStorage.getItem('nourishUser') && localStorage.getItem('nourishUser')) {
+            localStorage.removeItem('nourishUser');
+            localStorage.removeItem('nourishToken');
+        }
+
+        const userStr = sessionStorage.getItem('nourishUser');
+        const token = sessionStorage.getItem('nourishToken');
         if (userStr && token) {
             const user = JSON.parse(userStr);
             const type = (user.type || user.accountType || user.role || '').toLowerCase();
@@ -1118,8 +1124,6 @@ document.addEventListener('DOMContentLoaded', () => {
             console.log("Session found, active portal:", state.activePortal);
             sessionStorage.setItem('nourishUser', JSON.stringify(user));
             sessionStorage.setItem('nourishToken', token);
-            localStorage.setItem('nourishUser', JSON.stringify(user));
-            localStorage.setItem('nourishToken', token);
             document.documentElement.classList.add('user-logged-in');
             refreshState();
 
@@ -1446,6 +1450,11 @@ document.addEventListener('DOMContentLoaded', () => {
     // Toggle Forms
     function showLoginForm() {
         authModal.classList.add('active');
+        sessionStorage.removeItem('nourishUser');
+        sessionStorage.removeItem('nourishToken');
+        localStorage.removeItem('nourishUser');
+        localStorage.removeItem('nourishToken');
+        document.documentElement.classList.remove('user-logged-in');
         if (loginView && registerView) {
             registerView.style.display = 'none';
             loginView.style.display = 'block';
@@ -1580,8 +1589,8 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // Check if user is already logged in
-    const user = JSON.parse(sessionStorage.getItem('nourishUser') || localStorage.getItem('nourishUser') || 'null');
-    const token = sessionStorage.getItem('nourishToken') || localStorage.getItem('nourishToken');
+    const user = JSON.parse(sessionStorage.getItem('nourishUser') || 'null');
+    const token = sessionStorage.getItem('nourishToken');
     if (user) {
         // Also update any "Join Now" or "Donate Food" buttons on the landing page
         const heroActions = document.querySelectorAll('.hero-action a, .action-card button');
@@ -2527,6 +2536,8 @@ document.addEventListener('DOMContentLoaded', () => {
     function logout() {
         sessionStorage.removeItem('nourishUser');
         sessionStorage.removeItem('nourishToken');
+        localStorage.removeItem('nourishUser');
+        localStorage.removeItem('nourishToken');
         document.documentElement.classList.remove('user-logged-in');
         state.activePortal = 'home';
         state.cart = [];
@@ -2538,7 +2549,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
     function renderSellerPortal() {
-        const user = JSON.parse(sessionStorage.getItem('nourishUser') || localStorage.getItem('nourishUser') || '{}');
+        const user = JSON.parse(sessionStorage.getItem('nourishUser') || '{}');
         const sellerListings = state.listings.filter(l => l.vendorId == user.id);
         const fssai = user.fssaiCode || user.fssaicode || '';
 
@@ -2886,7 +2897,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function renderBuyerPortal() {
-        const user = JSON.parse(sessionStorage.getItem('nourishUser') || localStorage.getItem('nourishUser') || '{}');
+        const user = JSON.parse(sessionStorage.getItem('nourishUser') || '{}');
         const darpan = user.darpanId || user.darpanid || '';
 
         portalsRoot.innerHTML = `
@@ -3878,7 +3889,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const fssaiWrap = document.getElementById('fssaiFieldWrap');
             const darpanWrap = document.getElementById('darpanFieldWrap');
             const subtitle = modal.querySelector('p');
-            const user = JSON.parse(sessionStorage.getItem('nourishUser') || localStorage.getItem('nourishUser') || '{}');
+            const user = JSON.parse(sessionStorage.getItem('nourishUser') || '{}');
             const role = (user.accountType || user.type || user.role || (state.activePortal === 'seller' ? 'vendor' : 'ngo')).toLowerCase();
             const isSeller = role.includes('restaurant') || role.includes('vendor') || role.includes('seller') || state.activePortal === 'seller';
             if (fssaiWrap) fssaiWrap.style.display = isSeller ? 'block' : 'none';
@@ -4008,7 +4019,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         async function loadProfile() {
             try {
-                const user = JSON.parse(sessionStorage.getItem('nourishUser') || localStorage.getItem('nourishUser') || '{}');
+                const user = JSON.parse(sessionStorage.getItem('nourishUser') || '{}');
                 const profile = user;
 
                 // 1. Account & Identity Fields
@@ -4234,7 +4245,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
                     if (res.ok) {
                         const data = await res.json();
-                        const prevUser = JSON.parse(sessionStorage.getItem('nourishUser') || localStorage.getItem('nourishUser') || '{}');
+                        const prevUser = JSON.parse(sessionStorage.getItem('nourishUser') || '{}');
                         const updatedUser = {
                             ...prevUser,
                             ...(data.user || {}),
