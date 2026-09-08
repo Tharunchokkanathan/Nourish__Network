@@ -502,11 +502,15 @@
 
                     <!-- For NGO / Shelter: Multi-Tier Accreditation & Verification -->
                     <div id="regDarpanWrap" style="display: none; margin-bottom: 1rem;">
-                        <div style="margin-bottom: 8px;">
-                            <select id="regNgoType" class="minimal-input minimal-input-select" style="padding: 10px 14px; font-size: 0.85rem; border-radius: 10px; cursor: pointer; width: 100%;">
-                                <option value="darpan" style="background-color: #0f172a; color: #f8fafc;">NITI Aayog DARPAN ID</option>
-                                <option value="trust" style="background-color: #0f172a; color: #f8fafc;">State Society / Trust Deed</option>
+                        <div class="minimal-select-wrap" style="position: relative; width: 100%; margin-bottom: 8px;">
+                            <select id="regNgoType" class="minimal-input minimal-input-select" style="cursor: pointer; width: 100%;">
+                                <option value="darpan" style="background-color: #141414; color: #ffffff;">NITI Aayog DARPAN ID</option>
+                                <option value="trust" style="background-color: #141414; color: #ffffff;">State Society / Trust Deed</option>
                             </select>
+                            <div class="select-arrow-container" title="Select Accreditation Method">
+                                <i class="fa-solid fa-chevron-up" style="font-size: 0.52rem; margin-bottom: -1px; opacity: 0.75;"></i>
+                                <i class="fa-solid fa-chevron-down" style="font-size: 0.52rem; opacity: 0.75;"></i>
+                            </div>
                         </div>
                         <div class="minimal-input-wrap">
                             <input type="text" id="regDarpan" class="minimal-input" placeholder="NITI Aayog DARPAN ID (e.g. TN/2026/0123456)" maxlength="24" autocomplete="off" style="text-transform: uppercase;">
@@ -755,11 +759,15 @@
                                 </span>
                                 <span id="darpanStateTag" style="display: none; font-size: 0.72rem; font-weight: 700; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 6px; padding: 2px 8px;"></span>
                             </label>
-                            <div style="margin-bottom: 8px;">
-                                <select id="darpanTypeSelect" class="minimal-input minimal-input-select" style="padding: 10px 14px; font-size: 0.85rem; border-radius: 10px; cursor: pointer; width: 100%;">
-                                    <option value="darpan" style="background-color: #0f172a; color: #f8fafc;">NITI Aayog DARPAN ID</option>
-                                    <option value="trust" style="background-color: #0f172a; color: #f8fafc;">State Society / Trust Deed</option>
+                            <div class="minimal-select-wrap" style="position: relative; width: 100%; margin-bottom: 8px;">
+                                <select id="darpanTypeSelect" class="minimal-input minimal-input-select" style="cursor: pointer; width: 100%;">
+                                    <option value="darpan" style="background-color: #141414; color: #ffffff;">NITI Aayog DARPAN ID</option>
+                                    <option value="trust" style="background-color: #141414; color: #ffffff;">State Society / Trust Deed</option>
                                 </select>
+                                <div class="select-arrow-container" title="Select Accreditation Method">
+                                    <i class="fa-solid fa-chevron-up" style="font-size: 0.52rem; margin-bottom: -1px; opacity: 0.75;"></i>
+                                    <i class="fa-solid fa-chevron-down" style="font-size: 0.52rem; opacity: 0.75;"></i>
+                                </div>
                             </div>
                             <input type="text" id="darpanInput" class="minimal-input" placeholder="e.g. TN/2026/0123456" maxlength="24" style="font-family: monospace; letter-spacing: 1.5px; font-weight: 600; text-transform: uppercase;">
                             <div id="darpanFeedback" style="font-size: 0.78rem; margin-top: 6px; display: none; padding: 6px 12px; border-radius: 8px; transition: all 0.2s ease;"></div>
