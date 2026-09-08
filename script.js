@@ -172,19 +172,93 @@ window.validateDARPAN = function (code) {
 };
 
 // ---- STATE SOCIETY / TRUST DEED VALIDATOR ----
+const INDIAN_STATES_2LETTERS = {
+    'AN': 'Andaman & Nicobar', 'AP': 'Andhra Pradesh', 'AR': 'Arunachal Pradesh',
+    'AS': 'Assam', 'BR': 'Bihar', 'CH': 'Chandigarh', 'CG': 'Chhattisgarh',
+    'DN': 'Dadra & Nagar Haveli', 'DD': 'Daman & Diu', 'DL': 'Delhi', 'GA': 'Goa',
+    'GJ': 'Gujarat', 'HR': 'Haryana', 'HP': 'Himachal Pradesh', 'JK': 'Jammu & Kashmir',
+    'JH': 'Jharkhand', 'KA': 'Karnataka', 'KL': 'Kerala', 'LA': 'Ladakh',
+    'LD': 'Lakshadweep', 'MP': 'Madhya Pradesh', 'MH': 'Maharashtra', 'MN': 'Manipur',
+    'ML': 'Meghalaya', 'MZ': 'Mizoram', 'NL': 'Nagaland', 'OD': 'Odisha',
+    'PB': 'Punjab', 'PY': 'Puducherry', 'RJ': 'Rajasthan', 'SK': 'Sikkim',
+    'TN': 'Tamil Nadu', 'TS': 'Telangana', 'TR': 'Tripura', 'UP': 'Uttar Pradesh',
+    'UK': 'Uttarakhand', 'WB': 'West Bengal'
+};
+
 window.validateTrustDeed = function (code) {
     if (!code) return { valid: false, message: 'Registration or Deed Number is required' };
-    const clean = code.trim().toUpperCase();
-    if (clean.length < 5) {
-        return { valid: false, message: 'Registration number too short (minimum 5 characters, e.g. SOC/TN/2022/04812)' };
+    const clean = code.trim().toUpperCase().replace(/\s+/g, '');
+    
+    // Must contain numeric digits (e.g. serial/year number cannot be purely alphabetical text)
+    const digits = clean.replace(/\D/g, '');
+    if (digits.length < 3) {
+        return { valid: false, message: 'Invalid format. Must include registration digits (e.g. SOC/TN/2022/04812)' };
     }
-    if (!/^[A-Z0-9\/\-\s]{5,30}$/.test(clean)) {
-        return { valid: false, message: 'Invalid characters in registration code (use letters, numbers, slashes, or dashes)' };
+    
+    // Must not contain invalid characters
+    if (!/^[A-Z0-9\/\-]+$/.test(clean)) {
+        return { valid: false, message: 'Use only letters, digits, slashes (/), or hyphens (-)' };
     }
+
+    // Pattern 1: Structured Prefix / State / Year / Serial (e.g., SOC/TN/2022/04812 or TR/MH/2021/0149)
+    const p1 = clean.match(/^(SOC|TR|TRUST|REG|SOCIETY)\/([A-Z]{2})\/(\d{4})\/([A-Z0-9]+)$/);
+    if (p1) {
+        const stateName = INDIAN_STATES_2LETTERS[p1[2]] || p1[2];
+        const year = parseInt(p1[3], 10);
+        if (year >= 1950 && year <= 2027) {
+            return {
+                valid: true,
+                clean,
+                stateName,
+                year,
+                serial: p1[4],
+                message: `✓ Valid State Society: ${stateName} · Year ${year} (Reg #${p1[4]})`
+            };
+        }
+    }
+
+    // Pattern 2: State / Serial / Year or State / Year / Serial (e.g., TN/1248/2021 or MH/2020/0481)
+    const p2 = clean.match(/^([A-Z]{2})\/(\d{1,8})\/(\d{4})$/);
+    if (p2) {
+        const stateName = INDIAN_STATES_2LETTERS[p2[1]];
+        const year = parseInt(p2[3], 10);
+        if (stateName && year >= 1950 && year <= 2027) {
+            return {
+                valid: true,
+                clean,
+                stateName,
+                year,
+                serial: p2[2],
+                message: `✓ Valid Registered Deed: ${stateName} · Year ${year} (#${p2[2]})`
+            };
+        }
+    }
+
+    // Pattern 3: Prefix / State / Serial (e.g. SOC/TN/4812)
+    const p3 = clean.match(/^(SOC|TR|TRUST|REG|SOCIETY)\/([A-Z]{2})\/([A-Z0-9\-]+)$/);
+    if (p3) {
+        const stateName = INDIAN_STATES_2LETTERS[p3[2]] || p3[2];
+        return {
+            valid: true,
+            clean,
+            stateName,
+            serial: p3[3],
+            message: `✓ Valid Registered Non-Profit: ${stateName} (Deed #${p3[3]})`
+        };
+    }
+
+    // Pattern 4: General official deed number containing slash or hyphen and valid digits
+    if (/^[A-Z0-9]{2,8}[\/\-][A-Z0-9\/\-]{3,18}$/.test(clean) && digits.length >= 4) {
+        return {
+            valid: true,
+            clean,
+            message: `✓ Valid Registered Trust Deed Record: ${clean}`
+        };
+    }
+
     return {
-        valid: true,
-        clean,
-        message: `✓ Valid Registered Non-Profit / Trust Record: ${clean}`
+        valid: false,
+        message: 'Invalid Trust/Society format (e.g. SOC/TN/2022/04812 or TR/MH/2021/00142)'
     };
 };
 
