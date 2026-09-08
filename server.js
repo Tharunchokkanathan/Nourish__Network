@@ -1164,7 +1164,7 @@ app.get('/api/user/me', (req, res) => {
             email: 'serverdemo@gmail.com',
             accountType: 'restaurant',
             type: 'restaurant',
-            contactPerson: 'Chef Marco Rossi',
+            contactPerson: 'Verified Partner Representative',
             publicPhone: '+91 98765 43210',
             phone: '+91 98765 43210',
             address: '45, MG Road, Indiranagar, Bengaluru - 560038',
@@ -1340,6 +1340,24 @@ app.get('/api/stats', (req, res) => {
             }
         });
     });
+});
+
+// 5b. COMMUNITY VOICES (Real live registered sellers and buyers)
+// GET /api/community-voices
+app.get('/api/community-voices', (req, res) => {
+    db.all(
+        `SELECT id, organizationName, accountType, isVerified 
+         FROM users 
+         WHERE isVerified = 1 AND LOWER(organizationName) NOT LIKE '%test%'
+         ORDER BY id ASC LIMIT 10`,
+        [],
+        (err, rows) => {
+            if (err || !rows) {
+                return res.status(200).json({ success: true, voices: [] });
+            }
+            res.status(200).json({ success: true, voices: rows });
+        }
+    );
 });
 
 // ─────────────────────────────────────────────────────────────────────────────

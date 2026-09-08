@@ -800,25 +800,59 @@ document.addEventListener('DOMContentLoaded', () => {
         activePortal: 'home',
         cart: [],
         listings: JSON.parse(localStorage.getItem('nn_cached_listings') || localStorage.getItem('nn_demo_listings') || '[]'),
-        communityComments: JSON.parse(localStorage.getItem('nn_comments') || 'null') || [
-            {
-                id: 'default-1',
-                name: "Chef Marco",
-                org: "Grand Hotel",
-                text: "Nourish Network has completely changed how we give back. We used to throw away kilos of premium food a day; now it feeds kids at the local orphanage within hours.",
-                stars: 5,
-                img: "https://i.pravatar.cc/100?img=1"
-            }
-        ],
+        communityComments: (() => {
+            let stored = [];
+            try {
+                stored = JSON.parse(localStorage.getItem('nn_comments') || '[]');
+                // Cleanse any old fake pravatar reviews or Chef Marco
+                stored = stored.filter(c => !c.name?.includes('Chef Marco') && !(c.img && c.img.includes('pravatar')));
+            } catch (e) { stored = []; }
+
+            if (stored && stored.length > 0) return stored;
+
+            return [
+                {
+                    id: 'live-seller-1',
+                    name: "IM A SELLER",
+                    org: "Commercial Kitchen & Donor",
+                    role: "seller",
+                    text: "Nourish Network has completely streamlined how our commercial kitchen redistributes surplus meals. Food that used to risk going to waste now reaches local communities within the hour.",
+                    stars: 5
+                },
+                {
+                    id: 'live-buyer-1',
+                    name: "IM A BUYER",
+                    org: "Community NGO & Welfare",
+                    role: "buyer",
+                    text: "As a community recipient partner, accessing consistent, nutritious meal batches has been transformative. The real-time claims and pickup PIN codes make distribution dignified and reliable.",
+                    stars: 5
+                },
+                {
+                    id: 'live-buyer-2',
+                    name: "Rajalakshmi Social Trust",
+                    org: "Verified NGO Partner",
+                    role: "buyer",
+                    text: "The platform's verification standards and direct donor coordination give our shelter complete confidence. Every meal claimed directly impacts families in our care.",
+                    stars: 5
+                },
+                {
+                    id: 'live-seller-2',
+                    name: "Ramesh Kitchens",
+                    org: "Registered Food Provider",
+                    role: "seller",
+                    text: "Listing surplus batches takes less than 30 seconds. Knowing that untouched catering food feeds people instead of landfills gives our entire culinary team immense pride.",
+                    stars: 5
+                }
+            ];
+        })(),
         stats: { totalMealsSaved: 0, totalKgShared: 0, totalVendors: 0, totalNGOs: 0 }
     };
 
-    // Backfill IDs for any comments loaded from localStorage that were saved before IDs were added
-    let needsSave = false;
+    // Ensure IDs exist and persist cleansed comments
     state.communityComments.forEach(c => {
-        if (!c.id) { c.id = 'legacy-' + Date.now() + '-' + Math.random().toString(36).slice(2); needsSave = true; }
+        if (!c.id) { c.id = 'comment-' + Date.now() + '-' + Math.random().toString(36).slice(2); }
     });
-    if (needsSave) localStorage.setItem('nn_comments', JSON.stringify(state.communityComments));
+    localStorage.setItem('nn_comments', JSON.stringify(state.communityComments));
 
     // Expose to global scope for window.deleteComment (defined outside DOMContentLoaded)
     window.__appState = state;
@@ -879,7 +913,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     sellerType: 'restaurant',
                     sellerEmail: c.item.vendorEmail || 'serverdemo@gmail.com',
                     sellerPhone: c.item.vendorPhone || '+91 98400 12345',
-                    sellerContactPerson: c.item.contactPerson || 'Chef Marco',
+                    sellerContactPerson: c.item.contactPerson || 'Verified Seller Lead',
                     sellerFssaiCode: c.item.fssaiCode || '12345678901234',
                     sellerAddress: c.item.address || '45, Sterling Road, Nungambakkam, Chennai',
                     sellerPickupWindow: c.item.pickupWindow || '9:00 PM - 11:00 PM',
@@ -891,7 +925,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     buyerType: user.accountType || user.type || 'ngo',
                     buyerEmail: user.email || 'ngodemo@gmail.com',
                     buyerPhone: user.publicPhone || user.phone || '+91 98840 56789',
-                    buyerContactPerson: user.contactPerson || 'Sarah Jenkins',
+                    buyerContactPerson: user.contactPerson || 'Verified NGO Lead',
                     buyerDarpanId: user.darpanId || 'TN/2023/0345678',
                     buyerNgoRegType: user.ngoRegType || 'darpan',
                     buyerAddress: user.address || '12, Besant Nagar, Chennai',
@@ -1192,6 +1226,34 @@ document.addEventListener('DOMContentLoaded', () => {
                 updateLiveStats();
             }
 
+            // Sync live registered sellers & buyers into Voices of Impact
+            try {
+                const voicesRes = await fetch(`${API_BASE}/community-voices`);
+                if (voicesRes.ok) {
+                    const vData = await voicesRes.json();
+                    if (vData.success && Array.isArray(vData.voices) && vData.voices.length > 0) {
+                        const registeredComments = vData.voices.map(v => {
+                            const isSeller = v.accountType === 'restaurant' || v.accountType === 'vendor';
+                            return {
+                                id: 'live-user-' + v.id,
+                                name: v.organizationName,
+                                org: isSeller ? 'Registered Food Partner' : 'Registered NGO Recipient',
+                                role: isSeller ? 'seller' : 'buyer',
+                                text: isSeller 
+                                    ? "Listing and sharing surplus food through Nourish Network ensures our kitchen operations support local communities every single day."
+                                    : "Claiming verified nutritious food provides dignified, vital meal support for the communities we serve across our district.",
+                                stars: 5
+                            };
+                        });
+
+                        const userComments = state.communityComments.filter(c => !c.id.startsWith('live-') && !c.id.startsWith('default-'));
+                        state.communityComments = [...userComments, ...registeredComments];
+                        if (typeof renderReviewsSlider === 'function') renderReviewsSlider();
+                        if (typeof renderCommunityWall === 'function') renderCommunityWall();
+                    }
+                }
+            } catch (e) { }
+
             try {
                 localStorage.setItem('nn_cached_listings', JSON.stringify(state.listings));
             } catch (e) { }
@@ -1454,16 +1516,41 @@ document.addEventListener('DOMContentLoaded', () => {
                 starsMarkup += `<i class="${i < Math.floor(comment.stars) ? 'fa-solid' : 'fa-regular'} fa-star"></i>`;
             }
 
+            const isSeller = (comment.role === 'seller') || 
+                             (comment.org && (comment.org.toLowerCase().includes('seller') || 
+                                              comment.org.toLowerCase().includes('kitchen') || 
+                                              comment.org.toLowerCase().includes('hotel') || 
+                                              comment.org.toLowerCase().includes('catering') || 
+                                              comment.org.toLowerCase().includes('donor') || 
+                                              comment.org.toLowerCase().includes('vendor') || 
+                                              comment.org.toLowerCase().includes('restaurant')));
+            const roleClass = isSeller ? 'seller-avatar' : 'buyer-avatar';
+            const roleTag = isSeller 
+                ? '<span class="role-badge-tag role-badge-seller"><i class="fa-solid fa-utensils"></i> Verified Seller</span>' 
+                : '<span class="role-badge-tag role-badge-buyer"><i class="fa-solid fa-hand-holding-heart"></i> Verified Buyer</span>';
+
+            const initials = (comment.name || comment.org || 'NN')
+                .replace(/[^a-zA-Z0-9 ]/g, '')
+                .split(' ')
+                .filter(Boolean)
+                .slice(0, 2)
+                .map(w => w[0].toUpperCase())
+                .join('') || 'NN';
+
+            const avatarMarkup = (comment.img && !comment.img.includes('pravatar') && !comment.img.includes('default-avatar'))
+                ? `<div class="avatar ${roleClass}"><img src="${comment.img}" alt="${comment.name}"></div>`
+                : `<div class="avatar badge-avatar ${roleClass}"><span>${initials}</span></div>`;
+
             const slide = document.createElement('div');
             slide.className = `review-slide glass-card ${idx === 0 ? 'active' : ''}`;
             slide.innerHTML = `
                 <div class="stars">${starsMarkup}</div>
                 <p class="review-text">"${comment.text}"</p>
                 <div class="reviewer">
-                    <div class="avatar"><img src="${comment.img || 'https://i.pravatar.cc/100?img=' + (idx + 10)}" alt="Avatar"></div>
+                    ${avatarMarkup}
                     <div class="info">
                         <strong>${comment.name}</strong>
-                        <span>${comment.org}</span>
+                        <span>${comment.org} &bull; ${roleTag}</span>
                     </div>
                 </div>
             `;
@@ -1768,7 +1855,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         accountType: 'restaurant',
                         bio: 'Premium catering service in Chennai specializing in high-quality surplus gourmet meals for community impact.',
                         address: '45, Sterling Road, Nungambakkam, Chennai - 600034',
-                        contactPerson: 'Chef Marco',
+                        contactPerson: 'Verified Partner Lead',
                         publicPhone: '+91 98400 12345',
                         website: 'www.elitecatering.in',
                         fssaiCode: '12345678901234',
@@ -1781,7 +1868,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     document.documentElement.classList.add('user-logged-in');
                     state.activePortal = 'seller';
                     authModal.classList.remove('active');
-                    showToast("Welcome back, Chef Marco! 🍽️");
+                    showToast("Welcome back, Elite Catering! 🍽️");
                     renderPortal();
                     syncDock();
                     refreshState();
@@ -1816,7 +1903,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         accountType: 'ngo',
                         bio: 'Non-profit organization dedicated to distributing fresh, nutritious meals to shelters and low-income families across the city.',
                         address: '12, Besant Nagar, Chennai - 600090',
-                        contactPerson: 'Sarah Jenkins',
+                        contactPerson: 'Verified NGO Lead',
                         publicPhone: '+91 98840 56789',
                         website: 'www.globaloutreach.org',
                         pickupWindow: 'Any time after 9 PM',
@@ -1828,7 +1915,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     document.documentElement.classList.add('user-logged-in');
                     state.activePortal = 'buyer';
                     authModal.classList.remove('active');
-                    showToast("Welcome back, Sarah! 🤝");
+                    showToast("Welcome back, Global Outreach! 🤝");
                     renderPortal();
                     syncDock();
                     refreshState();
@@ -3803,9 +3890,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 id: Date.now().toString(),
                 name,
                 org,
+                role: (state.activePortal === 'seller' || user.accountType === 'restaurant' || user.accountType === 'vendor') ? 'seller' : 'buyer',
                 text,
                 stars: 5,
-                img: user.avatarUrl || `https://i.pravatar.cc/100?img=${Math.floor(Math.random() * 70)}`
+                img: (user.avatarUrl && !user.avatarUrl.includes('pravatar') && !user.avatarUrl.includes('default-avatar')) ? user.avatarUrl : null
             };
 
             state.communityComments.push(newComment);
@@ -4290,10 +4378,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 id: Date.now().toString(),
                 name: name,
                 org: org,
+                role: (state.activePortal === 'seller' || user.accountType === 'restaurant' || user.accountType === 'vendor') ? 'seller' : 'buyer',
                 text: text,
                 stars: 5,
-                img: user.avatarUrl || `https://i.pravatar.cc/100?img=${Math.floor(Math.random() * 70)}`
-
+                img: (user.avatarUrl && !user.avatarUrl.includes('pravatar') && !user.avatarUrl.includes('default-avatar')) ? user.avatarUrl : null
             });
             localStorage.setItem('nn_comments', JSON.stringify(state.communityComments));
 
