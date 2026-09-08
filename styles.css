@@ -4267,6 +4267,48 @@ select.form-control option {
     box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.15) !important;
 }
 
+/* Select & Option Dropdown Fix for Dark/Light Mode */
+select.minimal-input,
+.minimal-input-select {
+    color-scheme: dark;
+    background-color: #0f172a !important;
+    color: #f8fafc !important;
+    cursor: pointer !important;
+}
+
+select.minimal-input option,
+.minimal-input-select option {
+    background-color: #0f172a !important;
+    color: #f8fafc !important;
+    padding: 10px 14px !important;
+}
+
+select.minimal-input option:checked,
+.minimal-input-select option:checked {
+    background-color: #1e293b !important;
+    color: #38bdf8 !important;
+}
+
+[data-theme='light'] select.minimal-input,
+[data-theme='light'] .minimal-input-select {
+    color-scheme: light;
+    background-color: #ffffff !important;
+    color: #0f172a !important;
+    border-color: rgba(0, 0, 0, 0.15) !important;
+}
+
+[data-theme='light'] select.minimal-input option,
+[data-theme='light'] .minimal-input-select option {
+    background-color: #ffffff !important;
+    color: #0f172a !important;
+}
+
+[data-theme='light'] select.minimal-input option:checked,
+[data-theme='light'] .minimal-input-select option:checked {
+    background-color: #e2e8f0 !important;
+    color: #0284c7 !important;
+}
+
 .minimal-eye-icon {
     position: absolute;
     right: 1.25rem;
