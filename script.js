@@ -171,6 +171,99 @@ window.validateDARPAN = function (code) {
     };
 };
 
+// ---- SECTION 8 COMPANY (MCA CIN) VALIDATOR ----
+window.validateSection8CIN = function (cin) {
+    if (!cin) return { valid: false, message: 'Section 8 MCA CIN is required' };
+    const clean = cin.trim().toUpperCase();
+    const regex = /^([UL])(\d{5})([A-Z]{2})(\d{4})(NPL|PTC|SGC|PLC)(\d{6})$/;
+    const match = clean.match(regex);
+    if (!match) {
+        if (clean.length !== 21) {
+            return { valid: false, message: 'MCA CIN must be exactly 21 characters (e.g. U85300DL2021NPL123456)' };
+        }
+        return { valid: false, message: 'Invalid MCA CIN structure (must contain state and entity category)' };
+    }
+    const stateCode = match[3];
+    const year = match[4];
+    const category = match[5];
+    const stateName = FSSAI_STATES[stateCode] || stateCode;
+    const isSection8 = category === 'NPL';
+    return {
+        valid: true,
+        clean,
+        stateName,
+        year,
+        isSection8,
+        message: `✓ Valid MCA CIN: ${stateName} · ${isSection8 ? 'Section 8 Non-Profit (NPL)' : category} · Year ${year}`
+    };
+};
+
+// ---- STATE SOCIETY / TRUST DEED VALIDATOR ----
+window.validateTrustDeed = function (code) {
+    if (!code) return { valid: false, message: 'Registration or Deed Number is required' };
+    const clean = code.trim().toUpperCase();
+    if (clean.length < 5) {
+        return { valid: false, message: 'Registration number too short (minimum 5 characters, e.g. SOC/TN/2022/04812)' };
+    }
+    if (!/^[A-Z0-9\/\-\s]{5,30}$/.test(clean)) {
+        return { valid: false, message: 'Invalid characters in registration code (use letters, numbers, slashes, or dashes)' };
+    }
+    return {
+        valid: true,
+        clean,
+        message: `✓ Valid Registered Non-Profit / Trust Record: ${clean}`
+    };
+};
+
+// ---- INCOME TAX 12A / 80G URN VALIDATOR ----
+window.validateTax12A = function (code) {
+    if (!code) return { valid: false, message: '12A/80G Unique Registration Number (URN) is required' };
+    const clean = code.trim().toUpperCase().replace(/[^A-Z0-9]/g, '');
+    if (clean.length !== 16) {
+        return { valid: false, message: 'CBDT 12A/80G URN must be exactly 16 alphanumeric characters' };
+    }
+    return {
+        valid: true,
+        clean,
+        message: `✓ Valid CBDT Tax-Exempt Non-Profit URN: ${clean}`
+    };
+};
+
+// ---- UNIFIED NGO COMPLIANCE VALIDATOR ----
+window.validateNGOCompliance = function (type, code) {
+    if (!code) return { valid: true, optional: true, message: 'Optional field (leaves account unaccredited until provided)' };
+    switch (type) {
+        case 'cin':
+            return window.validateSection8CIN(code);
+        case 'trust':
+            return window.validateTrustDeed(code);
+        case 'tax12a':
+            return window.validateTax12A(code);
+        case 'darpan':
+        default:
+            return window.validateDARPAN(code);
+    }
+};
+
+// ---- DYNAMIC NGO TRUST BADGE RENDERER ----
+window.renderNgoTrustBadge = function (user) {
+    const code = user.darpanId || user.darpanid || '';
+    const type = user.ngoRegType || (code.includes('/') ? 'darpan' : (code.length === 21 ? 'cin' : 'trust'));
+    if (!code) {
+        return '<span style="color:#f59e0b; font-size:0.75rem;"><i class="fa-solid fa-triangle-exclamation"></i> Accreditation not set — update in Settings</span>';
+    }
+    if (type === 'cin') {
+        return `<span class="section8-trust-badge" style="font-size:0.75rem; padding: 3px 10px; border-radius: 12px; background: rgba(99, 102, 241, 0.15); color: #818cf8; border: 1px solid rgba(99, 102, 241, 0.35); display: inline-flex; align-items: center; gap: 5px;" title="Ministry of Corporate Affairs (MCA) Section 8 Non-Profit"><i class="fa-solid fa-building-columns"></i> <strong style="font-family:monospace; letter-spacing:1px;">${code}</strong> <span style="font-weight:700;">SEC 8 CIN</span></span>`;
+    }
+    if (type === 'tax12a') {
+        return `<span class="tax-trust-badge" style="font-size:0.75rem; padding: 3px 10px; border-radius: 12px; background: rgba(245, 158, 11, 0.15); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.35); display: inline-flex; align-items: center; gap: 5px;" title="Income Tax Department 12A/80G URN"><i class="fa-solid fa-file-invoice-dollar"></i> <strong style="font-family:monospace; letter-spacing:1px;">${code}</strong> <span style="font-weight:700;">12A/80G</span></span>`;
+    }
+    if (type === 'trust') {
+        return `<span class="grassroots-trust-badge" style="font-size:0.75rem; padding: 3px 10px; border-radius: 12px; background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.35); display: inline-flex; align-items: center; gap: 5px;" title="Registered Charitable Trust / Society Deed"><i class="fa-solid fa-hand-holding-heart"></i> <strong style="font-family:monospace; letter-spacing:1px;">${code}</strong> <span style="font-weight:700;">TRUST/SOCIETY</span></span>`;
+    }
+    return `<span class="darpan-trust-badge" style="font-size:0.75rem; padding: 3px 10px; border-radius: 12px; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.35); display: inline-flex; align-items: center; gap: 5px;" title="NITI Aayog DARPAN Verified NGO"><i class="fa-solid fa-building-ngo"></i> <strong style="font-family:monospace; letter-spacing:1px;">${code}</strong> <span style="font-weight:700;">DARPAN</span></span>`;
+};
+
 window.toLocalDateTimeLocalString = function (dateInput) {
     if (!dateInput) return '';
     const d = new Date(dateInput);
@@ -1832,14 +1925,22 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Dynamic Role-Based Compliance Fields (FSSAI vs DARPAN)
+    // Dynamic Role-Based Compliance Fields (FSSAI vs DARPAN / Multi-tier NGO)
     const regAccountTypeRadios = document.querySelectorAll('input[name="accountType"]');
     const regFssaiWrap = document.getElementById('regFssaiWrap');
     const regDarpanWrap = document.getElementById('regDarpanWrap');
     const regFssai = document.getElementById('regFssai');
     const regDarpan = document.getElementById('regDarpan');
+    const regNgoType = document.getElementById('regNgoType');
     const regFssaiFeedback = document.getElementById('regFssaiFeedback');
     const regDarpanFeedback = document.getElementById('regDarpanFeedback');
+
+    const NGO_PLACEHOLDERS = {
+        darpan: 'NITI Aayog DARPAN ID (e.g. TN/2026/0123456)',
+        cin: 'Section 8 Company MCA CIN (e.g. U85300DL2021NPL123456)',
+        trust: 'State Society / Trust Deed (e.g. SOC/TN/2022/04812)',
+        tax12a: 'CBDT 12A/80G URN (16-Digit URN)'
+    };
 
     function updateRegComplianceVisibility() {
         const selected = document.querySelector('input[name="accountType"]:checked');
@@ -1849,6 +1950,16 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     regAccountTypeRadios.forEach(r => r.addEventListener('change', updateRegComplianceVisibility));
+
+    if (regNgoType && regDarpan) {
+        regNgoType.addEventListener('change', () => {
+            const selectedType = regNgoType.value;
+            regDarpan.placeholder = NGO_PLACEHOLDERS[selectedType] || 'Registration Code';
+            if (regDarpan.value.trim()) {
+                regDarpan.dispatchEvent(new Event('input'));
+            }
+        });
+    }
 
     // Live validation for FSSAI on register input
     if (regFssai) {
@@ -1876,7 +1987,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Live validation for DARPAN ID on register input
+    // Live validation for Multi-Tier NGO Accreditation on register input
     if (regDarpan) {
         regDarpan.addEventListener('input', () => {
             let val = regDarpan.value.trim().toUpperCase();
@@ -1886,13 +1997,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 regDarpanFeedback.style.display = 'none';
                 return;
             }
-            const res = window.validateDARPAN(val);
+            const currentType = regNgoType ? regNgoType.value : 'darpan';
+            const res = window.validateNGOCompliance(currentType, val);
             regDarpanFeedback.style.display = 'block';
             if (res.valid) {
                 regDarpanFeedback.style.color = '#34d399';
                 regDarpanFeedback.style.background = 'rgba(16, 185, 129, 0.12)';
                 regDarpanFeedback.style.border = '1px solid rgba(16, 185, 129, 0.3)';
-                regDarpanFeedback.innerHTML = `<i class="fa-solid fa-circle-check"></i> <strong>Valid NITI Aayog DARPAN</strong>: ${res.stateName} (${res.year})`;
+                regDarpanFeedback.innerHTML = `<i class="fa-solid fa-circle-check"></i> ${res.message}`;
             } else {
                 regDarpanFeedback.style.color = '#f87171';
                 regDarpanFeedback.style.background = 'rgba(239, 68, 68, 0.12)';
@@ -1911,7 +2023,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const email = document.getElementById('regEmail').value.trim();
         const password = document.getElementById('regPassword').value.trim();
         const fssaiCode = regFssai ? regFssai.value.trim() : '';
-        const darpanId = regDarpan ? regDarpan.value.trim() : '';
+        const darpanId = regDarpan ? regDarpan.value.trim().toUpperCase() : '';
+        const ngoRegType = regNgoType ? regNgoType.value : 'darpan';
 
         if (!organizationName || !email || !password) {
             showToast("Please fill in all required fields, including a password.", "error");
@@ -1927,11 +2040,11 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
 
-        // Validate DARPAN if provided for NGO
+        // Validate NGO Accreditation if provided
         if ((accountType === 'ngo' || accountType === 'shelter') && darpanId) {
-            const darpanRes = window.validateDARPAN(darpanId);
-            if (!darpanRes.valid) {
-                showToast(darpanRes.message || "Invalid NITI Aayog DARPAN ID format.", "warning");
+            const ngoRes = window.validateNGOCompliance(ngoRegType, darpanId);
+            if (!ngoRes.valid) {
+                showToast(ngoRes.message || "Invalid NGO registration credential format.", "warning");
                 return;
             }
         }
@@ -1945,7 +2058,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const response = await fetch(`${API_BASE}/register`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ accountType, organizationName, email, password, fssaiCode, darpanId })
+                body: JSON.stringify({ accountType, organizationName, email, password, fssaiCode, darpanId, ngoRegType })
             });
 
             const data = await response.json();
@@ -2797,7 +2910,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                 </div>
                                 ${user.bio ? `<p style="color:var(--text-muted); font-size:0.9rem; margin: 0 0 8px;">${user.bio}</p>` : ''}
                                 <div style="display: flex; flex-wrap: wrap; gap: 10px 20px; font-size: 0.82rem; color: var(--text-muted); margin-top: 6px;">
-                                    ${darpan ? `<span class="darpan-trust-badge" style="font-size:0.75rem; padding: 3px 10px; border-radius: 12px; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.35); display: inline-flex; align-items: center; gap: 5px;" title="NITI Aayog DARPAN Verified NGO"><i class="fa-solid fa-building-ngo"></i> <strong style="font-family:monospace; letter-spacing:1px;">${darpan}</strong> <span style="font-weight:700;">DARPAN</span></span>` : '<span style="color:#f59e0b;"><i class="fa-solid fa-triangle-exclamation"></i> DARPAN ID not set — update in Settings</span>'}
+                                    ${window.renderNgoTrustBadge(user)}
                                     ${user.address ? `<span><i class="fa-solid fa-location-dot" style="color:#38bdf8;"></i> ${user.address}</span>` : ''}
                                     ${(user.publicPhone || user.phone) ? `<span><i class="fa-solid fa-phone" style="color:#38bdf8;"></i> ${user.publicPhone || user.phone}</span>` : ''}
                                     ${user.contactPerson ? `<span><i class="fa-solid fa-user-tie" style="color:#38bdf8;"></i> ${user.contactPerson}</span>` : ''}
@@ -3847,6 +3960,8 @@ document.addEventListener('DOMContentLoaded', () => {
             fssaiInput.addEventListener('input', updateFssaiFeedback);
         }
 
+        const darpanTypeSelect = document.getElementById('darpanTypeSelect');
+
         function updateDarpanFeedback() {
             if (!darpanInput) return;
             const clean = darpanInput.value.trim().toUpperCase();
@@ -3862,20 +3977,17 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
 
-            const res = window.validateDARPAN(clean);
+            const currentType = darpanTypeSelect ? darpanTypeSelect.value : 'darpan';
+            const res = window.validateNGOCompliance(currentType, clean);
             darpanFeedback.style.display = 'block';
 
             if (res.valid) {
                 darpanFeedback.className = 'darpan-feedback-valid';
-                darpanFeedback.innerHTML = `<i class="fa-solid fa-circle-check"></i> <strong>Valid DARPAN ID</strong>: ${res.stateName} · Registered Year ${res.year}`;
+                darpanFeedback.innerHTML = `<i class="fa-solid fa-circle-check"></i> ${res.message}`;
                 if (darpanStateTag) {
                     darpanStateTag.style.display = 'inline-block';
-                    darpanStateTag.textContent = `${res.stateName} • ${res.year}`;
+                    darpanStateTag.textContent = res.stateName ? `${res.stateName} • ${res.year || 'Verified'}` : 'Verified';
                 }
-            } else if (clean.length < 14) {
-                darpanFeedback.className = 'darpan-feedback-warning';
-                darpanFeedback.innerHTML = `<i class="fa-solid fa-circle-info"></i> Format: <strong>[State]/[Year]/[7-Digits]</strong> (e.g. <code>TN/2026/0123456</code>)`;
-                if (darpanStateTag) darpanStateTag.style.display = 'none';
             } else {
                 darpanFeedback.className = 'darpan-feedback-invalid';
                 darpanFeedback.innerHTML = `<i class="fa-solid fa-triangle-exclamation"></i> ${res.message}`;
@@ -3885,6 +3997,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (darpanInput) {
             darpanInput.addEventListener('input', updateDarpanFeedback);
+        }
+
+        if (darpanTypeSelect) {
+            darpanTypeSelect.addEventListener('change', () => {
+                if (darpanInput) {
+                    darpanInput.placeholder = NGO_PLACEHOLDERS[darpanTypeSelect.value] || 'Registration Code';
+                }
+                updateDarpanFeedback();
+            });
         }
 
         async function loadProfile() {
@@ -3917,6 +4038,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (fssaiInput) {
                     fssaiInput.value = profile.fssaiCode || profile.fssaicode || '';
                     updateFssaiFeedback();
+                }
+                if (darpanTypeSelect) {
+                    darpanTypeSelect.value = profile.ngoRegType || profile.ngoregtype || 'darpan';
+                    if (darpanInput) darpanInput.placeholder = NGO_PLACEHOLDERS[darpanTypeSelect.value] || 'Registration Code';
                 }
                 if (darpanInput) {
                     darpanInput.value = profile.darpanId || profile.darpanid || '';
@@ -3952,6 +4077,10 @@ document.addEventListener('DOMContentLoaded', () => {
                                 fssaiInput.value = liveProfile.fssaiCode || liveProfile.fssaicode || '';
                                 updateFssaiFeedback();
                             }
+                            if (darpanTypeSelect && (liveProfile.ngoRegType || liveProfile.ngoregtype)) {
+                                darpanTypeSelect.value = liveProfile.ngoRegType || liveProfile.ngoregtype;
+                                if (darpanInput) darpanInput.placeholder = NGO_PLACEHOLDERS[darpanTypeSelect.value] || 'Registration Code';
+                            }
                             if (darpanInput) {
                                 darpanInput.value = liveProfile.darpanId || liveProfile.darpanid || '';
                                 updateDarpanFeedback();
@@ -3968,7 +4097,8 @@ document.addEventListener('DOMContentLoaded', () => {
                                 ...user, 
                                 ...liveProfile,
                                 fssaiCode: liveProfile.fssaiCode || liveProfile.fssaicode || user.fssaiCode || user.fssaicode || '',
-                                darpanId: liveProfile.darpanId || liveProfile.darpanid || user.darpanId || user.darpanid || ''
+                                darpanId: liveProfile.darpanId || liveProfile.darpanid || user.darpanId || user.darpanid || '',
+                                ngoRegType: liveProfile.ngoRegType || liveProfile.ngoregtype || user.ngoRegType || user.ngoregtype || ''
                             };
                             sessionStorage.setItem('nourishUser', JSON.stringify(merged));
                             localStorage.setItem('nourishUser', JSON.stringify(merged));
@@ -4054,10 +4184,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
 
                 const darpanCode = darpanInput ? darpanInput.value.trim().toUpperCase() : '';
+                const ngoType = darpanTypeSelect ? darpanTypeSelect.value : 'darpan';
                 if (darpanCode) {
-                    const validation = window.validateDARPAN(darpanCode);
+                    const validation = window.validateNGOCompliance(ngoType, darpanCode);
                     if (!validation.valid) {
-                        showToast(`Invalid DARPAN ID: ${validation.message}`, "error");
+                        showToast(`Invalid Registration Credential: ${validation.message}`, "error");
                         if (darpanInput) {
                             darpanInput.focus();
                             darpanInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -4098,6 +4229,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             name: orgName,
                             bio, address, avatarUrl, contactPerson,
                             publicPhone, website, fssaiCode, darpanId: darpanCode,
+                            ngoRegType: ngoType,
                             pickupWindow, pickupInstructions
                         })
                     });
@@ -4118,6 +4250,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             website,
                             fssaiCode: fssaiCode || (data.user && (data.user.fssaiCode || data.user.fssaicode)) || prevUser.fssaiCode || prevUser.fssaicode || '',
                             darpanId: darpanCode || (data.user && (data.user.darpanId || data.user.darpanid)) || prevUser.darpanId || prevUser.darpanid || '',
+                            ngoRegType: ngoType || (data.user && (data.user.ngoRegType || data.user.ngoregtype)) || prevUser.ngoRegType || prevUser.ngoregtype || '',
                             pickupWindow,
                             pickupInstructions,
                             avatarUrl: avatarUrl || prevUser.avatarUrl

@@ -84,7 +84,7 @@ function makeToken(user) {
 // POST /api/register
 // Body: { accountType, organizationName, email, password, phone?, address? }
 app.post('/api/register', async (req, res) => {
-    const { accountType, organizationName, email, password, phone, address, fssaiCode, darpanId } = req.body;
+    const { accountType, organizationName, email, password, phone, address, fssaiCode, darpanId, ngoRegType } = req.body;
 
     if (!accountType || !organizationName || !email || !password) {
         return res.status(400).json({ error: 'Please provide all required fields.' });
@@ -102,8 +102,8 @@ app.post('/api/register', async (req, res) => {
         const verificationOtp = Math.floor(100000 + Math.random() * 900000).toString();
         const verificationTokenExpires = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(); // 24 Hours
 
-        const sql = `INSERT INTO users (accountType, organizationName, email, password, phone, address, fssaiCode, darpanId, isVerified, verificationToken, verificationTokenExpires, verificationOtp)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?)`;
+        const sql = `INSERT INTO users (accountType, organizationName, email, password, phone, address, fssaiCode, darpanId, ngoRegType, isVerified, verificationToken, verificationTokenExpires, verificationOtp)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?)`;
 
         db.run(sql, [
             accountType,
@@ -114,6 +114,7 @@ app.post('/api/register', async (req, res) => {
             address || null,
             fssaiCode || null,
             darpanId || null,
+            ngoRegType || (darpanId ? 'darpan' : null),
             verificationToken,
             verificationTokenExpires,
             verificationOtp
@@ -133,6 +134,7 @@ app.post('/api/register', async (req, res) => {
                 email,
                 fssaiCode: fssaiCode || '',
                 darpanId: darpanId || '',
+                ngoRegType: ngoRegType || (darpanId ? 'darpan' : ''),
                 isVerified: 0
             };
 
@@ -291,6 +293,7 @@ app.post('/api/login', (req, res) => {
                     website: user.website || '',
                     fssaiCode: user.fssaiCode || '',
                     darpanId: user.darpanId || '',
+                    ngoRegType: user.ngoRegType || '',
                     pickupInstructions: user.pickupInstructions || '',
                     avatarUrl: user.avatarUrl || '',
                     isVerified: user.isVerified || 1
@@ -1127,7 +1130,7 @@ app.get('/api/user/me', (req, res) => {
 
     try {
         const decoded = jwt.verify(token, JWT_SECRET);
-        db.get(`SELECT id, email, organizationName, accountType, phone, bio, address, avatarUrl, contactPerson, publicPhone, website, fssaiCode, darpanId, pickupWindow, pickupInstructions, isVerified FROM users WHERE id = ?`, [decoded.id], (err, user) => {
+        db.get(`SELECT id, email, organizationName, accountType, phone, bio, address, avatarUrl, contactPerson, publicPhone, website, fssaiCode, darpanId, ngoRegType, pickupWindow, pickupInstructions, isVerified FROM users WHERE id = ?`, [decoded.id], (err, user) => {
             if (err) return res.status(500).json({ error: err.message });
             if (!user) {
                 return res.status(200).json({
@@ -1152,7 +1155,7 @@ app.put('/api/user/me', (req, res) => {
 
     if (!token) return res.status(401).json({ error: 'Access token required' });
 
-    const { organizationName, name, phone, bio, address, avatarUrl, contactPerson, publicPhone, website, fssaiCode, darpanId, pickupInstructions, pickupWindow } = req.body;
+    const { organizationName, name, phone, bio, address, avatarUrl, contactPerson, publicPhone, website, fssaiCode, darpanId, ngoRegType, pickupInstructions, pickupWindow } = req.body;
     const org = organizationName || name || null;
     const pubPhone = publicPhone || phone || null;
 
@@ -1195,13 +1198,14 @@ app.put('/api/user/me', (req, res) => {
                 website = COALESCE(?, website),
                 fssaiCode = COALESCE(?, fssaiCode),
                 darpanId = COALESCE(?, darpanId),
+                ngoRegType = COALESCE(?, ngoRegType),
                 pickupInstructions = COALESCE(?, pickupInstructions),
                 pickupWindow = COALESCE(?, pickupWindow)
             WHERE id = ?`,
-            [org, pubPhone, bio || null, address || null, avatarUrl || null, contactPerson || null, pubPhone, website || null, fssaiCode || null, darpanId || null, pickupInstructions || null, pickupWindow || null, decoded.id],
+            [org, pubPhone, bio || null, address || null, avatarUrl || null, contactPerson || null, pubPhone, website || null, fssaiCode || null, darpanId || null, ngoRegType || null, pickupInstructions || null, pickupWindow || null, decoded.id],
             function (err) {
                 if (err) return res.status(500).json({ error: err.message });
-                db.get(`SELECT id, email, organizationName, accountType, phone, bio, address, avatarUrl, contactPerson, publicPhone, website, fssaiCode, darpanId, pickupWindow, pickupInstructions, isVerified FROM users WHERE id = ?`, [decoded.id], (err, updatedUser) => {
+                db.get(`SELECT id, email, organizationName, accountType, phone, bio, address, avatarUrl, contactPerson, publicPhone, website, fssaiCode, darpanId, ngoRegType, pickupWindow, pickupInstructions, isVerified FROM users WHERE id = ?`, [decoded.id], (err, updatedUser) => {
                     res.status(200).json({
                         message: 'Profile updated successfully!',
                         user: updatedUser
@@ -1296,7 +1300,7 @@ app.get('/api/stats', (req, res) => {
 // 6. GET MY PROFILE
 // GET /api/user/me
 app.get('/api/user/me', authenticateToken, (req, res) => {
-    db.get(`SELECT id, accountType, organizationName, email, phone, address, bio, avatarUrl, isVerified, contactPerson, publicPhone, website, fssaiCode, darpanId, pickupWindow, pickupInstructions, createdAt
+    db.get(`SELECT id, accountType, organizationName, email, phone, address, bio, avatarUrl, isVerified, contactPerson, publicPhone, website, fssaiCode, darpanId, ngoRegType, pickupWindow, pickupInstructions, createdAt
             FROM users WHERE id = ?`, [req.user.id], (err, user) => {
         if (err) return res.status(500).json({ error: err.message });
         if (!user) return res.status(404).json({ error: 'User not found.' });
@@ -1309,7 +1313,7 @@ app.get('/api/user/me', authenticateToken, (req, res) => {
 app.put('/api/user/me', authenticateToken, (req, res) => {
     const {
         organizationName, phone, address, bio, avatarUrl,
-        contactPerson, publicPhone, website, fssaiCode, darpanId,
+        contactPerson, publicPhone, website, fssaiCode, darpanId, ngoRegType,
         pickupWindow, pickupInstructions
     } = req.body;
 
@@ -1325,6 +1329,7 @@ app.put('/api/user/me', authenticateToken, (req, res) => {
             website            = COALESCE(?, website),
             fssaiCode          = COALESCE(?, fssaiCode),
             darpanId           = COALESCE(?, darpanId),
+            ngoRegType         = COALESCE(?, ngoRegType),
             pickupWindow       = COALESCE(?, pickupWindow),
             pickupInstructions = COALESCE(?, pickupInstructions)
         WHERE id = ?
@@ -1341,6 +1346,7 @@ app.put('/api/user/me', authenticateToken, (req, res) => {
         website || null,
         fssaiCode || null,
         darpanId || null,
+        ngoRegType || null,
         pickupWindow || null,
         pickupInstructions || null,
         req.user.id

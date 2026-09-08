@@ -5383,4 +5383,81 @@ button:active,
     border-color: #fecaca;
 }
 
+/* Multi-Tier NGO Accreditation Badges */
+.section8-trust-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 0.68rem;
+    font-weight: 700;
+    color: #818cf8;
+    background: rgba(99, 102, 241, 0.12);
+    border: 1px solid rgba(99, 102, 241, 0.3);
+    padding: 2px 8px;
+    border-radius: 12px;
+    letter-spacing: 0.5px;
+    white-space: nowrap;
+    transition: all 0.2s ease;
+}
+.section8-trust-badge i {
+    font-size: 0.65rem;
+    color: #818cf8;
+}
+[data-theme='light'] .section8-trust-badge {
+    background: rgba(99, 102, 241, 0.1);
+    color: #4f46e5;
+    border-color: rgba(99, 102, 241, 0.35);
+}
+
+.grassroots-trust-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 0.68rem;
+    font-weight: 700;
+    color: #34d399;
+    background: rgba(16, 185, 129, 0.12);
+    border: 1px solid rgba(16, 185, 129, 0.3);
+    padding: 2px 8px;
+    border-radius: 12px;
+    letter-spacing: 0.5px;
+    white-space: nowrap;
+    transition: all 0.2s ease;
+}
+.grassroots-trust-badge i {
+    font-size: 0.65rem;
+    color: #34d399;
+}
+[data-theme='light'] .grassroots-trust-badge {
+    background: #ecfdf5;
+    color: #059669;
+    border-color: #a7f3d0;
+}
+
+.tax-trust-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 0.68rem;
+    font-weight: 700;
+    color: #fbbf24;
+    background: rgba(245, 158, 11, 0.12);
+    border: 1px solid rgba(245, 158, 11, 0.3);
+    padding: 2px 8px;
+    border-radius: 12px;
+    letter-spacing: 0.5px;
+    white-space: nowrap;
+    transition: all 0.2s ease;
+}
+.tax-trust-badge i {
+    font-size: 0.65rem;
+    color: #fbbf24;
+}
+[data-theme='light'] .tax-trust-badge {
+    background: #fffbeb;
+    color: #b45309;
+    border-color: #fde68a;
+}
+
+
 

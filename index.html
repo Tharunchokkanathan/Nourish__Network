@@ -492,10 +492,23 @@
                         <div id="regFssaiFeedback" style="display: none; font-size: 0.78rem; margin-top: 6px; padding: 6px 12px; border-radius: 8px; text-align: left; line-height: 1.4;"></div>
                     </div>
 
-                    <!-- For NGO / Shelter: NITI Aayog DARPAN ID -->
-                    <div id="regDarpanWrap" class="minimal-input-wrap" style="display: none;">
-                        <input type="text" id="regDarpan" class="minimal-input" placeholder="NITI Aayog DARPAN ID (e.g. TN/2026/0123456)" maxlength="16" autocomplete="off">
-                        <div id="regDarpanFeedback" style="display: none; font-size: 0.78rem; margin-top: 6px; padding: 6px 12px; border-radius: 8px; text-align: left; line-height: 1.4;"></div>
+                    <!-- For NGO / Shelter: Multi-Tier Accreditation & Verification -->
+                    <div id="regDarpanWrap" style="display: none; margin-bottom: 1rem;">
+                        <div style="margin-bottom: 8px;">
+                            <select id="regNgoType" class="minimal-input" style="padding: 10px 14px; font-size: 0.85rem; background: rgba(15, 23, 42, 0.7); border-radius: 10px; cursor: pointer; width: 100%;">
+                                <option value="darpan">NITI Aayog DARPAN ID (Tier 1)</option>
+                                <option value="cin">Section 8 Company (MCA CIN)</option>
+                                <option value="trust">State Society / Trust Deed</option>
+                                <option value="tax12a">Income Tax 12A / 80G URN</option>
+                            </select>
+                        </div>
+                        <div class="minimal-input-wrap">
+                            <input type="text" id="regDarpan" class="minimal-input" placeholder="NITI Aayog DARPAN ID (e.g. TN/2026/0123456)" maxlength="24" autocomplete="off" style="text-transform: uppercase;">
+                            <div id="regDarpanFeedback" style="display: none; font-size: 0.78rem; margin-top: 6px; padding: 6px 12px; border-radius: 8px; text-align: left; line-height: 1.4;"></div>
+                        </div>
+                        <div style="font-size: 0.72rem; color: rgba(255,255,255,0.45); margin-top: 5px; text-align: left; padding-left: 4px;">
+                            <i class="fa-solid fa-shield-halved" style="color: #38bdf8;"></i> Accreditation provides a verified trust badge. Optional for grassroots shelters.
+                        </div>
                     </div>
 
                     <button type="submit" class="minimal-pill-btn">Sign Up</button>
@@ -728,15 +741,23 @@
                             <input type="text" id="fssaiInput" class="minimal-input" placeholder="e.g. 13324001004521" maxlength="14" style="font-family: monospace; letter-spacing: 1.5px; font-weight: 600;">
                             <div id="fssaiFeedback" style="font-size: 0.78rem; margin-top: 6px; display: none; padding: 6px 12px; border-radius: 8px; transition: all 0.2s ease;"></div>
                         </div>
-                        <!-- DARPAN ID: Buyer / NGO only -->
+                        <!-- NGO Accreditation: Buyer / NGO only -->
                         <div id="darpanFieldWrap" style="grid-column: 1 / -1; display: none;">
                             <label style="font-size: 0.8rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.8px; color: rgba(255,255,255,0.8); margin-bottom: 6px; display: flex; align-items: center; justify-content: space-between;">
                                 <span style="display: flex; align-items: center; gap: 6px;">
-                                    <i class="fa-solid fa-building-ngo" style="color: #38bdf8;"></i> NITI Aayog NGO DARPAN ID
+                                    <i class="fa-solid fa-shield-halved" style="color: #38bdf8;"></i> NGO Accreditation & Registration
                                 </span>
                                 <span id="darpanStateTag" style="display: none; font-size: 0.72rem; font-weight: 700; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 6px; padding: 2px 8px;"></span>
                             </label>
-                            <input type="text" id="darpanInput" class="minimal-input" placeholder="e.g. TN/2026/0123456" maxlength="20" style="font-family: monospace; letter-spacing: 1.5px; font-weight: 600; text-transform: uppercase;">
+                            <div style="margin-bottom: 8px;">
+                                <select id="darpanTypeSelect" class="minimal-input" style="padding: 10px 14px; font-size: 0.85rem; background: rgba(15, 23, 42, 0.7); border-radius: 10px; cursor: pointer; width: 100%;">
+                                    <option value="darpan">NITI Aayog DARPAN ID</option>
+                                    <option value="cin">Section 8 Company (MCA CIN)</option>
+                                    <option value="trust">State Society / Trust Deed</option>
+                                    <option value="tax12a">Income Tax 12A / 80G URN</option>
+                                </select>
+                            </div>
+                            <input type="text" id="darpanInput" class="minimal-input" placeholder="e.g. TN/2026/0123456" maxlength="24" style="font-family: monospace; letter-spacing: 1.5px; font-weight: 600; text-transform: uppercase;">
                             <div id="darpanFeedback" style="font-size: 0.78rem; margin-top: 6px; display: none; padding: 6px 12px; border-radius: 8px; transition: all 0.2s ease;"></div>
                         </div>
                         <!-- Pickup Instructions -->
