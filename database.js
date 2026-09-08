@@ -15,6 +15,7 @@ function normalizeRow(row) {
         publicphone: 'publicPhone',
         fssaicode: 'fssaiCode',
         darpanid: 'darpanId',
+        ngoregtype: 'ngoRegType',
         pickupwindow: 'pickupWindow',
         pickupinstructions: 'pickupInstructions',
         isverified: 'isVerified',
@@ -158,6 +159,7 @@ if (dbUrl) {
                     website TEXT,
                     fssaicode TEXT,
                     darpanid TEXT,
+                    ngoregtype TEXT,
                     pickupwindow TEXT,
                     pickupinstructions TEXT,
                     isverified INTEGER DEFAULT 0,
@@ -169,8 +171,9 @@ if (dbUrl) {
                     createdat TIMESTAMP NOT NULL DEFAULT NOW()
                 );
 
-                -- Safe migration: ensure darpanid exists
+                -- Safe migration: ensure darpanid and ngoregtype exist
                 ALTER TABLE users ADD COLUMN IF NOT EXISTS darpanid TEXT;
+                ALTER TABLE users ADD COLUMN IF NOT EXISTS ngoregtype TEXT;
 
                 CREATE TABLE IF NOT EXISTS contacts (
                     id SERIAL PRIMARY KEY,
@@ -250,6 +253,7 @@ if (dbUrl) {
                 website                 TEXT,
                 fssaiCode               TEXT,
                 darpanId                TEXT,
+                ngoRegType              TEXT,
                 pickupWindow            TEXT,
                 pickupInstructions     TEXT,
                 isVerified              INTEGER  DEFAULT 0,
@@ -262,8 +266,9 @@ if (dbUrl) {
             )
         `, (err) => {
             logErr('users')(err);
-            // Safe migration for SQLite to add darpanId column if it doesn't exist
+            // Safe migration for SQLite to add darpanId and ngoRegType columns if they don't exist
             db.run('ALTER TABLE users ADD COLUMN darpanId TEXT;', () => {});
+            db.run('ALTER TABLE users ADD COLUMN ngoRegType TEXT;', () => {});
         });
 
         db.run(`
