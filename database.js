@@ -34,7 +34,29 @@ function normalizeRow(row) {
         dateposted: 'datePosted',
         buyerid: 'buyerId',
         listingid: 'listingId',
-        totalprice: 'totalPrice'
+        totalprice: 'totalPrice',
+        orderid: 'orderId',
+        orderstatus: 'orderStatus',
+        foodname: 'foodName',
+        unitprice: 'unitPrice',
+        buyername: 'buyerName',
+        buyertype: 'buyerType',
+        buyeremail: 'buyerEmail',
+        buyerphone: 'buyerPhone',
+        buyercontactperson: 'buyerContactPerson',
+        buyerdarpanid: 'buyerDarpanId',
+        buyerngoregtype: 'buyerNgoRegType',
+        buyeraddress: 'buyerAddress',
+        buyeravatar: 'buyerAvatar',
+        sellername: 'sellerName',
+        sellertype: 'sellerType',
+        selleremail: 'sellerEmail',
+        sellerphone: 'sellerPhone',
+        sellercontactperson: 'sellerContactPerson',
+        sellerfssaicode: 'sellerFssaiCode',
+        selleraddress: 'sellerAddress',
+        sellerpickupwindow: 'sellerPickupWindow',
+        selleravatar: 'sellerAvatar'
     };
     for (const [lower, camel] of Object.entries(keyMap)) {
         if (lower in normalized && !(camel in normalized)) {

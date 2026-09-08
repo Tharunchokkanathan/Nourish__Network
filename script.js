@@ -992,6 +992,15 @@ document.addEventListener('DOMContentLoaded', () => {
             };
         }
 
+        const historyDock = document.getElementById('history-toggle-dock');
+        if (historyDock) {
+            historyDock.onclick = (e) => {
+                e.preventDefault();
+                console.log("Dock: History Clicked");
+                switchToHistoryTab();
+            };
+        }
+
         const cartDock = document.getElementById('cart-toggle-dock');
         if (cartDock) {
             cartDock.onclick = (e) => {
@@ -1087,6 +1096,13 @@ document.addEventListener('DOMContentLoaded', () => {
                         renderSellerListings();
                     } else if (state.activePortal === 'buyer' && typeof renderExchangeGrid === 'function') {
                         renderExchangeGrid();
+                    }
+                }
+                // Silently refresh history if user is on history tab or has active portal session
+                if ((state.activePortal === 'seller' || state.activePortal === 'buyer') && typeof loadPortalHistory === 'function') {
+                    const histTab = document.getElementById('tab-history');
+                    if (histTab && histTab.style.display !== 'none') {
+                        loadPortalHistory(true);
                     }
                 }
             } else {
@@ -2503,6 +2519,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // IDs from index.html: cart-toggle-dock (buyer), add-listing-dock (seller)
         const cartDockItem = document.getElementById('cart-toggle-dock');
         const addDockItem = document.getElementById('add-listing-dock');
+        const historyDockItem = document.getElementById('history-toggle-dock');
         const loginDockItem = document.getElementById('login-toggle-dock');
         const settingsDockItem = document.getElementById('settings-toggle-dock');
         const settingsNavItem = document.getElementById('settings-toggle-nav');
@@ -2512,18 +2529,21 @@ document.addEventListener('DOMContentLoaded', () => {
             landingItems.forEach(el => el.style.setProperty('display', 'none', 'important'));
             if (cartDockItem) cartDockItem.style.setProperty('display', 'flex', 'important');
             if (addDockItem) addDockItem.style.setProperty('display', 'none', 'important');
+            if (historyDockItem) historyDockItem.style.setProperty('display', 'flex', 'important');
             if (settingsDockItem) settingsDockItem.style.setProperty('display', 'flex', 'important');
             if (loginDockItem) loginDockItem.style.setProperty('display', 'flex', 'important');
         } else if (state.activePortal === 'seller') {
             landingItems.forEach(el => el.style.setProperty('display', 'none', 'important'));
             if (cartDockItem) cartDockItem.style.setProperty('display', 'none', 'important');
             if (addDockItem) addDockItem.style.setProperty('display', 'flex', 'important');
+            if (historyDockItem) historyDockItem.style.setProperty('display', 'flex', 'important');
             if (settingsDockItem) settingsDockItem.style.setProperty('display', 'flex', 'important');
             if (loginDockItem) loginDockItem.style.setProperty('display', 'flex', 'important');
         } else {
             landingItems.forEach(el => el.style.setProperty('display', 'flex', 'important'));
             if (cartDockItem) cartDockItem.style.setProperty('display', 'none', 'important');
             if (addDockItem) addDockItem.style.setProperty('display', 'none', 'important');
+            if (historyDockItem) historyDockItem.style.setProperty('display', 'none', 'important');
             if (settingsDockItem) settingsDockItem.style.setProperty('display', 'none', 'important');
             if (loginDockItem) loginDockItem.style.setProperty('display', 'flex', 'important');
         }
@@ -2600,6 +2620,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     <div class="portal-tabs" style="display:flex; gap: 0.5rem; margin-bottom: 2.5rem; border-bottom: 1px solid var(--border-glow); padding-bottom: 0;">
                         <button class="portal-tab-btn active" data-tab="listings" style="padding: 0.75rem 1.75rem; background: none; border: none; border-bottom: 2px solid var(--accent-primary); color: var(--accent-primary); font-weight: 700; font-size: 0.95rem; cursor: pointer; letter-spacing: 1px;">
                             <i class="fa-solid fa-utensils"></i> LISTINGS
+                        </button>
+                        <button class="portal-tab-btn" data-tab="history" style="padding: 0.75rem 1.75rem; background: none; border: none; border-bottom: 2px solid transparent; color: var(--text-muted); font-weight: 700; font-size: 0.95rem; cursor: pointer; letter-spacing: 1px;">
+                            <i class="fa-solid fa-clock-rotate-left"></i> CLAIMS & ORDERS
                         </button>
                         <button class="portal-tab-btn" data-tab="comments" style="padding: 0.75rem 1.75rem; background: none; border: none; border-bottom: 2px solid transparent; color: var(--text-muted); font-weight: 700; font-size: 0.95rem; cursor: pointer; letter-spacing: 1px;">
                             <i class="fa-solid fa-comments"></i> COMMENTS
@@ -2724,6 +2747,17 @@ document.addEventListener('DOMContentLoaded', () => {
                                     <button type="button" id="cancel-edit-btn" class="nn-cancel-btn" style="display:none;"><i class="fa-solid fa-xmark"></i> Cancel Edit</button>
                                 </div>
                             </form>
+                        </div>
+                    </div>
+
+                    <!-- Tab: History (Seller) -->
+                    <div id="tab-history" class="portal-tab-content" style="display:none;">
+                        <div class="seller-listings-header" style="margin-bottom: 1.5rem;">
+                            <h2>DISTRIBUTION & CLAIMS HISTORY</h2>
+                            <span class="listings-count-badge" id="seller-history-count-badge">Live Sync Active</span>
+                        </div>
+                        <div id="seller-history-container">
+                            <!-- Live history records rendered here -->
                         </div>
                     </div>
 
@@ -2936,6 +2970,9 @@ document.addEventListener('DOMContentLoaded', () => {
                         <button class="portal-tab-btn active" data-tab="listings" style="padding: 0.75rem 1.75rem; background: none; border: none; border-bottom: 2px solid var(--accent-primary); color: var(--accent-primary); font-weight: 700; font-size: 0.95rem; cursor: pointer; letter-spacing: 1px;">
                             <i class="fa-solid fa-basket-shopping"></i> LISTINGS
                         </button>
+                        <button class="portal-tab-btn" data-tab="history" style="padding: 0.75rem 1.75rem; background: none; border: none; border-bottom: 2px solid transparent; color: var(--text-muted); font-weight: 700; font-size: 0.95rem; cursor: pointer; letter-spacing: 1px;">
+                            <i class="fa-solid fa-clock-rotate-left"></i> MY CLAIMS & ORDERS
+                        </button>
                         <button class="portal-tab-btn" data-tab="comments" style="padding: 0.75rem 1.75rem; background: none; border: none; border-bottom: 2px solid transparent; color: var(--text-muted); font-weight: 700; font-size: 0.95rem; cursor: pointer; letter-spacing: 1px;">
                             <i class="fa-solid fa-comments"></i> COMMENTS
                         </button>
@@ -2945,6 +2982,17 @@ document.addEventListener('DOMContentLoaded', () => {
                     <div id="tab-listings" class="portal-tab-content">
                         <div class="items-grid" id="exchange-grid">
                             <!-- Cards will render here -->
+                        </div>
+                    </div>
+
+                    <!-- Tab: History (Buyer) -->
+                    <div id="tab-history" class="portal-tab-content" style="display:none;">
+                        <div class="seller-listings-header" style="margin-bottom: 1.5rem;">
+                            <h2>MY RESCUED FOOD & CLAIMS</h2>
+                            <span class="listings-count-badge" id="buyer-history-count-badge">Live Sync Active</span>
+                        </div>
+                        <div id="buyer-history-container">
+                            <!-- Live history records rendered here -->
                         </div>
                     </div>
 
@@ -3571,8 +3619,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 document.querySelectorAll('.portal-tab-content').forEach(t => t.style.display = 'none');
                 const tab = document.getElementById(`tab-${target}`);
                 if (tab) tab.style.display = 'block';
-                // Render existing comments when switching to comments tab
+                // Render existing comments or history when switching tabs
                 if (target === 'comments') renderPortalCommentList();
+                if (target === 'history') loadPortalHistory();
             });
         });
 
@@ -3658,6 +3707,277 @@ document.addEventListener('DOMContentLoaded', () => {
             bubble.addEventListener('mouseleave', () => { if (btn) btn.style.opacity = '0'; bubble.style.borderColor = 'rgba(255,255,255,0.06)'; });
         });
     }
+
+    // ---- PORTAL ORDER & CLAIM HISTORY (LIVE DATA) ----
+    function switchToHistoryTab() {
+        const historyBtn = document.querySelector(`.portal-tab-btn[data-tab="history"]`);
+        if (historyBtn) {
+            historyBtn.click();
+            const tabArea = document.getElementById('tab-history');
+            if (tabArea) {
+                tabArea.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+        }
+    }
+    window.switchToHistoryTab = switchToHistoryTab;
+
+    async function loadPortalHistory(silent = false) {
+        const token = sessionStorage.getItem('nourishToken');
+        const containerId = state.activePortal === 'seller' ? 'seller-history-container' : 'buyer-history-container';
+        const badgeId = state.activePortal === 'seller' ? 'seller-history-count-badge' : 'buyer-history-count-badge';
+        const container = document.getElementById(containerId);
+        const countBadge = document.getElementById(badgeId);
+        const dockBadge = document.getElementById('history-dock-badge');
+
+        if (!token) {
+            if (container) {
+                container.innerHTML = `
+                    <div class="empty-listings-wrap" style="text-align: center; padding: 3.5rem 2rem; background: var(--card-bg, rgba(255,255,255,0.02)); border: 1px dashed var(--border-glow); border-radius: 16px;">
+                        <i class="fa-solid fa-lock" style="font-size: 2.5rem; color: var(--text-muted); margin-bottom: 1rem;"></i>
+                        <h3 style="color: var(--text-primary); margin-bottom: 0.5rem;">Sign In to View History</h3>
+                        <p style="color: var(--text-muted); max-width: 450px; margin: 0 auto;">Live claims and order transactions require an active account session.</p>
+                    </div>
+                `;
+            }
+            return;
+        }
+
+        if (!silent && container) {
+            container.innerHTML = `
+                <div style="text-align: center; padding: 3rem; color: var(--text-muted);">
+                    <i class="fa-solid fa-circle-notch fa-spin" style="font-size: 2rem; color: var(--accent-primary); margin-bottom: 1rem;"></i>
+                    <p>Loading real-time order & claim records from database...</p>
+                </div>
+            `;
+        }
+
+        try {
+            const res = await fetch(`${API_BASE}/orders`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+
+            if (!res.ok) throw new Error("Failed to fetch order history");
+            const orders = await res.json();
+
+            // Update badges
+            const count = Array.isArray(orders) ? orders.length : 0;
+            if (countBadge) countBadge.innerText = `${count} record${count === 1 ? '' : 's'}`;
+            if (dockBadge) {
+                if (count > 0) {
+                    dockBadge.innerText = count > 99 ? '99+' : count;
+                    dockBadge.style.display = 'inline-block';
+                } else {
+                    dockBadge.style.display = 'none';
+                }
+            }
+
+            if (!container) return;
+
+            if (count === 0) {
+                if (state.activePortal === 'seller') {
+                    container.innerHTML = `
+                        <div class="empty-listings-wrap" style="text-align: center; padding: 4rem 2rem; background: var(--card-bg, rgba(255,255,255,0.02)); border: 1px dashed var(--border-glow); border-radius: 16px;">
+                            <i class="fa-solid fa-clock-rotate-left" style="font-size: 3rem; color: var(--text-muted); margin-bottom: 1rem; opacity: 0.5;"></i>
+                            <h3 style="color: var(--text-primary); margin-bottom: 0.5rem;">No Distribution History Yet</h3>
+                            <p style="color: var(--text-muted); max-width: 480px; margin: 0 auto; line-height: 1.6;">
+                                When an accredited NGO or shelter claims or orders your food listings, their details, verified badges, and pickup status will appear here live.
+                            </p>
+                        </div>
+                    `;
+                } else {
+                    container.innerHTML = `
+                        <div class="empty-listings-wrap" style="text-align: center; padding: 4rem 2rem; background: var(--card-bg, rgba(255,255,255,0.02)); border: 1px dashed var(--border-glow); border-radius: 16px;">
+                            <i class="fa-solid fa-basket-shopping" style="font-size: 3rem; color: var(--text-muted); margin-bottom: 1rem; opacity: 0.5;"></i>
+                            <h3 style="color: var(--text-primary); margin-bottom: 0.5rem;">No Rescued Food Claims Yet</h3>
+                            <p style="color: var(--text-muted); max-width: 480px; margin: 0 auto; line-height: 1.6;">
+                                Browse the <strong>Listings</strong> tab and claim fresh surplus meals from local restaurants. Your orders, pickup codes, and donor contact details will appear here live.
+                            </p>
+                        </div>
+                    `;
+                }
+                return;
+            }
+
+            // Render Cards based on Portal
+            if (state.activePortal === 'seller') {
+                container.innerHTML = orders.map(o => {
+                    const dateStr = o.createdAt ? new Date(o.createdAt).toLocaleString('en-IN', {
+                        day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit'
+                    }) : 'Just now';
+                    const isCompleted = o.orderStatus === 'completed';
+                    const ngoBadge = window.renderNgoTrustBadge ? window.renderNgoTrustBadge({
+                        darpanId: o.buyerDarpanId,
+                        ngoRegType: o.buyerNgoRegType
+                    }) : '';
+                    const foodImg = o.imageUrl || (window.getSmartFoodImage ? window.getSmartFoodImage(o.foodName, o.category, null) : 'assets/default-food.jpg');
+
+                    return `
+                        <div class="history-card" id="order-card-${o.orderId}">
+                            <div class="history-top-row">
+                                <div class="history-item-info">
+                                    <img src="${foodImg}" alt="${o.foodName || 'Food'}" class="history-food-thumb" onerror="this.onerror=null; this.src='assets/default-food.jpg';">
+                                    <div>
+                                        <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                                            <h4 style="font-size: 1.1rem; font-weight: 700; color: var(--text-primary); margin: 0;">${o.foodName || 'Surplus Meal'}</h4>
+                                            <span class="badge" style="background: rgba(16, 185, 129, 0.15); color: #34d399; font-size: 0.72rem; padding: 2px 8px; border-radius: 6px;">${o.category || 'Cooked'}</span>
+                                        </div>
+                                        <div style="font-size: 0.85rem; color: var(--text-muted); margin-top: 4px;">
+                                            <span style="font-weight: 700; color: var(--text-primary);">${o.quantity} ${o.unit || 'portions'}</span> · 
+                                            <span>${o.totalPrice > 0 ? '₹' + o.totalPrice : '<strong style="color:var(--accent-primary);">Free Surplus Donation</strong>'}</span> · 
+                                            <span><i class="fa-regular fa-clock"></i> ${dateStr}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div>
+                                    <span class="history-status-badge ${isCompleted ? 'status-completed' : 'status-confirmed'}">
+                                        <i class="fa-solid ${isCompleted ? 'fa-circle-check' : 'fa-hourglass-half'}"></i>
+                                        ${isCompleted ? 'Picked Up / Completed' : 'Ready for Pickup'}
+                                    </span>
+                                </div>
+                            </div>
+
+                            <!-- Buyer NGO Details Box -->
+                            <div class="history-party-box">
+                                <div style="display: flex; align-items: center; gap: 12px; flex: 1; min-width: 240px;">
+                                    <img src="${o.buyerAvatar || 'assets/default-avatar.jpg'}" style="width: 44px; height: 44px; border-radius: 50%; object-fit: cover; border: 1.5px solid #38bdf8;">
+                                    <div>
+                                        <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                                            <strong style="font-size: 0.95rem; color: var(--text-primary);">${o.buyerName || 'Accredited NGO Partner'}</strong>
+                                            ${ngoBadge}
+                                        </div>
+                                        <div style="font-size: 0.82rem; color: var(--text-muted); margin-top: 3px;">
+                                            ${o.buyerContactPerson ? `<span><i class="fa-solid fa-user-tie" style="color:#38bdf8;"></i> ${o.buyerContactPerson}</span> · ` : ''}
+                                            ${o.buyerPhone ? `<a href="tel:${o.buyerPhone}" style="color:#38bdf8; text-decoration: none;"><i class="fa-solid fa-phone"></i> ${o.buyerPhone}</a>` : ''}
+                                        </div>
+                                        ${o.buyerAddress ? `<div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;"><i class="fa-solid fa-location-dot" style="color:#38bdf8;"></i> ${o.buyerAddress}</div>` : ''}
+                                    </div>
+                                </div>
+
+                                <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+                                    <div class="pickup-code-pill" title="NGO Pickup Verification Code">
+                                        <i class="fa-solid fa-ticket"></i> PIN: <strong>NN-${String(o.orderId).padStart(4, '0')}</strong>
+                                    </div>
+                                    ${!isCompleted ? `
+                                        <button class="history-action-btn btn-update-order-status" data-order-id="${o.orderId}" data-status="completed" style="background: var(--accent-primary); color: #fff; border: none; border-radius: 10px; padding: 8px 16px; font-weight: 700; font-size: 0.82rem; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;">
+                                            <i class="fa-solid fa-handshake"></i> Mark as Handed Over
+                                        </button>
+                                    ` : `
+                                        <span style="color: #34d399; font-size: 0.85rem; font-weight: 700; display: inline-flex; align-items: center; gap: 6px;">
+                                            <i class="fa-solid fa-check-double"></i> Handover Complete
+                                        </span>
+                                    `}
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            } else {
+                // Buyer Portal
+                container.innerHTML = orders.map(o => {
+                    const dateStr = o.createdAt ? new Date(o.createdAt).toLocaleString('en-IN', {
+                        day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit'
+                    }) : 'Just now';
+                    const isCompleted = o.orderStatus === 'completed';
+                    const foodImg = o.imageUrl || (window.getSmartFoodImage ? window.getSmartFoodImage(o.foodName, o.category, null) : 'assets/default-food.jpg');
+
+                    return `
+                        <div class="history-card" id="order-card-${o.orderId}">
+                            <div class="history-top-row">
+                                <div class="history-item-info">
+                                    <img src="${foodImg}" alt="${o.foodName || 'Food'}" class="history-food-thumb" onerror="this.onerror=null; this.src='assets/default-food.jpg';">
+                                    <div>
+                                        <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                                            <h4 style="font-size: 1.1rem; font-weight: 700; color: var(--text-primary); margin: 0;">${o.foodName || 'Rescued Food'}</h4>
+                                            <span class="badge" style="background: rgba(56, 189, 248, 0.15); color: #38bdf8; font-size: 0.72rem; padding: 2px 8px; border-radius: 6px;">${o.category || 'Cooked'}</span>
+                                        </div>
+                                        <div style="font-size: 0.85rem; color: var(--text-muted); margin-top: 4px;">
+                                            <span style="font-weight: 700; color: var(--text-primary);">${o.quantity} portions</span> · 
+                                            <span>${o.totalPrice > 0 ? '₹' + o.totalPrice : '<strong style="color:var(--accent-primary);">Free Surplus Donation</strong>'}</span> · 
+                                            <span><i class="fa-regular fa-clock"></i> ${dateStr}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div>
+                                    <span class="history-status-badge ${isCompleted ? 'status-completed' : 'status-confirmed'}">
+                                        <i class="fa-solid ${isCompleted ? 'fa-circle-check' : 'fa-box'}"></i>
+                                        ${isCompleted ? 'Picked Up' : 'Ready for Pickup'}
+                                    </span>
+                                </div>
+                            </div>
+
+                            <!-- Donating Restaurant Details Box -->
+                            <div class="history-party-box">
+                                <div style="display: flex; align-items: center; gap: 12px; flex: 1; min-width: 240px;">
+                                    <img src="${o.sellerAvatar || 'assets/default-avatar.jpg'}" style="width: 44px; height: 44px; border-radius: 50%; object-fit: cover; border: 1.5px solid var(--accent-primary);">
+                                    <div>
+                                        <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                                            <strong style="font-size: 0.95rem; color: var(--text-primary);">${o.sellerName || 'Donor Restaurant'}</strong>
+                                            ${o.sellerFssaiCode ? `
+                                                <span class="fssai-trust-badge" title="FSSAI Food Safety Verified"><i class="fa-solid fa-shield-halved"></i> <strong style="font-family:monospace;">${o.sellerFssaiCode}</strong> FSSAI</span>
+                                            ` : ''}
+                                        </div>
+                                        <div style="font-size: 0.82rem; color: var(--text-muted); margin-top: 3px;">
+                                            ${o.sellerAddress ? `<span><i class="fa-solid fa-location-dot" style="color:var(--accent-primary);"></i> ${o.sellerAddress}</span> · ` : ''}
+                                            ${o.sellerPickupWindow ? `<span><i class="fa-solid fa-clock" style="color:var(--accent-primary);"></i> ${o.sellerPickupWindow}</span>` : ''}
+                                        </div>
+                                        ${o.sellerPhone ? `<div style="font-size: 0.8rem; margin-top: 2px;"><a href="tel:${o.sellerPhone}" style="color:var(--accent-primary); text-decoration: none;"><i class="fa-solid fa-phone"></i> ${o.sellerPhone}</a></div>` : ''}
+                                    </div>
+                                </div>
+
+                                <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+                                    <div class="pickup-code-pill" style="background: rgba(16, 185, 129, 0.12); border-color: rgba(16, 185, 129, 0.3); color: #34d399;" title="Show this code at the restaurant counter for pickup">
+                                        <i class="fa-solid fa-ticket"></i> PIN: <strong>NN-${String(o.orderId).padStart(4, '0')}</strong>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            }
+
+            // Attach action handlers for marking orders picked up
+            container.querySelectorAll('.btn-update-order-status').forEach(btn => {
+                btn.addEventListener('click', async () => {
+                    const orderId = btn.dataset.orderId;
+                    const newStatus = btn.dataset.status;
+                    btn.disabled = true;
+                    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Updating...';
+                    try {
+                        const patchRes = await fetch(`${API_BASE}/orders/${orderId}/status`, {
+                            method: 'PATCH',
+                            headers: {
+                                'Authorization': `Bearer ${token}`,
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({ status: newStatus })
+                        });
+                        if (patchRes.ok) {
+                            showToast("Handover marked as completed! 🤝", "success");
+                            loadPortalHistory();
+                        } else {
+                            const err = await patchRes.json();
+                            showToast(err.error || "Failed to update status", "error");
+                            btn.disabled = false;
+                        }
+                    } catch (e) {
+                        showToast("Network error updating order status", "error");
+                        btn.disabled = false;
+                    }
+                });
+            });
+
+        } catch (err) {
+            console.error("Order history fetch error:", err);
+            if (container && !silent) {
+                container.innerHTML = `
+                    <div style="text-align:center; padding:2rem; color:var(--text-muted);">
+                        <p><i class="fa-solid fa-triangle-exclamation" style="color:#f59e0b;"></i> Could not load live history.</p>
+                    </div>
+                `;
+            }
+        }
+    }
+    window.loadPortalHistory = loadPortalHistory;
 
     // ---- GLOBAL DELETE COMMENT ----
     window.deleteComment = function (commentId, btnEl) {

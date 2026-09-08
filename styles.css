@@ -5501,5 +5501,136 @@ button:active,
     border-color: #fde68a;
 }
 
+/* ─────────────────────────────────────────────────────────────
+   PORTAL HISTORY & TRACEABILITY SYSTEM
+   ───────────────────────────────────────────────────────────── */
+
+.history-card {
+    background: var(--card-bg, rgba(255, 255, 255, 0.03));
+    border: 1px solid var(--border-glow, rgba(255, 255, 255, 0.08));
+    border-radius: 18px;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+    position: relative;
+    overflow: hidden;
+}
+
+.history-card:hover {
+    transform: translateY(-2px);
+    border-color: rgba(56, 189, 248, 0.3);
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.25);
+}
+
+.history-top-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--border-glow, rgba(255, 255, 255, 0.06));
+}
+
+.history-item-info {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+}
+
+.history-food-thumb {
+    width: 54px;
+    height: 54px;
+    border-radius: 12px;
+    object-fit: cover;
+    border: 1px solid var(--border-glow);
+    flex-shrink: 0;
+}
+
+.history-status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    padding: 4px 12px;
+    border-radius: 20px;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+}
+
+.history-status-badge.status-confirmed {
+    background: rgba(56, 189, 248, 0.12);
+    color: #38bdf8;
+    border: 1px solid rgba(56, 189, 248, 0.3);
+}
+
+.history-status-badge.status-completed {
+    background: rgba(16, 185, 129, 0.12);
+    color: #34d399;
+    border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.history-party-box {
+    background: rgba(0, 0, 0, 0.2);
+    border: 1px solid var(--border-glow);
+    border-radius: 14px;
+    padding: 1.2rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+[data-theme='light'] .history-party-box {
+    background: rgba(241, 245, 249, 0.7);
+    border-color: #e2e8f0;
+}
+
+.pickup-code-pill {
+    background: rgba(56, 189, 248, 0.1);
+    border: 1px solid rgba(56, 189, 248, 0.3);
+    color: #38bdf8;
+    padding: 6px 14px;
+    border-radius: 10px;
+    font-size: 0.85rem;
+    font-weight: 700;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-family: monospace;
+    letter-spacing: 1px;
+}
+
+.dock-badge {
+    position: absolute;
+    top: 4px;
+    right: 8px;
+    background: var(--accent-primary);
+    color: white;
+    font-size: 0.65rem;
+    font-weight: 800;
+    padding: 2px 6px;
+    border-radius: 10px;
+    min-width: 16px;
+    text-align: center;
+    line-height: 1;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+}
+
+.history-action-btn {
+    transition: all 0.2s ease;
+}
+
+.history-action-btn:hover {
+    transform: scale(1.03);
+    box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
+}
+
 
 

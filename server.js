@@ -1620,6 +1620,19 @@ app.post('/api/listings/claim', authenticateToken, (req, res) => {
         if (err) return res.status(500).json({ error: err.message });
         if (this.changes === 0) return res.status(400).json({ error: 'Listing not found or already claimed.' });
 
+        // Insert order record into database so it reflects in real-time history
+        db.get(`SELECT quantity, price FROM food_listings WHERE id = ?`, [listingId], (gErr, lRow) => {
+            const claimQty = lRow ? (parseInt(lRow.quantity) || 1) : 1;
+            db.run(
+                `INSERT INTO orders (buyerId, listingId, quantity, totalPrice, status, notes)
+                 VALUES (?, ?, ?, 0, 'confirmed', 'Direct Food Rescue Claim')`,
+                [ngoId, listingId, claimQty],
+                (insErr) => {
+                    if (insErr) console.error("Claim order tracking insert error:", insErr.message);
+                }
+            );
+        });
+
         // Notify seller about claimed food in background
         const hostUrl = `${req.protocol}://${req.get('host')}`;
         setImmediate(() => {
@@ -1747,20 +1760,119 @@ app.post('/api/checkout', authenticateToken, (req, res) => {
 
 
 
-// 13. GET ORDER HISTORY
+// 13. GET ORDER & CLAIM HISTORY (Role-Aware for Seller and Buyer)
 // GET /api/orders
 app.get('/api/orders', authenticateToken, (req, res) => {
-    const buyerId = req.user.id;
-    const sql = `
-        SELECT o.*, f.name as foodName, f.vendorName, f.category, f.imageUrl
+    const userId = req.user.id;
+    const accountType = (req.user.accountType || req.user.type || '').toLowerCase();
+    const isSeller = accountType === 'restaurant' || accountType === 'vendor';
+
+    if (isSeller) {
+        // Seller sees all orders/claims for their food listings with full buyer NGO details
+        const sql = `
+            SELECT 
+                o.id AS orderId,
+                o.quantity,
+                o.totalPrice,
+                o.status AS orderStatus,
+                o.notes,
+                o.createdAt,
+                f.id AS listingId,
+                f.name AS foodName,
+                f.category,
+                f.imageUrl,
+                f.unit,
+                f.price AS unitPrice,
+                b.id AS buyerId,
+                b.organizationName AS buyerName,
+                b.accountType AS buyerType,
+                b.email AS buyerEmail,
+                COALESCE(b.publicPhone, b.phone, '') AS buyerPhone,
+                COALESCE(b.contactPerson, '') AS buyerContactPerson,
+                COALESCE(b.darpanId, '') AS buyerDarpanId,
+                COALESCE(b.ngoRegType, 'darpan') AS buyerNgoRegType,
+                COALESCE(b.address, '') AS buyerAddress,
+                b.avatarUrl AS buyerAvatar
+            FROM orders o
+            JOIN food_listings f ON o.listingId = f.id
+            JOIN users b ON o.buyerId = b.id
+            WHERE f.vendorId = ?
+            ORDER BY o.createdAt DESC
+        `;
+        db.all(sql, [userId], (err, rows) => {
+            if (err) return res.status(500).json({ error: err.message });
+            res.status(200).json(rows || []);
+        });
+    } else {
+        // Buyer sees all their orders/claims with full donating seller restaurant details
+        const sql = `
+            SELECT 
+                o.id AS orderId,
+                o.quantity,
+                o.totalPrice,
+                o.status AS orderStatus,
+                o.notes,
+                o.createdAt,
+                f.id AS listingId,
+                f.name AS foodName,
+                f.category,
+                f.imageUrl,
+                f.unit,
+                f.price AS unitPrice,
+                f.pickupTime,
+                s.id AS sellerId,
+                s.organizationName AS sellerName,
+                s.accountType AS sellerType,
+                s.email AS sellerEmail,
+                COALESCE(s.publicPhone, s.phone, '') AS sellerPhone,
+                COALESCE(s.contactPerson, '') AS sellerContactPerson,
+                COALESCE(s.fssaiCode, '') AS sellerFssaiCode,
+                COALESCE(s.address, '') AS sellerAddress,
+                COALESCE(s.pickupWindow, '') AS sellerPickupWindow,
+                s.avatarUrl AS sellerAvatar
+            FROM orders o
+            JOIN food_listings f ON o.listingId = f.id
+            JOIN users s ON f.vendorId = s.id
+            WHERE o.buyerId = ?
+            ORDER BY o.createdAt DESC
+        `;
+        db.all(sql, [userId], (err, rows) => {
+            if (err) return res.status(500).json({ error: err.message });
+            res.status(200).json(rows || []);
+        });
+    }
+});
+
+// 14. UPDATE ORDER FULFILLMENT STATUS (e.g. 'completed' / 'picked up')
+// PATCH /api/orders/:id/status
+app.patch('/api/orders/:id/status', authenticateToken, (req, res) => {
+    const orderId = req.params.id;
+    const { status } = req.body;
+    const userId = req.user.id;
+
+    if (!['confirmed', 'completed', 'cancelled'].includes(status)) {
+        return res.status(400).json({ error: 'Invalid status. Must be confirmed, completed, or cancelled.' });
+    }
+
+    // Check that this order belongs to this user (as seller or buyer)
+    const checkSql = `
+        SELECT o.id, f.vendorId, o.buyerId 
         FROM orders o
         JOIN food_listings f ON o.listingId = f.id
-        WHERE o.buyerId = ?
-        ORDER BY o.createdAt DESC
+        WHERE o.id = ?
     `;
-    db.all(sql, [buyerId], (err, rows) => {
+    db.get(checkSql, [orderId], (err, order) => {
         if (err) return res.status(500).json({ error: err.message });
-        res.status(200).json(rows);
+        if (!order) return res.status(404).json({ error: 'Order not found.' });
+
+        if (order.vendorId !== userId && order.buyerId !== userId) {
+            return res.status(403).json({ error: 'Unauthorized to update this order.' });
+        }
+
+        db.run(`UPDATE orders SET status = ? WHERE id = ?`, [status, orderId], function (uErr) {
+            if (uErr) return res.status(500).json({ error: uErr.message });
+            res.status(200).json({ message: `Order status updated to ${status}.`, orderId, status });
+        });
     });
 });
 
