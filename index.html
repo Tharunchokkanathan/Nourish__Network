@@ -811,33 +811,24 @@
     <div id="historyModal"
         style="display: none; position: fixed; inset: 0; width: 100vw; height: 100vh; background: rgba(0, 0, 0, 0.88); z-index: 999999; align-items: center; justify-content: center; backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); overflow-y: auto; padding: 20px 10px;">
         <div class="settings-modal-card history-modal-card"
-            style="width: 100% !important; max-width: 860px !important; margin: auto !important; padding: 2.5rem !important; max-height: 90vh; overflow-y: auto; background: #111827 !important; border: 1px solid rgba(255, 255, 255, 0.08) !important; border-radius: 28px !important; box-shadow: 0 35px 90px rgba(0, 0, 0, 0.95) !important; color: #ffffff !important;">
+            style="width: 100% !important; max-width: 860px !important; margin: auto !important; padding: 2.5rem !important; max-height: 90vh; overflow-y: auto; background: #0d0d0d !important; border: 1px solid rgba(255, 255, 255, 0.07) !important; border-radius: 24px !important; box-shadow: 0 30px 80px rgba(0, 0, 0, 0.98) !important; color: #ffffff !important;">
 
             <!-- Header Bar -->
-            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 2rem; padding-bottom: 1.25rem; border-bottom: 1px solid rgba(255, 255, 255, 0.08); flex-wrap: wrap; gap: 12px;">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 2rem; padding-bottom: 1.25rem; border-bottom: 1px solid rgba(255, 255, 255, 0.07); flex-wrap: wrap; gap: 12px;">
                 <div style="display: flex; align-items: center; gap: 14px;">
                     <div
-                        style="width: 48px; height: 48px; background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.12); border-radius: 16px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
-                        <i class="fa-solid fa-clock-rotate-left" style="color: rgba(255,255,255,0.75); font-size: 1.3rem;"></i>
+                        style="width: 46px; height: 46px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 14px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                        <i class="fa-solid fa-clock-rotate-left" style="color: rgba(255,255,255,0.6); font-size: 1.2rem;"></i>
                     </div>
-                    <div>
-                        <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
-                            <h2 style="margin: 0; font-size: 1.65rem; font-weight: 700; color: #ffffff; letter-spacing: -0.01em;">Distribution & Claims History</h2>
-                            <span class="live-sync-indicator-pill" style="display: inline-flex; align-items: center; gap: 6px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12); color: rgba(255,255,255,0.55); font-size: 0.75rem; font-weight: 700; padding: 3px 10px; border-radius: 12px;">
-                                <span style="width: 7px; height: 7px; border-radius: 50%; background: #10b981; box-shadow: 0 0 6px #10b981; display: inline-block;"></span>
-                                Live Sync
-                            </span>
-                        </div>
-                        <p id="historyModalSubtitle" style="margin: 4px 0 0; font-size: 0.88rem; color: rgba(255,255,255,0.45); font-weight: 500;">Real-time database records of food claims, counterparty credentials, and pickup codes</p>
-                    </div>
+                    <h2 style="margin: 0; font-size: 1.5rem; font-weight: 700; color: #ffffff; letter-spacing: -0.01em;">Claim History</h2>
                 </div>
                 <div style="display: flex; align-items: center; gap: 10px;">
-                    <button id="refreshHistoryModalBtn" onclick="if(typeof loadPortalHistory === 'function') loadPortalHistory();" title="Refresh Live Records"
-                        style="width: 42px; height: 42px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12); border-radius: 50%; font-size: 1rem; cursor: pointer; color: rgba(255,255,255,0.6); display: flex; align-items: center; justify-content: center; transition: all 0.2s ease;">
+                    <button id="refreshHistoryModalBtn" onclick="if(typeof loadPortalHistory === 'function') loadPortalHistory();" title="Refresh"
+                        style="width: 40px; height: 40px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 50%; font-size: 0.95rem; cursor: pointer; color: rgba(255,255,255,0.55); display: flex; align-items: center; justify-content: center; transition: all 0.2s ease;">
                         <i class="fa-solid fa-arrows-rotate"></i>
                     </button>
                     <button id="closeHistoryModal" class="close-history-modal-btn" onclick="window.closeHistoryModal ? window.closeHistoryModal() : (document.getElementById('historyModal').style.display='none')"
-                        style="width: 42px; height: 42px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12); border-radius: 50%; font-size: 1.2rem; cursor: pointer; color: #ffffff; display: flex; align-items: center; justify-content: center; transition: all 0.2s ease;">
+                        style="width: 40px; height: 40px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 50%; font-size: 1.1rem; cursor: pointer; color: rgba(255,255,255,0.75); display: flex; align-items: center; justify-content: center; transition: all 0.2s ease;">
                         <i class="fa-solid fa-xmark"></i>
                     </button>
                 </div>
@@ -845,9 +836,9 @@
 
             <!-- Dynamic Live History Container -->
             <div id="modal-history-container" style="display: flex; flex-direction: column; gap: 1.25rem;">
-                <div style="text-align: center; padding: 3rem; color: var(--text-muted);">
-                    <i class="fa-solid fa-circle-notch fa-spin" style="font-size: 2rem; color: var(--accent-primary); margin-bottom: 1rem;"></i>
-                    <p>Loading real-time order & claim records...</p>
+                <div style="text-align: center; padding: 3rem; color: rgba(255,255,255,0.35);">
+                    <i class="fa-solid fa-circle-notch fa-spin" style="font-size: 2rem; margin-bottom: 1rem; display: block;"></i>
+                    <p>Loading claim records...</p>
                 </div>
             </div>
 

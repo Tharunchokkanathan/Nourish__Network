@@ -3810,14 +3810,6 @@ document.addEventListener('DOMContentLoaded', () => {
         modal.style.setProperty('pointer-events', 'auto', 'important');
         modal.style.setProperty('z-index', '999999', 'important');
 
-        const subtitle = document.getElementById('historyModalSubtitle');
-        if (subtitle) {
-            if (state.activePortal === 'seller') {
-                subtitle.textContent = "Live claims on your food listings, buyer NGO verification, and handover PIN codes";
-            } else {
-                subtitle.textContent = "Live rescued meals, donor restaurant FSSAI verification, and pickup PIN codes";
-            }
-        }
         loadPortalHistory();
     }
     window.openHistoryModal = openHistoryModal;
@@ -4004,11 +3996,11 @@ document.addEventListener('DOMContentLoaded', () => {
                                     <div>
                                         <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
                                             <h4 style="font-size: 1.1rem; font-weight: 700; color: var(--text-primary); margin: 0;">${o.foodName || 'Surplus Meal'}</h4>
-                                            <span class="badge" style="background: rgba(16, 185, 129, 0.15); color: #34d399; font-size: 0.72rem; padding: 2px 8px; border-radius: 6px;">${o.category || 'Cooked'}</span>
+                                            <span class="badge" style="background: rgba(255, 255, 255, 0.06); color: #d1d5db; border: 1px solid rgba(255, 255, 255, 0.1); font-size: 0.72rem; padding: 2px 8px; border-radius: 6px;">${o.category || 'Cooked'}</span>
                                         </div>
                                         <div style="font-size: 0.85rem; color: var(--text-muted); margin-top: 4px;">
                                             <span style="font-weight: 700; color: var(--text-primary);">${o.quantity} ${o.unit || 'portions'}</span> · 
-                                            <span>${o.totalPrice > 0 ? '₹' + o.totalPrice : '<strong style="color:var(--accent-primary);">Free Surplus Donation</strong>'}</span> · 
+                                            <span>${o.totalPrice > 0 ? '₹' + o.totalPrice : '<strong style="color:#e5e5e5;">Free Surplus Donation</strong>'}</span> · 
                                             <span><i class="fa-regular fa-clock"></i> ${dateStr}</span>
                                         </div>
                                     </div>
@@ -4024,17 +4016,17 @@ document.addEventListener('DOMContentLoaded', () => {
                             <!-- Buyer NGO Details Box -->
                             <div class="history-party-box">
                                 <div style="display: flex; align-items: center; gap: 12px; flex: 1; min-width: 240px;">
-                                    <img src="${o.buyerAvatar || 'assets/default-avatar.jpg'}" style="width: 44px; height: 44px; border-radius: 50%; object-fit: cover; border: 1.5px solid #38bdf8;">
+                                    <img src="${o.buyerAvatar || 'assets/default-avatar.jpg'}" style="width: 44px; height: 44px; border-radius: 50%; object-fit: cover; border: 1.5px solid rgba(255, 255, 255, 0.15);">
                                     <div>
                                         <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
                                             <strong style="font-size: 0.95rem; color: var(--text-primary);">${o.buyerName || 'Accredited NGO Partner'}</strong>
                                             ${ngoBadge}
                                         </div>
                                         <div style="font-size: 0.82rem; color: var(--text-muted); margin-top: 3px;">
-                                            ${o.buyerContactPerson ? `<span><i class="fa-solid fa-user-tie" style="color:#38bdf8;"></i> ${o.buyerContactPerson}</span> · ` : ''}
-                                            ${o.buyerPhone ? `<a href="tel:${o.buyerPhone}" style="color:#38bdf8; text-decoration: none;"><i class="fa-solid fa-phone"></i> ${o.buyerPhone}</a>` : ''}
+                                            ${o.buyerContactPerson ? `<span><i class="fa-solid fa-user-tie" style="color:#9ca3af;"></i> ${o.buyerContactPerson}</span> · ` : ''}
+                                            ${o.buyerPhone ? `<a href="tel:${o.buyerPhone}" style="color:#d1d5db; text-decoration: none;"><i class="fa-solid fa-phone"></i> ${o.buyerPhone}</a>` : ''}
                                         </div>
-                                        ${o.buyerAddress ? `<div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;"><i class="fa-solid fa-location-dot" style="color:#38bdf8;"></i> ${o.buyerAddress}</div>` : ''}
+                                        ${o.buyerAddress ? `<div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;"><i class="fa-solid fa-location-dot" style="color:#9ca3af;"></i> ${o.buyerAddress}</div>` : ''}
                                     </div>
                                 </div>
 
@@ -4043,11 +4035,11 @@ document.addEventListener('DOMContentLoaded', () => {
                                         <i class="fa-solid fa-ticket"></i> PIN: <strong>NN-${String(o.orderId).padStart(4, '0')}</strong>
                                     </div>
                                     ${!isCompleted ? `
-                                        <button class="history-action-btn btn-update-order-status" data-order-id="${o.orderId}" data-status="completed" style="background: var(--accent-primary); color: #fff; border: none; border-radius: 10px; padding: 8px 16px; font-weight: 700; font-size: 0.82rem; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;">
+                                        <button class="history-action-btn btn-update-order-status" data-order-id="${o.orderId}" data-status="completed" style="background: rgba(255, 255, 255, 0.1); color: #ffffff; border: 1px solid rgba(255, 255, 255, 0.18); border-radius: 10px; padding: 8px 16px; font-weight: 600; font-size: 0.82rem; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;">
                                             <i class="fa-solid fa-handshake"></i> Mark as Handed Over
                                         </button>
                                     ` : `
-                                        <span style="color: #34d399; font-size: 0.85rem; font-weight: 700; display: inline-flex; align-items: center; gap: 6px;">
+                                        <span style="color: #9ca3af; font-size: 0.85rem; font-weight: 700; display: inline-flex; align-items: center; gap: 6px;">
                                             <i class="fa-solid fa-check-double"></i> Handover Complete
                                         </span>
                                     `}
@@ -4073,11 +4065,11 @@ document.addEventListener('DOMContentLoaded', () => {
                                     <div>
                                         <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
                                             <h4 style="font-size: 1.1rem; font-weight: 700; color: var(--text-primary); margin: 0;">${o.foodName || 'Rescued Food'}</h4>
-                                            <span class="badge" style="background: rgba(56, 189, 248, 0.15); color: #38bdf8; font-size: 0.72rem; padding: 2px 8px; border-radius: 6px;">${o.category || 'Cooked'}</span>
+                                            <span class="badge" style="background: rgba(255, 255, 255, 0.06); color: #d1d5db; border: 1px solid rgba(255, 255, 255, 0.1); font-size: 0.72rem; padding: 2px 8px; border-radius: 6px;">${o.category || 'Cooked'}</span>
                                         </div>
                                         <div style="font-size: 0.85rem; color: var(--text-muted); margin-top: 4px;">
                                             <span style="font-weight: 700; color: var(--text-primary);">${o.quantity} portions</span> · 
-                                            <span>${o.totalPrice > 0 ? '₹' + o.totalPrice : '<strong style="color:var(--accent-primary);">Free Surplus Donation</strong>'}</span> · 
+                                            <span>${o.totalPrice > 0 ? '₹' + o.totalPrice : '<strong style="color:#e5e5e5;">Free Surplus Donation</strong>'}</span> · 
                                             <span><i class="fa-regular fa-clock"></i> ${dateStr}</span>
                                         </div>
                                     </div>
@@ -4093,23 +4085,23 @@ document.addEventListener('DOMContentLoaded', () => {
                             <!-- Donating Restaurant Details Box -->
                             <div class="history-party-box">
                                 <div style="display: flex; align-items: center; gap: 12px; flex: 1; min-width: 240px;">
-                                    <img src="${o.sellerAvatar || 'assets/default-avatar.jpg'}" style="width: 44px; height: 44px; border-radius: 50%; object-fit: cover; border: 1.5px solid var(--accent-primary);">
+                                    <img src="${o.sellerAvatar || 'assets/default-avatar.jpg'}" style="width: 44px; height: 44px; border-radius: 50%; object-fit: cover; border: 1.5px solid rgba(255, 255, 255, 0.15);">
                                     <div>
                                         <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
                                             <strong style="font-size: 0.95rem; color: var(--text-primary);">${o.sellerName || 'Donor Restaurant / Kitchen'}</strong>
                                             ${o.sellerFssaiCode ? `<span class="fssai-trust-badge" title="FSSAI Verified Food Establishment"><i class="fa-solid fa-shield-halved"></i> FSSAI Certified</span>` : ''}
                                         </div>
                                         <div style="font-size: 0.82rem; color: var(--text-muted); margin-top: 3px;">
-                                            ${o.sellerContactPerson ? `<span><i class="fa-solid fa-user-tie" style="color:var(--accent-primary);"></i> ${o.sellerContactPerson}</span> · ` : ''}
-                                            ${o.sellerPhone ? `<a href="tel:${o.sellerPhone}" style="color:var(--accent-primary); text-decoration: none;"><i class="fa-solid fa-phone"></i> ${o.sellerPhone}</a>` : ''}
+                                            ${o.sellerContactPerson ? `<span><i class="fa-solid fa-user-tie" style="color:#9ca3af;"></i> ${o.sellerContactPerson}</span> · ` : ''}
+                                            ${o.sellerPhone ? `<a href="tel:${o.sellerPhone}" style="color:#d1d5db; text-decoration: none;"><i class="fa-solid fa-phone"></i> ${o.sellerPhone}</a>` : ''}
                                         </div>
-                                        ${o.sellerAddress ? `<div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;"><i class="fa-solid fa-location-dot" style="color:var(--accent-primary);"></i> Pickup: ${o.sellerAddress}</div>` : ''}
-                                        ${o.sellerPickupWindow ? `<div style="font-size: 0.8rem; color: var(--accent-primary); margin-top: 2px;"><i class="fa-regular fa-clock"></i> Pickup Window: ${o.sellerPickupWindow}</div>` : ''}
+                                        ${o.sellerAddress ? `<div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;"><i class="fa-solid fa-location-dot" style="color:#9ca3af;"></i> Pickup: ${o.sellerAddress}</div>` : ''}
+                                        ${o.sellerPickupWindow ? `<div style="font-size: 0.8rem; color: #9ca3af; margin-top: 2px;"><i class="fa-regular fa-clock"></i> Pickup Window: ${o.sellerPickupWindow}</div>` : ''}
                                     </div>
                                 </div>
 
                                 <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
-                                    <div class="pickup-code-pill" style="background: rgba(16, 185, 129, 0.12); border-color: rgba(16, 185, 129, 0.3); color: #34d399;" title="Show this code at the restaurant counter for pickup">
+                                    <div class="pickup-code-pill" title="Show this code at the restaurant counter for pickup">
                                         <i class="fa-solid fa-ticket"></i> PIN: <strong>NN-${String(o.orderId).padStart(4, '0')}</strong>
                                     </div>
                                 </div>
