@@ -5544,7 +5544,7 @@ button:active,
 
 .history-card:hover {
     transform: translateY(-2px);
-    border-color: rgba(56, 189, 248, 0.3);
+    border-color: rgba(255, 255, 255, 0.15);
     box-shadow: 0 8px 30px rgba(0, 0, 0, 0.25);
 }
 
@@ -5651,7 +5651,7 @@ button:active,
 
 .history-action-btn:hover {
     transform: scale(1.03);
-    box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
 }
 
 /* History Modal Glassmorphic Styling */
@@ -5706,8 +5706,9 @@ button:active,
 }
 
 #refreshHistoryModalBtn:hover {
-    background: rgba(16, 185, 129, 0.15) !important;
-    border-color: rgba(16, 185, 129, 0.6) !important;
+    background: rgba(255, 255, 255, 0.1) !important;
+    border-color: rgba(255, 255, 255, 0.25) !important;
+    color: #ffffff !important;
     transform: scale(1.08);
 }
 
@@ -5719,9 +5720,9 @@ button:active,
     border-radius: 8px;
 }
 #modal-history-container::-webkit-scrollbar-thumb {
-    background: rgba(16, 185, 129, 0.3);
+    background: rgba(255, 255, 255, 0.15);
     border-radius: 8px;
 }
 #modal-history-container::-webkit-scrollbar-thumb:hover {
-    background: rgba(16, 185, 129, 0.6);
+    background: rgba(255, 255, 255, 0.25);
 }
