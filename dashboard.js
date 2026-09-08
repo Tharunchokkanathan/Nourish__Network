@@ -66,6 +66,8 @@ document.addEventListener('DOMContentLoaded', () => {
         logoutBtn.addEventListener('click', () => {
             sessionStorage.removeItem('nourishUser');
             sessionStorage.removeItem('nourishToken');
+            localStorage.removeItem('nourishUser');
+            localStorage.removeItem('nourishToken');
             window.location.href = 'index.html';
         });
     }
