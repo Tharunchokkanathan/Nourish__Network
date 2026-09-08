@@ -601,9 +601,8 @@ document.addEventListener('click', (e) => {
 
 document.addEventListener('DOMContentLoaded', () => {
 
-    // 1. Configuration - Dynamic API Detection
-    const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.protocol === 'file:';
-    const API_BASE = window.location.protocol === 'file:' ? 'http://localhost:3000/api' : (isLocal ? '/api' : 'https://nourish-network-4bit.onrender.com/api');
+    // 1. Configuration - Dynamic API Detection (works on localhost, Render, or any domain)
+    const API_BASE = window.location.protocol === 'file:' ? 'http://localhost:3000/api' : '/api';
 
     function resolveCustomImageUrl(rawUrl) {
         if (!rawUrl || typeof rawUrl !== 'string') return null;
@@ -660,8 +659,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // 6. Local uploads
         if (url.startsWith('/uploads')) {
-            const isLocalHost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-            return (isLocalHost ? '' : 'https://nourish-network-4bit.onrender.com') + url;
+            return (window.location.protocol === 'file:' ? 'http://localhost:3000' : '') + url;
         }
 
         // 7. Add https:// if user pasted without protocol (e.g. "i.imgur.com/...")
