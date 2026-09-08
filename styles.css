@@ -160,10 +160,27 @@ html.portal-pre-active #nn-portals-root { display: block !important; }
     background: #059669 !important;
 }
 
+/* =========================================
+   GLOBAL SCROLLBAR REMOVAL (SEAMLESS SCROLL)
+   ========================================= */
+html,
+body,
 * {
     margin: 0;
     padding: 0;
     box-sizing: border-box;
+    scrollbar-width: none !important; /* Firefox & Modern W3C */
+    -ms-overflow-style: none !important; /* IE 10+ & Legacy Edge */
+}
+
+/* Chrome, Edge, Safari, Opera & WebKit browsers */
+*::-webkit-scrollbar,
+html::-webkit-scrollbar,
+body::-webkit-scrollbar {
+    display: none !important;
+    width: 0px !important;
+    height: 0px !important;
+    background: transparent !important;
 }
 
 html {
@@ -2424,6 +2441,14 @@ input:checked + .slider:before { transform: translateX(20px); }
     box-shadow: -10px 0 50px rgba(0, 0, 0, 0.6);
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
+    scrollbar-width: none !important;
+    -ms-overflow-style: none !important;
+}
+
+.cart-drawer-content::-webkit-scrollbar {
+    display: none !important;
+    width: 0 !important;
+    height: 0 !important;
 }
 
 .cart-drawer.active .cart-drawer-content {
@@ -2490,6 +2515,14 @@ input:checked + .slider:before { transform: translateX(20px); }
     flex: 1;
     overflow-y: auto;
     margin-bottom: 2rem;
+    scrollbar-width: none !important;
+    -ms-overflow-style: none !important;
+}
+
+.cart-items-list::-webkit-scrollbar {
+    display: none !important;
+    width: 0 !important;
+    height: 0 !important;
 }
 
 .empty-cart-msg {
@@ -5713,16 +5746,7 @@ button:active,
 }
 
 #modal-history-container::-webkit-scrollbar {
-    width: 6px;
-}
-#modal-history-container::-webkit-scrollbar-track {
-    background: rgba(255, 255, 255, 0.02);
-    border-radius: 8px;
-}
-#modal-history-container::-webkit-scrollbar-thumb {
-    background: rgba(255, 255, 255, 0.15);
-    border-radius: 8px;
-}
-#modal-history-container::-webkit-scrollbar-thumb:hover {
-    background: rgba(255, 255, 255, 0.25);
+    display: none !important;
+    width: 0 !important;
+    height: 0 !important;
 }
