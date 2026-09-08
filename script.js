@@ -774,7 +774,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const state = {
         activePortal: 'home',
         cart: [],
-        listings: [],
+        listings: JSON.parse(localStorage.getItem('nn_cached_listings') || localStorage.getItem('nn_demo_listings') || '[]'),
         communityComments: JSON.parse(localStorage.getItem('nn_comments') || 'null') || [
             {
                 id: 'default-1',
@@ -997,7 +997,11 @@ document.addEventListener('DOMContentLoaded', () => {
             historyDock.onclick = (e) => {
                 e.preventDefault();
                 console.log("Dock: History Clicked");
-                switchToHistoryTab();
+                if (typeof openHistoryModal === 'function') {
+                    openHistoryModal();
+                } else if (typeof switchToHistoryTab === 'function') {
+                    switchToHistoryTab();
+                }
             };
         }
 
@@ -1086,27 +1090,27 @@ document.addEventListener('DOMContentLoaded', () => {
                 updateLiveStats();
             }
 
+            try {
+                localStorage.setItem('nn_cached_listings', JSON.stringify(state.listings));
+            } catch (e) { }
+
             const newSnapshot = JSON.stringify(state.listings.map(l => ({ id: l.id, qty: l.qty, status: l.status, expiry: l.expiry, price: l.price })));
             const hasChanged = state._lastListingsSnapshot !== newSnapshot;
             state._lastListingsSnapshot = newSnapshot;
 
-            if (silent) {
-                if (hasChanged) {
-                    if (state.activePortal === 'seller' && typeof renderSellerListings === 'function') {
-                        renderSellerListings();
-                    } else if (state.activePortal === 'buyer' && typeof renderExchangeGrid === 'function') {
-                        renderExchangeGrid();
-                    }
-                }
-                // Silently refresh history if user is on history tab or has active portal session
-                if ((state.activePortal === 'seller' || state.activePortal === 'buyer') && typeof loadPortalHistory === 'function') {
-                    const histTab = document.getElementById('tab-history');
-                    if (histTab && histTab.style.display !== 'none') {
-                        loadPortalHistory(true);
-                    }
-                }
-            } else {
+            // In-place updates: Never nuke the portal DOM if already active
+            if (state.activePortal === 'seller') {
+                if (typeof renderSellerListings === 'function') renderSellerListings();
+            } else if (state.activePortal === 'buyer') {
+                if (typeof renderExchangeGrid === 'function') renderExchangeGrid();
+            } else if (!silent) {
                 renderPortal();
+            }
+
+            // Silently refresh history if history modal is currently open
+            const histModal = document.getElementById('historyModal');
+            if (histModal && histModal.style.display !== 'none' && typeof loadPortalHistory === 'function') {
+                loadPortalHistory(true);
             }
 
             if (typeof renderImpactMap === 'function') {
@@ -1114,9 +1118,15 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         } catch (err) {
             console.error("Backend Sync Failed:", err);
-            // Even if everything fails, still show demo listings
-            state.listings = JSON.parse(localStorage.getItem('nn_demo_listings') || '[]');
-            renderPortal();
+            // Even if network fails, use cached or demo listings
+            if (!state.listings || state.listings.length === 0) {
+                state.listings = JSON.parse(localStorage.getItem('nn_cached_listings') || localStorage.getItem('nn_demo_listings') || '[]');
+            }
+            if (state.activePortal === 'seller' && typeof renderSellerListings === 'function') {
+                renderSellerListings();
+            } else if (state.activePortal === 'buyer' && typeof renderExchangeGrid === 'function') {
+                renderExchangeGrid();
+            }
         }
     }
 
@@ -1141,7 +1151,13 @@ document.addEventListener('DOMContentLoaded', () => {
             sessionStorage.setItem('nourishUser', JSON.stringify(user));
             sessionStorage.setItem('nourishToken', token);
             document.documentElement.classList.add('user-logged-in');
-            refreshState();
+            document.documentElement.classList.add('portal-pre-active');
+
+            // Render instantly on frame 1 using cached session + cached listings (zero wait, zero flash)
+            renderPortal();
+
+            // Background sync (silent mode - no screen flicker!)
+            refreshState(true);
 
             // Auto-fetch fresh profile from DB to ensure badges (FSSAI/DARPAN) are always up-to-date
             if (!token.startsWith('demo-token')) {
@@ -1159,14 +1175,16 @@ document.addEventListener('DOMContentLoaded', () => {
                         };
                         sessionStorage.setItem('nourishUser', JSON.stringify(merged));
                         localStorage.setItem('nourishUser', JSON.stringify(merged));
-                        renderPortal();
+                        syncDock();
                     }
                 })
                 .catch(() => {});
             }
         } else {
             console.log("No session found.");
-            refreshState();
+            state.activePortal = 'home';
+            renderPortal();
+            refreshState(true);
         }
     }
 
@@ -1620,27 +1638,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 updateLiquidIndicator();
             };
         });
-
-        // Always sync latest profile from database on startup so FSSAI/DARPAN badges are 100% up to date!
-        if (token && (!token.startsWith('demo-token'))) {
-            fetch(`${API_BASE}/user/me`, {
-                headers: { 'Authorization': `Bearer ${token}` }
-            })
-            .then(res => res.ok ? res.json() : null)
-            .then(liveUser => {
-                if (liveUser && liveUser.id) {
-                    const merged = { ...user, ...liveUser };
-                    sessionStorage.setItem('nourishUser', JSON.stringify(merged));
-                    localStorage.setItem('nourishUser', JSON.stringify(merged));
-                    if (state.activePortal === 'seller') {
-                        renderSellerPortal();
-                    } else if (state.activePortal === 'buyer') {
-                        renderBuyerPortal();
-                    }
-                }
-            })
-            .catch(() => {});
-        }
     }
 
     // --- Demo Login Fillers ---
@@ -2465,7 +2462,10 @@ document.addEventListener('DOMContentLoaded', () => {
         syncPortalSwitcher();
         if (state.activePortal === 'home') {
             if (homePortal) homePortal.style.display = 'block';
-            if (portalsRoot) portalsRoot.style.display = 'none';
+            if (portalsRoot) {
+                portalsRoot.style.display = 'none';
+                delete portalsRoot.dataset.activePortal;
+            }
             // Re-render slider + wall so any new comments from portals show up instantly
             renderReviewsSlider();
             renderCommunityWall();
@@ -2473,9 +2473,13 @@ document.addEventListener('DOMContentLoaded', () => {
             if (homePortal) homePortal.style.display = 'none';
             if (portalsRoot) {
                 portalsRoot.style.display = 'block';
-                portalsRoot.classList.remove('portal-reveal');
-                void portalsRoot.offsetWidth; // Trigger reflow
-                portalsRoot.classList.add('portal-reveal');
+                // Only trigger the portalEnter transition when switching portals or on initial entry
+                if (portalsRoot.dataset.activePortal !== state.activePortal) {
+                    portalsRoot.dataset.activePortal = state.activePortal;
+                    portalsRoot.classList.remove('portal-reveal');
+                    void portalsRoot.offsetWidth; // Trigger reflow
+                    portalsRoot.classList.add('portal-reveal');
+                }
             }
             if (state.activePortal === 'seller') {
                 renderSellerPortal();
@@ -2621,9 +2625,6 @@ document.addEventListener('DOMContentLoaded', () => {
                         <button class="portal-tab-btn active" data-tab="listings" style="padding: 0.75rem 1.75rem; background: none; border: none; border-bottom: 2px solid var(--accent-primary); color: var(--accent-primary); font-weight: 700; font-size: 0.95rem; cursor: pointer; letter-spacing: 1px;">
                             <i class="fa-solid fa-utensils"></i> LISTINGS
                         </button>
-                        <button class="portal-tab-btn" data-tab="history" style="padding: 0.75rem 1.75rem; background: none; border: none; border-bottom: 2px solid transparent; color: var(--text-muted); font-weight: 700; font-size: 0.95rem; cursor: pointer; letter-spacing: 1px;">
-                            <i class="fa-solid fa-clock-rotate-left"></i> CLAIMS & ORDERS
-                        </button>
                         <button class="portal-tab-btn" data-tab="comments" style="padding: 0.75rem 1.75rem; background: none; border: none; border-bottom: 2px solid transparent; color: var(--text-muted); font-weight: 700; font-size: 0.95rem; cursor: pointer; letter-spacing: 1px;">
                             <i class="fa-solid fa-comments"></i> COMMENTS
                         </button>
@@ -2747,17 +2748,6 @@ document.addEventListener('DOMContentLoaded', () => {
                                     <button type="button" id="cancel-edit-btn" class="nn-cancel-btn" style="display:none;"><i class="fa-solid fa-xmark"></i> Cancel Edit</button>
                                 </div>
                             </form>
-                        </div>
-                    </div>
-
-                    <!-- Tab: History (Seller) -->
-                    <div id="tab-history" class="portal-tab-content" style="display:none;">
-                        <div class="seller-listings-header" style="margin-bottom: 1.5rem;">
-                            <h2>DISTRIBUTION & CLAIMS HISTORY</h2>
-                            <span class="listings-count-badge" id="seller-history-count-badge">Live Sync Active</span>
-                        </div>
-                        <div id="seller-history-container">
-                            <!-- Live history records rendered here -->
                         </div>
                     </div>
 
@@ -2970,9 +2960,6 @@ document.addEventListener('DOMContentLoaded', () => {
                         <button class="portal-tab-btn active" data-tab="listings" style="padding: 0.75rem 1.75rem; background: none; border: none; border-bottom: 2px solid var(--accent-primary); color: var(--accent-primary); font-weight: 700; font-size: 0.95rem; cursor: pointer; letter-spacing: 1px;">
                             <i class="fa-solid fa-basket-shopping"></i> LISTINGS
                         </button>
-                        <button class="portal-tab-btn" data-tab="history" style="padding: 0.75rem 1.75rem; background: none; border: none; border-bottom: 2px solid transparent; color: var(--text-muted); font-weight: 700; font-size: 0.95rem; cursor: pointer; letter-spacing: 1px;">
-                            <i class="fa-solid fa-clock-rotate-left"></i> MY CLAIMS & ORDERS
-                        </button>
                         <button class="portal-tab-btn" data-tab="comments" style="padding: 0.75rem 1.75rem; background: none; border: none; border-bottom: 2px solid transparent; color: var(--text-muted); font-weight: 700; font-size: 0.95rem; cursor: pointer; letter-spacing: 1px;">
                             <i class="fa-solid fa-comments"></i> COMMENTS
                         </button>
@@ -2982,17 +2969,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     <div id="tab-listings" class="portal-tab-content">
                         <div class="items-grid" id="exchange-grid">
                             <!-- Cards will render here -->
-                        </div>
-                    </div>
-
-                    <!-- Tab: History (Buyer) -->
-                    <div id="tab-history" class="portal-tab-content" style="display:none;">
-                        <div class="seller-listings-header" style="margin-bottom: 1.5rem;">
-                            <h2>MY RESCUED FOOD & CLAIMS</h2>
-                            <span class="listings-count-badge" id="buyer-history-count-badge">Live Sync Active</span>
-                        </div>
-                        <div id="buyer-history-container">
-                            <!-- Live history records rendered here -->
                         </div>
                     </div>
 
@@ -3708,26 +3684,61 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // ---- PORTAL ORDER & CLAIM HISTORY (LIVE DATA) ----
-    function switchToHistoryTab() {
-        const historyBtn = document.querySelector(`.portal-tab-btn[data-tab="history"]`);
-        if (historyBtn) {
-            historyBtn.click();
-            const tabArea = document.getElementById('tab-history');
-            if (tabArea) {
-                tabArea.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    // ---- REAL-TIME HISTORY MODAL (FLOATING DOCK TRIGGERED) ----
+    function openHistoryModal() {
+        const modal = document.getElementById('historyModal');
+        if (!modal) return;
+        modal.style.display = 'flex';
+        const subtitle = document.getElementById('historyModalSubtitle');
+        if (subtitle) {
+            if (state.activePortal === 'seller') {
+                subtitle.textContent = "Live claims on your food listings, buyer NGO verification, and handover PIN codes";
+            } else {
+                subtitle.textContent = "Live rescued meals, donor restaurant FSSAI verification, and pickup PIN codes";
             }
         }
+        loadPortalHistory();
+    }
+    window.openHistoryModal = openHistoryModal;
+
+    function closeHistoryModal() {
+        const modal = document.getElementById('historyModal');
+        if (modal) modal.style.display = 'none';
+    }
+    window.closeHistoryModal = closeHistoryModal;
+
+    function switchToHistoryTab() {
+        openHistoryModal();
     }
     window.switchToHistoryTab = switchToHistoryTab;
 
+    // Attach modal close listener for backdrop click and Escape key
+    const histModalBackdrop = document.getElementById('historyModal');
+    if (histModalBackdrop) {
+        histModalBackdrop.addEventListener('click', (e) => {
+            if (e.target === histModalBackdrop) closeHistoryModal();
+        });
+    }
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+            const hModal = document.getElementById('historyModal');
+            if (hModal && hModal.style.display !== 'none') closeHistoryModal();
+        }
+    });
+
     async function loadPortalHistory(silent = false) {
         const token = sessionStorage.getItem('nourishToken');
-        const containerId = state.activePortal === 'seller' ? 'seller-history-container' : 'buyer-history-container';
-        const badgeId = state.activePortal === 'seller' ? 'seller-history-count-badge' : 'buyer-history-count-badge';
-        const container = document.getElementById(containerId);
-        const countBadge = document.getElementById(badgeId);
+        const container = document.getElementById('modal-history-container') || document.getElementById('seller-history-container') || document.getElementById('buyer-history-container');
         const dockBadge = document.getElementById('history-dock-badge');
+        const refreshBtn = document.getElementById('refreshHistoryModalBtn');
+
+        if (refreshBtn) {
+            const icon = refreshBtn.querySelector('i');
+            if (icon) {
+                icon.classList.add('fa-spin');
+                setTimeout(() => icon.classList.remove('fa-spin'), 600);
+            }
+        }
 
         if (!token) {
             if (container) {
@@ -3759,9 +3770,8 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!res.ok) throw new Error("Failed to fetch order history");
             const orders = await res.json();
 
-            // Update badges
+            // Update dock badge with count of active or total orders
             const count = Array.isArray(orders) ? orders.length : 0;
-            if (countBadge) countBadge.innerText = `${count} record${count === 1 ? '' : 's'}`;
             if (dockBadge) {
                 if (count > 0) {
                     dockBadge.innerText = count > 99 ? '99+' : count;

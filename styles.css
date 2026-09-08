@@ -53,8 +53,14 @@
 }
 
 /* Anti-flash Utilities */
-.user-logged-in #home-portal { display: none !important; }
-.user-logged-in #nn-portals-root { display: block !important; }
+.user-logged-in #home-portal,
+.portal-pre-active #home-portal,
+html.user-logged-in #home-portal,
+html.portal-pre-active #home-portal { display: none !important; }
+.user-logged-in #nn-portals-root,
+.portal-pre-active #nn-portals-root,
+html.user-logged-in #nn-portals-root,
+html.portal-pre-active #nn-portals-root { display: block !important; }
 
 #successModal {
     z-index: 99999 !important;
@@ -5632,5 +5638,55 @@ button:active,
     box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
 }
 
+/* History Modal Glassmorphic Styling */
+#historyModal {
+    animation: historyFadeIn 0.25s ease forwards;
+}
 
+@keyframes historyFadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
 
+.history-modal-card {
+    animation: historySlideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes historySlideUp {
+    from {
+        opacity: 0;
+        transform: translateY(24px) scale(0.98);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+#closeHistoryModal:hover {
+    background: rgba(239, 68, 68, 0.2) !important;
+    border-color: rgba(239, 68, 68, 0.5) !important;
+    color: #ef4444 !important;
+    transform: rotate(90deg);
+}
+
+#refreshHistoryModalBtn:hover {
+    background: rgba(16, 185, 129, 0.15) !important;
+    border-color: rgba(16, 185, 129, 0.6) !important;
+    transform: scale(1.08);
+}
+
+#modal-history-container::-webkit-scrollbar {
+    width: 6px;
+}
+#modal-history-container::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.02);
+    border-radius: 8px;
+}
+#modal-history-container::-webkit-scrollbar-thumb {
+    background: rgba(16, 185, 129, 0.3);
+    border-radius: 8px;
+}
+#modal-history-container::-webkit-scrollbar-thumb:hover {
+    background: rgba(16, 185, 129, 0.6);
+}
