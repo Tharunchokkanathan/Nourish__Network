@@ -1023,6 +1023,58 @@ img {
     border-radius: 100px;
     overflow: hidden;
     border: 2px solid var(--primary-green);
+    flex-shrink: 0;
+}
+
+.avatar.badge-avatar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 800;
+    font-size: 1.05rem;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    user-select: none;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
+}
+
+.avatar.seller-avatar {
+    background: linear-gradient(135deg, #064e3b 0%, #10b981 100%);
+    color: #ffffff;
+    border: 2px solid #34d399;
+    box-shadow: 0 0 12px rgba(16, 185, 129, 0.4);
+}
+
+.avatar.buyer-avatar {
+    background: linear-gradient(135deg, #0c4a6e 0%, #0284c7 100%);
+    color: #ffffff;
+    border: 2px solid #38bdf8;
+    box-shadow: 0 0 12px rgba(14, 165, 233, 0.4);
+}
+
+.role-badge-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    padding: 2px 9px;
+    border-radius: 20px;
+    margin-top: 4px;
+    letter-spacing: 0.3px;
+    text-transform: uppercase;
+}
+
+.role-badge-seller {
+    background: rgba(16, 185, 129, 0.15);
+    color: #34d399;
+    border: 1px solid rgba(16, 185, 129, 0.35);
+}
+
+.role-badge-buyer {
+    background: rgba(14, 165, 233, 0.15);
+    color: #38bdf8;
+    border: 1px solid rgba(14, 165, 233, 0.35);
 }
 
 .reviewer .info strong {
