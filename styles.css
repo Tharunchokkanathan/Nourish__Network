@@ -4314,33 +4314,75 @@ select.form-control option {
 }
 
 /* Select & Option Dropdown Fix for Dark/Light Mode */
+.minimal-select-wrap {
+    position: relative;
+    width: 100%;
+}
+
 select.minimal-input,
 .minimal-input-select {
     color-scheme: dark;
-    background-color: #0f172a !important;
+    background-color: #141414 !important;
     color: #f8fafc !important;
     cursor: pointer !important;
     appearance: none !important;
     -webkit-appearance: none !important;
     -moz-appearance: none !important;
-    padding-right: 2.75rem !important;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%2394a3b8' d='M6 8L1 3h10z'/%3E%3C/svg%3E") !important;
-    background-repeat: no-repeat !important;
-    background-position: right 1rem center !important;
-    background-size: 12px !important;
+    padding: 0.95rem 3rem 0.95rem 1.25rem !important;
+    border-radius: 18px !important;
+    background-image: none !important; /* Rely on clean overlay arrow */
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    width: 100% !important;
+    font-size: 0.9rem !important;
+    outline: none !important;
+    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+select.minimal-input::-ms-expand,
+.minimal-input-select::-ms-expand {
+    display: none !important;
+}
+
+select.minimal-input:focus,
+.minimal-input-select:focus {
+    border-color: rgba(255, 255, 255, 0.25) !important;
+    background-color: #1c1c1c !important;
+    box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.08) !important;
+}
+
+.select-arrow-container {
+    position: absolute;
+    right: 18px;
+    top: 50%;
+    transform: translateY(-50%);
+    pointer-events: none;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    color: rgba(255, 255, 255, 0.6);
+    line-height: 1;
+    transition: color 0.2s ease;
+}
+
+.minimal-select-wrap:hover .select-arrow-container {
+    color: #ffffff;
 }
 
 select.minimal-input option,
 .minimal-input-select option {
-    background-color: #0f172a !important;
+    background-color: #141414 !important;
     color: #f8fafc !important;
-    padding: 10px 14px !important;
+    padding: 12px 14px !important;
+    font-size: 0.9rem !important;
 }
 
 select.minimal-input option:checked,
 .minimal-input-select option:checked {
-    background-color: #1e293b !important;
-    color: #38bdf8 !important;
+    background-color: #262626 !important;
+    color: #ffffff !important;
+    font-weight: 600;
 }
 
 [data-theme='light'] select.minimal-input,
@@ -4349,7 +4391,15 @@ select.minimal-input option:checked,
     background-color: #ffffff !important;
     color: #0f172a !important;
     border-color: rgba(0, 0, 0, 0.15) !important;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%230f172a' d='M6 8L1 3h10z'/%3E%3C/svg%3E") !important;
+    background-image: none !important;
+}
+
+[data-theme='light'] .select-arrow-container {
+    color: rgba(15, 23, 42, 0.6);
+}
+
+[data-theme='light'] .minimal-select-wrap:hover .select-arrow-container {
+    color: #0f172a;
 }
 
 [data-theme='light'] select.minimal-input option,
