@@ -5528,13 +5528,13 @@ button:active,
    ───────────────────────────────────────────────────────────── */
 
 .history-card {
-    background: var(--card-bg, rgba(255, 255, 255, 0.03));
-    border: 1px solid var(--border-glow, rgba(255, 255, 255, 0.08));
+    background: #141414;
+    border: 1px solid rgba(255, 255, 255, 0.08);
     border-radius: 18px;
     padding: 1.5rem;
     margin-bottom: 1.5rem;
     transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.35);
     display: flex;
     flex-direction: column;
     gap: 1.25rem;
@@ -5544,8 +5544,8 @@ button:active,
 
 .history-card:hover {
     transform: translateY(-2px);
-    border-color: rgba(255, 255, 255, 0.15);
-    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.25);
+    border-color: rgba(255, 255, 255, 0.16);
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.5);
 }
 
 .history-top-row {
@@ -5555,7 +5555,7 @@ button:active,
     flex-wrap: wrap;
     gap: 10px;
     padding-bottom: 1rem;
-    border-bottom: 1px solid var(--border-glow, rgba(255, 255, 255, 0.06));
+    border-bottom: 1px solid rgba(255, 255, 255, 0.07);
 }
 
 .history-item-info {
@@ -5569,7 +5569,7 @@ button:active,
     height: 54px;
     border-radius: 12px;
     object-fit: cover;
-    border: 1px solid var(--border-glow);
+    border: 1px solid rgba(255, 255, 255, 0.1);
     flex-shrink: 0;
 }
 
@@ -5586,20 +5586,20 @@ button:active,
 }
 
 .history-status-badge.status-confirmed {
-    background: rgba(56, 189, 248, 0.12);
-    color: #38bdf8;
-    border: 1px solid rgba(56, 189, 248, 0.3);
+    background: rgba(255, 255, 255, 0.08);
+    color: #e5e5e5;
+    border: 1px solid rgba(255, 255, 255, 0.16);
 }
 
 .history-status-badge.status-completed {
-    background: rgba(16, 185, 129, 0.12);
-    color: #34d399;
-    border: 1px solid rgba(16, 185, 129, 0.3);
+    background: rgba(255, 255, 255, 0.04);
+    color: #9ca3af;
+    border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .history-party-box {
-    background: rgba(0, 0, 0, 0.2);
-    border: 1px solid var(--border-glow);
+    background: #1b1b1b;
+    border: 1px solid rgba(255, 255, 255, 0.07);
     border-radius: 14px;
     padding: 1.2rem;
     display: flex;
@@ -5615,9 +5615,9 @@ button:active,
 }
 
 .pickup-code-pill {
-    background: rgba(56, 189, 248, 0.1);
-    border: 1px solid rgba(56, 189, 248, 0.3);
-    color: #38bdf8;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    color: #e5e5e5;
     padding: 6px 14px;
     border-radius: 10px;
     font-size: 0.85rem;
