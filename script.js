@@ -2091,20 +2091,33 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        // Validate FSSAI if provided for Vendor
-        if ((accountType === 'restaurant' || accountType === 'vendor') && fssaiCode) {
+        // FSSAI is mandatory for Vendor / Restaurant accounts
+        if (accountType === 'restaurant' || accountType === 'vendor') {
+            if (!fssaiCode) {
+                showToast("FSSAI License Code is required to register as a food vendor.", "error");
+                if (regFssai) regFssai.focus();
+                return;
+            }
             const fssaiRes = window.validateFSSAI(fssaiCode);
             if (!fssaiRes.valid) {
                 showToast(fssaiRes.message || "Invalid 14-digit FSSAI code.", "warning");
+                if (regFssai) regFssai.focus();
                 return;
             }
         }
 
-        // Validate NGO Accreditation if provided
-        if ((accountType === 'ngo' || accountType === 'shelter') && darpanId) {
+        // DARPAN / Trust Deed is mandatory for NGO / Shelter accounts
+        if (accountType === 'ngo' || accountType === 'shelter') {
+            if (!darpanId) {
+                const label = ngoRegType === 'trust' ? 'State Society / Trust Deed number' : 'NITI Aayog DARPAN ID';
+                showToast(`${label} is required to register as an NGO / shelter.`, "error");
+                if (regDarpan) regDarpan.focus();
+                return;
+            }
             const ngoRes = window.validateNGOCompliance(ngoRegType, darpanId);
             if (!ngoRes.valid) {
                 showToast(ngoRes.message || "Invalid NGO registration credential format.", "warning");
+                if (regDarpan) regDarpan.focus();
                 return;
             }
         }
