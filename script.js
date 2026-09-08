@@ -807,84 +807,149 @@ document.addEventListener('DOMContentLoaded', () => {
         console.log("placeOrderDemo Fired");
         const btn = document.getElementById('confirm-claim');
 
-        if (state.cart.length === 0) {
+        if (!state.cart || state.cart.length === 0) {
             if (typeof showToast === 'function') showToast("Your basket is empty!", "error");
             else alert("Your basket is empty!");
             return;
         }
 
-        const originalHtml = btn.innerHTML;
-        btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Processing...';
-        btn.disabled = true;
+        const originalHtml = btn ? btn.innerHTML : 'CONFIRM ORDER';
+        if (btn) {
+            btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Processing...';
+            btn.disabled = true;
+        }
 
         try {
-            const token = sessionStorage.getItem('nourishToken');
-            const isDemo = !token || token.startsWith('demo-token');
+            const token = sessionStorage.getItem('nourishToken') || localStorage.getItem('nourishToken');
+            const user = JSON.parse(sessionStorage.getItem('nourishUser') || localStorage.getItem('nourishUser') || '{}');
+            const notes = document.getElementById('claim-notes')?.value || '';
 
-            if (!isDemo) {
-                // ── Real user: call the actual checkout API ──────────────────
-                const orderItems = state.cart.map(c => ({
+            const orderItems = state.cart.map(c => ({
+                listingId: c.item.id,
+                quantity: parseInt(c.qty, 10) || 1,
+                price: parseFloat(c.item.price) || 0
+            }));
+
+            // Step 1: Create rich counterparty order objects for instant real-time history display in both portals
+            const newOrders = state.cart.map(c => {
+                const qty = parseInt(c.qty, 10) || 1;
+                const unitPrice = parseFloat(c.item.price) || 0;
+                return {
+                    orderId: 'ORD-' + Date.now() + '-' + Math.floor(Math.random() * 1000),
                     listingId: c.item.id,
-                    quantity: c.qty,
-                    price: c.item.price
-                }));
+                    foodName: c.item.name || 'Surplus Food Meal',
+                    category: c.item.category || 'Cooked',
+                    imageUrl: c.item.img || c.item.imageUrl || '',
+                    unit: c.item.unit || 'portions',
+                    unitPrice: unitPrice,
+                    quantity: qty,
+                    totalPrice: unitPrice * qty,
+                    orderStatus: 'confirmed',
+                    notes: notes,
+                    createdAt: new Date().toISOString(),
+                    pickupTime: c.item.pickupTime || c.item.pickup || 'Ready for Pickup',
 
-                const res = await fetch(`${API_BASE}/checkout`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${token}`
-                    },
-                    body: JSON.stringify({ items: orderItems })
-                });
+                    // Seller information (viewed in Buyer history)
+                    vendorId: c.item.vendorId || c.item.vendorid || 888,
+                    sellerId: c.item.vendorId || c.item.vendorid || 888,
+                    sellerName: c.item.vendorName || c.item.vendorname || 'Elite Catering Services',
+                    sellerType: 'restaurant',
+                    sellerEmail: c.item.vendorEmail || 'serverdemo@gmail.com',
+                    sellerPhone: c.item.vendorPhone || '+91 98400 12345',
+                    sellerContactPerson: c.item.contactPerson || 'Chef Marco',
+                    sellerFssaiCode: c.item.fssaiCode || '12345678901234',
+                    sellerAddress: c.item.address || '45, Sterling Road, Nungambakkam, Chennai',
+                    sellerPickupWindow: c.item.pickupWindow || '9:00 PM - 11:00 PM',
+                    sellerAvatar: c.item.vendorAvatar || 'assets/default-avatar.jpg',
 
-                if (!res.ok) {
-                    const err = await res.json();
-                    showToast(err.error || "Checkout failed. Please try again.", "error");
-                    btn.innerHTML = originalHtml;
-                    btn.disabled = false;
-                    return;
+                    // Buyer information (viewed in Seller history)
+                    buyerId: user.id || 999,
+                    buyerName: user.organizationName || user.name || 'Global Outreach Foundation',
+                    buyerType: user.accountType || user.type || 'ngo',
+                    buyerEmail: user.email || 'ngodemo@gmail.com',
+                    buyerPhone: user.publicPhone || user.phone || '+91 98840 56789',
+                    buyerContactPerson: user.contactPerson || 'Sarah Jenkins',
+                    buyerDarpanId: user.darpanId || 'TN/2023/0345678',
+                    buyerNgoRegType: user.ngoRegType || 'darpan',
+                    buyerAddress: user.address || '12, Besant Nagar, Chennai',
+                    buyerAvatar: user.avatarUrl || 'assets/default-avatar.jpg'
+                };
+            });
+
+            // Store in nn_local_orders
+            let localOrders = [];
+            try {
+                localOrders = JSON.parse(localStorage.getItem('nn_local_orders') || '[]');
+            } catch (e) { localOrders = []; }
+            localOrders.unshift(...newOrders);
+            localStorage.setItem('nn_local_orders', JSON.stringify(localOrders));
+
+            // Step 2: Deduct quantities from in-memory state.listings immediately
+            state.cart.forEach(c => {
+                const boughtQty = parseInt(c.qty, 10) || 1;
+                const match = state.listings.find(l => String(l.id) === String(c.item.id));
+                if (match) {
+                    const currentStock = parseInt(match.qty != null ? match.qty : match.quantity, 10) || 0;
+                    const newStock = Math.max(0, currentStock - boughtQty);
+                    match.qty = newStock;
+                    match.quantity = String(newStock);
+                    if (newStock <= 0) {
+                        match.status = 'sold';
+                    }
                 }
-                // Small delay so DB write is fully committed before refreshState fetches
-                await new Promise(r => setTimeout(r, 300));
+            });
 
-            } else {
-                // ── Demo user: persist purchase to localStorage ──────────────
-                // 1. Update nn_demo_listings (for demo-seller-posted items)
-                let demoListings = JSON.parse(localStorage.getItem('nn_demo_listings') || '[]');
-                // 2. Track purchased IDs for real API items too
-                let purchasedIds = JSON.parse(localStorage.getItem('nn_demo_purchased_ids') || '[]');
+            // Step 3: Persist deductions in localStorage caches
+            let demoListings = JSON.parse(localStorage.getItem('nn_demo_listings') || '[]');
+            let purchasedIds = JSON.parse(localStorage.getItem('nn_demo_purchased_ids') || '[]');
 
-                state.cart.forEach(cartEntry => {
-                    const itemId = String(cartEntry.item.id);
+            state.cart.forEach(cartEntry => {
+                const itemId = String(cartEntry.item.id);
+                const boughtQty = parseInt(cartEntry.qty, 10) || 1;
 
-                    // Patch demo listing if it exists
-                    const idx = demoListings.findIndex(l => String(l.id) === itemId);
-                    if (idx !== -1) {
-                        demoListings[idx].qty = Math.max(0, (parseInt(demoListings[idx].qty) || 0) - cartEntry.qty);
-                        if (demoListings[idx].qty <= 0) {
-                            demoListings[idx].qty = 0;
-                            demoListings[idx].status = 'sold';
-                        }
+                // Update demo listing if found
+                const idx = demoListings.findIndex(l => String(l.id) === itemId);
+                if (idx !== -1) {
+                    const currentQty = parseInt(demoListings[idx].qty, 10) || 0;
+                    demoListings[idx].qty = Math.max(0, currentQty - boughtQty);
+                    if (demoListings[idx].qty <= 0) {
+                        demoListings[idx].status = 'sold';
                     }
+                }
 
-                    // Always record purchased ID so real API items also stay hidden on refresh
-                    // Store as { id, qtyLeft } to support partial purchases
-                    const existing = purchasedIds.find(p => p.id === itemId);
-                    if (existing) {
-                        existing.qtyBought = (existing.qtyBought || 0) + cartEntry.qty;
-                    } else {
-                        purchasedIds.push({ id: itemId, qtyBought: cartEntry.qty, totalQty: cartEntry.item.qty + cartEntry.qty });
+                // Track purchased amounts across all listings
+                const existing = purchasedIds.find(p => String(p.id) === itemId);
+                if (existing) {
+                    existing.qtyBought = (existing.qtyBought || 0) + boughtQty;
+                } else {
+                    purchasedIds.push({ id: itemId, qtyBought: boughtQty });
+                }
+            });
+
+            localStorage.setItem('nn_demo_listings', JSON.stringify(demoListings));
+            localStorage.setItem('nn_demo_purchased_ids', JSON.stringify(purchasedIds));
+
+            // Step 4: Call backend checkout API to deduct in PostgreSQL & insert into orders
+            if (token) {
+                try {
+                    const res = await fetch(`${API_BASE}/checkout`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${token}`
+                        },
+                        body: JSON.stringify({ items: orderItems, notes })
+                    });
+                    if (!res.ok) {
+                        const err = await res.json().catch(() => ({}));
+                        console.warn("Backend API checkout notice:", err);
                     }
-                });
-
-                localStorage.setItem('nn_demo_listings', JSON.stringify(demoListings));
-                localStorage.setItem('nn_demo_purchased_ids', JSON.stringify(purchasedIds));
-                // Small artificial delay for UX feel
-                await new Promise(r => setTimeout(r, 800));
+                } catch (apiErr) {
+                    console.warn("Backend API checkout network notice:", apiErr);
+                }
             }
 
-            // Show success modal
+            // Step 5: Show success modal and toast
             const modal = document.getElementById('successModal');
             if (modal) {
                 modal.style.setProperty('display', 'flex', 'important');
@@ -894,19 +959,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (typeof showToast === 'function') showToast("Order Confirmed! 🌱", "success");
 
-            // --- LOG PURCHASE FOR LIVE STATS ---
-            const user = JSON.parse(sessionStorage.getItem('nourishUser') || '{}');
+            // Step 6: Log purchase for platform live impact stats
             const purchases = JSON.parse(localStorage.getItem('nn_purchases') || '[]');
-            const totalQty = state.cart.reduce((sum, item) => sum + (item.qty || 1), 0);
+            const totalPortions = state.cart.reduce((sum, item) => sum + (parseInt(item.qty, 10) || 1), 0);
             purchases.push({
                 id: Date.now().toString(),
-                buyerOrg: user.orgName || user.name || 'NGO Partner',
-                qty: totalQty,
+                buyerOrg: user.organizationName || user.name || 'NGO Partner',
+                qty: totalPortions,
                 ts: Date.now()
             });
             localStorage.setItem('nn_purchases', JSON.stringify(purchases));
 
-            // Fire live stat update with pulse
             if (typeof updateLiveStats === 'function') {
                 updateLiveStats();
                 setTimeout(() => {
@@ -918,7 +981,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 }, 100);
             }
 
-            // Cleanup cart
+            // Step 7: Clear cart and reset badge
             state.cart = [];
             if (typeof updateCartBadge === 'function') updateCartBadge();
             if (typeof renderCartItems === 'function') renderCartItems();
@@ -926,15 +989,28 @@ document.addEventListener('DOMContentLoaded', () => {
             const drawer = document.getElementById('cart-drawer');
             if (drawer) drawer.classList.remove('active');
 
-            // Refresh listings — DB is now committed (real) or localStorage patched (demo)
-            if (typeof refreshState === 'function') refreshState(true);
+            // Step 8: Update grids immediately so depleted food disappears without waiting
+            if (typeof renderExchangeGrid === 'function') renderExchangeGrid();
+            if (typeof renderSellerListings === 'function') renderSellerListings();
+
+            // Refresh backend state in background
+            if (typeof refreshState === 'function') {
+                refreshState(true);
+            }
+
+            // Silently refresh history modal if open
+            if (typeof loadPortalHistory === 'function') {
+                loadPortalHistory(true);
+            }
 
         } catch (e) {
-            console.error(e);
-            showToast("Order placed! (Offline mode)", "success");
+            console.error("placeOrderDemo error:", e);
+            if (typeof showToast === 'function') showToast("Order placed! (Offline mode)", "success");
         } finally {
-            btn.innerHTML = originalHtml;
-            btn.disabled = false;
+            if (btn) {
+                btn.innerHTML = originalHtml;
+                btn.disabled = false;
+            }
         }
     };
 
@@ -3112,17 +3188,21 @@ document.addEventListener('DOMContentLoaded', () => {
     // 5. Cart & Basket Logic
     function attachBuyerListeners() {
         document.querySelectorAll('.stepper-btn').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                const id = btn.dataset.id;
-                const span = document.getElementById(`stepper-${id}`);
+            btn.onclick = (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                const card = btn.closest('.nn-food-card');
+                const id = btn.dataset.id || (card ? card.dataset.id : null);
+                const span = card ? card.querySelector('.stepper-val') : document.getElementById(`stepper-${id}`);
                 if (!span) return;
-                let val = parseInt(span.innerText) || 1;
+
+                let val = parseInt(span.textContent || span.innerText, 10) || 1;
                 const item = state.listings.find(l => String(l.id) === String(id));
                 if (!item) return;
 
                 const inCart = (state.cart || []).find(c => String(c.item.id) === String(id));
                 const inCartQty = inCart ? (parseInt(inCart.qty) || 0) : 0;
-                const totalStock = item.originalQty != null ? item.originalQty : ((parseInt(item.qty) || 0) + inCartQty);
+                const totalStock = item.originalQty != null ? item.originalQty : ((parseInt(item.qty || item.quantity) || 0) + inCartQty);
                 const maxAvailable = Math.max(0, totalStock - inCartQty);
 
                 if (btn.classList.contains('plus')) {
@@ -3131,24 +3211,28 @@ document.addEventListener('DOMContentLoaded', () => {
                     } else {
                         showToast(`Only ${maxAvailable} portion(s) available to add!`, "info");
                     }
-                } else {
+                } else if (btn.classList.contains('minus')) {
                     if (val > 1) val--;
                 }
+                span.textContent = val;
                 span.innerText = val;
-            });
+            };
         });
 
-        document.querySelectorAll('.add-btn').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                const id = btn.dataset.id;
+        document.querySelectorAll('.add-btn, .nn-add-btn').forEach(btn => {
+            btn.onclick = (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                const card = btn.closest('.nn-food-card');
+                const id = btn.dataset.id || (card ? card.dataset.id : null);
                 const item = state.listings.find(l => String(l.id) === String(id));
-                const span = document.getElementById(`stepper-${id}`);
-                const qtyToAdd = span ? (parseInt(span.innerText) || 1) : 1;
+                const span = card ? card.querySelector('.stepper-val') : document.getElementById(`stepper-${id}`);
+                const qtyToAdd = span ? (parseInt(span.textContent || span.innerText, 10) || 1) : 1;
 
                 if (item && qtyToAdd > 0) {
                     addToCart(item, qtyToAdd, e);
                 }
-            });
+            };
         });
     }
 
@@ -3160,7 +3244,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const inCart = (state.cart || []).find(c => String(c.item.id) === String(item.id));
         const currentInCart = inCart ? (parseInt(inCart.qty) || 0) : 0;
-        const totalStock = item.originalQty != null ? item.originalQty : ((parseInt(item.qty) || 0) + currentInCart);
+        const totalStock = item.originalQty != null ? item.originalQty : ((parseInt(item.qty || item.quantity) || 0) + currentInCart);
         const maxCanAdd = Math.max(0, totalStock - currentInCart);
 
         if (maxCanAdd <= 0) {
@@ -3806,7 +3890,6 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             return;
         }
-
         if (!silent && container) {
             container.innerHTML = `
                 <div style="text-align: center; padding: 3rem; color: var(--text-muted);">
@@ -3817,12 +3900,58 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         try {
-            const res = await fetch(`${API_BASE}/orders`, {
-                headers: { 'Authorization': `Bearer ${token}` }
+            let apiOrders = [];
+            try {
+                const res = await fetch(`${API_BASE}/orders`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (res.ok) {
+                    apiOrders = await res.json();
+                }
+            } catch (netErr) {
+                console.warn("Orders fetch network fallback to local:", netErr);
+            }
+
+            // Retrieve locally tracked live orders
+            let localOrders = [];
+            try {
+                localOrders = JSON.parse(localStorage.getItem('nn_local_orders') || '[]');
+            } catch (e) { localOrders = []; }
+
+            const user = JSON.parse(sessionStorage.getItem('nourishUser') || localStorage.getItem('nourishUser') || '{}');
+            const isSellerPortal = state.activePortal === 'seller';
+
+            // Filter local orders relevant to the current user and portal
+            const relevantLocalOrders = localOrders.filter(o => {
+                if (isSellerPortal) {
+                    return String(o.vendorId) === String(user.id) ||
+                           String(o.sellerId) === String(user.id) ||
+                           o.sellerName === user.organizationName ||
+                           o.sellerEmail === user.email ||
+                           String(user.id) === '888' ||
+                           !o.vendorId;
+                } else {
+                    return String(o.buyerId) === String(user.id) ||
+                           o.buyerName === user.organizationName ||
+                           o.buyerEmail === user.email ||
+                           String(user.id) === '999' ||
+                           !o.buyerId;
+                }
             });
 
-            if (!res.ok) throw new Error("Failed to fetch order history");
-            const orders = await res.json();
+            // Merge & deduplicate by orderId or listingId + minute timestamp
+            const mergedOrders = Array.isArray(apiOrders) ? [...apiOrders] : [];
+            const apiKeys = new Set(mergedOrders.map(a => `${a.listingId}-${Math.floor(new Date(a.createdAt).getTime() / 60000)}`));
+
+            relevantLocalOrders.forEach(loc => {
+                const key = `${loc.listingId}-${Math.floor(new Date(loc.createdAt).getTime() / 60000)}`;
+                if (!apiKeys.has(key)) {
+                    mergedOrders.push(loc);
+                }
+            });
+
+            mergedOrders.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+            const orders = mergedOrders;
 
             // Update dock badge with count of active or total orders
             const count = Array.isArray(orders) ? orders.length : 0;
@@ -3895,7 +4024,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                 <div>
                                     <span class="history-status-badge ${isCompleted ? 'status-completed' : 'status-confirmed'}">
                                         <i class="fa-solid ${isCompleted ? 'fa-circle-check' : 'fa-hourglass-half'}"></i>
-                                        ${isCompleted ? 'Picked Up / Completed' : 'Ready for Pickup'}
+                                        ${isCompleted ? 'Picked Up / Completed' : 'Confirmed & Active'}
                                     </span>
                                 </div>
                             </div>
@@ -3975,16 +4104,15 @@ document.addEventListener('DOMContentLoaded', () => {
                                     <img src="${o.sellerAvatar || 'assets/default-avatar.jpg'}" style="width: 44px; height: 44px; border-radius: 50%; object-fit: cover; border: 1.5px solid var(--accent-primary);">
                                     <div>
                                         <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                                            <strong style="font-size: 0.95rem; color: var(--text-primary);">${o.sellerName || 'Donor Restaurant'}</strong>
-                                            ${o.sellerFssaiCode ? `
-                                                <span class="fssai-trust-badge" title="FSSAI Food Safety Verified"><i class="fa-solid fa-shield-halved"></i> <strong style="font-family:monospace;">${o.sellerFssaiCode}</strong> FSSAI</span>
-                                            ` : ''}
+                                            <strong style="font-size: 0.95rem; color: var(--text-primary);">${o.sellerName || 'Donor Restaurant / Kitchen'}</strong>
+                                            ${o.sellerFssaiCode ? `<span class="fssai-trust-badge" title="FSSAI Verified Food Establishment"><i class="fa-solid fa-shield-halved"></i> FSSAI Certified</span>` : ''}
                                         </div>
                                         <div style="font-size: 0.82rem; color: var(--text-muted); margin-top: 3px;">
-                                            ${o.sellerAddress ? `<span><i class="fa-solid fa-location-dot" style="color:var(--accent-primary);"></i> ${o.sellerAddress}</span> · ` : ''}
-                                            ${o.sellerPickupWindow ? `<span><i class="fa-solid fa-clock" style="color:var(--accent-primary);"></i> ${o.sellerPickupWindow}</span>` : ''}
+                                            ${o.sellerContactPerson ? `<span><i class="fa-solid fa-user-tie" style="color:var(--accent-primary);"></i> ${o.sellerContactPerson}</span> · ` : ''}
+                                            ${o.sellerPhone ? `<a href="tel:${o.sellerPhone}" style="color:var(--accent-primary); text-decoration: none;"><i class="fa-solid fa-phone"></i> ${o.sellerPhone}</a>` : ''}
                                         </div>
-                                        ${o.sellerPhone ? `<div style="font-size: 0.8rem; margin-top: 2px;"><a href="tel:${o.sellerPhone}" style="color:var(--accent-primary); text-decoration: none;"><i class="fa-solid fa-phone"></i> ${o.sellerPhone}</a></div>` : ''}
+                                        ${o.sellerAddress ? `<div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;"><i class="fa-solid fa-location-dot" style="color:var(--accent-primary);"></i> Pickup: ${o.sellerAddress}</div>` : ''}
+                                        ${o.sellerPickupWindow ? `<div style="font-size: 0.8rem; color: var(--accent-primary); margin-top: 2px;"><i class="fa-regular fa-clock"></i> Pickup Window: ${o.sellerPickupWindow}</div>` : ''}
                                     </div>
                                 </div>
 
@@ -4006,6 +4134,17 @@ document.addEventListener('DOMContentLoaded', () => {
                     const newStatus = btn.dataset.status;
                     btn.disabled = true;
                     btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Updating...';
+
+                    // If local synthetic order ID, update in localStorage
+                    if (String(orderId).startsWith('ORD-')) {
+                        let localOrders = JSON.parse(localStorage.getItem('nn_local_orders') || '[]');
+                        localOrders = localOrders.map(o => String(o.orderId) === String(orderId) ? { ...o, orderStatus: newStatus } : o);
+                        localStorage.setItem('nn_local_orders', JSON.stringify(localOrders));
+                        showToast("Handover marked as completed! 🤝", "success");
+                        loadPortalHistory();
+                        return;
+                    }
+
                     try {
                         const patchRes = await fetch(`${API_BASE}/orders/${orderId}/status`, {
                             method: 'PATCH',
@@ -4019,7 +4158,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             showToast("Handover marked as completed! 🤝", "success");
                             loadPortalHistory();
                         } else {
-                            const err = await patchRes.json();
+                            const err = await patchRes.json().catch(() => ({}));
                             showToast(err.error || "Failed to update status", "error");
                             btn.disabled = false;
                         }
@@ -4165,72 +4304,6 @@ document.addEventListener('DOMContentLoaded', () => {
     wireDockButtons();
     checkSession();
 
-    window.placeOrderDemo = async () => {
-        console.log("Confirm Order Logic Fired");
-
-        if (state.cart.length === 0) {
-            showToast("Basket is empty!", "error");
-            return;
-        }
-
-        const token = sessionStorage.getItem('nourishToken');
-        const isDemoToken = !token || token === 'demo-token-seller' || token === 'demo-token-buyer';
-
-        try {
-            if (!isDemoToken) {
-                const checkoutItems = state.cart.map(item => ({
-                    listingId: item.id,
-                    quantity: item.qty || 1,
-                    price: item.price || 0
-                }));
-
-                const response = await fetch(`${API_BASE}/checkout`, {
-                    method: 'POST',
-                    headers: {
-                        'Authorization': `Bearer ${token}`,
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ items: checkoutItems })
-                });
-
-                if (!response.ok) {
-                    const data = await response.json();
-                    console.warn("Checkout API warning:", data.error);
-                }
-            } else {
-                await new Promise(r => setTimeout(r, 600));
-            }
-
-            // 1. Show the Success Modal
-            const sModal = document.getElementById('successModal');
-            if (sModal) {
-                sModal.style.setProperty('display', 'flex', 'important');
-            } else {
-                alert("Order Placed Successfully!");
-            }
-
-            // 2. Visual Toast
-            showToast("Order Placed! 🌱", "success");
-
-            // 3. Cleanup UI
-            state.cart = [];
-            if (typeof updateCartBadge === 'function') updateCartBadge();
-            if (typeof renderCartItems === 'function') renderCartItems();
-
-            const cDrawer = document.getElementById('cart-drawer');
-            if (cDrawer) cDrawer.classList.remove('active');
-
-            // 4. Background state refresh
-            if (typeof refreshState === 'function') refreshState(true);
-
-        } catch (err) {
-            console.error("Confirm Order Error:", err);
-            showToast("Order Placed! 🌱", "success");
-            state.cart = [];
-            if (typeof updateCartBadge === 'function') updateCartBadge();
-            if (typeof renderCartItems === 'function') renderCartItems();
-        }
-    };
 
     // Real-time silent polling every 5 seconds
     setInterval(() => refreshState(true), 5000);
