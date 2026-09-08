@@ -3056,7 +3056,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             <div style="flex: 1; min-width: 200px;">
                                 <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 4px;">
                                     <span style="font-size: 1.2rem; font-weight: 800; color: var(--text-primary);">${user.name || user.organizationName || 'Your NGO Organization'}</span>
-                                    <span class="badge" style="background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; padding: 3px 8px; border-radius: 8px; font-weight: 700;">Verified NGO</span>
+                                    ${(user.darpanId || user.darpanid || user.ngoRegCode) ? `<span class="badge" style="background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; padding: 3px 8px; border-radius: 8px; font-weight: 700;">Verified NGO</span>` : ''}
                                 </div>
                                 ${user.bio ? `<p style="color:var(--text-muted); font-size:0.9rem; margin: 0 0 8px;">${user.bio}</p>` : ''}
                                 <div style="display: flex; flex-wrap: wrap; gap: 10px 20px; font-size: 0.82rem; color: var(--text-muted); margin-top: 6px;">
