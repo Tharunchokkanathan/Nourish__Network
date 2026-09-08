@@ -237,6 +237,18 @@ if (dbUrl) {
                     createdat TIMESTAMP NOT NULL DEFAULT NOW()
                 );
             `);
+
+            // Ensure demo users exist so foreign keys in orders table succeed for demo workflows
+            await pool.query(`
+                INSERT INTO users (id, accounttype, organizationname, email, password, isverified, darpanid, ngoregtype, fssaicode)
+                VALUES 
+                (888, 'restaurant', 'Elite Catering Services', 'serverdemo@gmail.com', '$2a$10$demoHashedPasswordPlaceHolder888', 1, '', '', '12345678901234'),
+                (999, 'ngo', 'Global Outreach Foundation', 'ngodemo@gmail.com', '$2a$10$demoHashedPasswordPlaceHolder999', 1, 'TN/2023/0345678', 'darpan', '')
+                ON CONFLICT (id) DO UPDATE SET 
+                    organizationname = EXCLUDED.organizationname,
+                    accounttype = EXCLUDED.accounttype,
+                    email = EXCLUDED.email;
+            `);
             console.log('✅ Supabase PostgreSQL: All 4 cloud tables initialized and ready!');
         } catch (err) {
             console.error('❌ Supabase table initialization error:', err.message);

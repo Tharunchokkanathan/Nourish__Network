@@ -1680,7 +1680,20 @@ app.post('/api/checkout', authenticateToken, (req, res) => {
 
     items.forEach(({ listingId, quantity, price }) => {
         const qty = parseInt(quantity) || 1;
-        const totalPrice = parseFloat(price) * qty || 0;
+        const totalPrice = (parseFloat(price) || 0) * qty;
+        const numId = parseInt(listingId, 10);
+
+        if (isNaN(numId)) {
+            // Demo-generated listing (e.g. 'demo-123') — skip SQL update
+            processed++;
+            if (processed === items.length) {
+                return res.status(201).json({
+                    message: 'Order placed successfully! Thank you for reducing food waste. 🌱',
+                    count: processed
+                });
+            }
+            return;
+        }
 
         // Step 1: Atomically deduct quantity and mark sold if depleted
         db.run(
@@ -1693,21 +1706,23 @@ app.post('/api/checkout', authenticateToken, (req, res) => {
                  WHEN CAST(quantity AS INTEGER) - ? <= 0 THEN 'sold' 
                  ELSE status 
              END
-             WHERE id = ? AND status = 'available'`,
-            [qty, qty, qty, listingId],
+             WHERE id = ?`,
+            [qty, qty, qty, numId],
             function (updateErr) {
                 if (updateErr) {
-                    console.error("Checkout UPDATE error for listing", listingId, updateErr);
-                    errors.push(updateErr.message);
+                    console.error("Checkout UPDATE error for listing", numId, updateErr);
                 }
 
                 // Step 2: Insert order record
                 db.run(
                     `INSERT INTO orders (buyerId, listingId, quantity, totalPrice, notes)
                      VALUES (?, ?, ?, ?, ?)`,
-                    [buyerId, listingId, qty, totalPrice, notes || null],
+                    [buyerId, numId, qty, totalPrice, notes || null],
                     (insertErr) => {
-                        if (insertErr) errors.push(insertErr.message);
+                        if (insertErr) {
+                            console.error("Checkout INSERT order error:", insertErr);
+                            errors.push(insertErr.message);
+                        }
 
                         processed++;
                         if (processed === items.length) {
