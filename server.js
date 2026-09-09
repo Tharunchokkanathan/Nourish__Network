@@ -85,8 +85,9 @@ function makeToken(user) {
 // Body: { accountType, organizationName, email, password, phone?, address? }
 app.post('/api/register', async (req, res) => {
     const { accountType, organizationName, email, password, phone, address, fssaiCode, darpanId, ngoRegType } = req.body;
+    const resolvedOrgName = organizationName || req.body.name;
 
-    if (!accountType || !organizationName || !email || !password) {
+    if (!accountType || !resolvedOrgName || !email || !password) {
         return res.status(400).json({ error: 'Please provide all required fields.' });
     }
 
@@ -122,7 +123,7 @@ app.post('/api/register', async (req, res) => {
                     WHERE email = ?`;
 
                 db.run(updateSql, [
-                    accountType, organizationName, hashed,
+                    accountType, resolvedOrgName, hashed,
                     phone || null, address || null,
                     fssaiCode || null, darpanId || null,
                     ngoRegType || (darpanId ? 'darpan' : null),
@@ -134,8 +135,9 @@ app.post('/api/register', async (req, res) => {
                     setImmediate(() => {
                         sendVerificationEmail({
                             toEmail: email,
-                            name: organizationName,
+                            name: resolvedOrgName,
                             token: verificationToken,
+                            otp: verificationOtp,
                             accountType,
                             hostUrl
                         }).catch(e => console.error("Async Email Error:", e));
@@ -150,13 +152,14 @@ app.post('/api/register', async (req, res) => {
                 return;
             }
 
-            // New email — insert fresh account
+            // New email — insert fresh account (all accounts require email verification)
+            const initialVerified = 0;
             const sql = `INSERT INTO users (accountType, organizationName, email, password, phone, address, fssaiCode, darpanId, ngoRegType, isVerified, verificationToken, verificationTokenExpires, verificationOtp)
-                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?)`;
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
 
             db.run(sql, [
                 accountType,
-                organizationName,
+                resolvedOrgName,
                 email,
                 hashed,
                 phone || null,
@@ -164,6 +167,7 @@ app.post('/api/register', async (req, res) => {
                 fssaiCode || null,
                 darpanId || null,
                 ngoRegType || (darpanId ? 'darpan' : null),
+                initialVerified,
                 verificationToken,
                 verificationTokenExpires,
                 verificationOtp
@@ -175,24 +179,13 @@ app.post('/api/register', async (req, res) => {
                     return res.status(500).json({ error: err.message });
                 }
 
-                const userId = this.lastID;
-                const user = {
-                    id: userId,
-                    accountType,
-                    organizationName,
-                    email,
-                    fssaiCode: fssaiCode || '',
-                    darpanId: darpanId || '',
-                    ngoRegType: ngoRegType || (darpanId ? 'darpan' : ''),
-                    isVerified: 0
-                };
-
                 // Send registration verification email in background on immediate microtick
                 setImmediate(() => {
                     sendVerificationEmail({
                         toEmail: email,
-                        name: organizationName,
+                        name: resolvedOrgName,
                         token: verificationToken,
+                        otp: verificationOtp,
                         accountType,
                         hostUrl
                     }).catch(e => console.error("Async Email Error:", e));
@@ -274,6 +267,22 @@ app.post('/api/login', (req, res) => {
             message: 'Hackathon Demo Login Successful!',
             token: makeToken(user),
             user: { id: user.id, email: user.email, name: user.organizationName, organizationName: user.organizationName, type: user.accountType, accountType: user.accountType, isVerified: 1 }
+        });
+    }
+    if (email === 'farmerdemo@gmail.com' && password === 'demo123') {
+        const user = { id: 777, email: 'farmerdemo@gmail.com', accountType: 'crop_seller', organizationName: 'Green Valley Farmers FPO', phone: '+91 98765 12340', isVerified: 1 };
+        return res.status(200).json({
+            message: 'Crop Seller Demo Login Successful!',
+            token: makeToken(user),
+            user: { id: user.id, email: user.email, name: user.organizationName, organizationName: user.organizationName, type: user.accountType, accountType: user.accountType, phone: user.phone, isVerified: 1 }
+        });
+    }
+    if (email === 'buyeragridemo@gmail.com' && password === 'demo123') {
+        const user = { id: 666, email: 'buyeragridemo@gmail.com', accountType: 'crop_buyer', organizationName: 'Sahyadri Agro-Processing MSME', phone: '+91 98765 56780', isVerified: 1 };
+        return res.status(200).json({
+            message: 'Crop Buyer Demo Login Successful!',
+            token: makeToken(user),
+            user: { id: user.id, email: user.email, name: user.organizationName, organizationName: user.organizationName, type: user.accountType, accountType: user.accountType, phone: user.phone, isVerified: 1 }
         });
     }
     // Legacy demo accounts
@@ -977,29 +986,20 @@ app.post('/api/verify-otp', (req, res) => {
         return res.status(400).json({ error: 'Please provide both email and 6-digit OTP code.' });
     }
 
-    db.get(`SELECT * FROM users WHERE email = ?`, [email], (err, user) => {
+    db.get(`SELECT * FROM users WHERE LOWER(email) = LOWER(?)`, [email.trim()], (err, user) => {
         if (err || !user) {
-            return res.status(404).json({ error: 'User account not found.' });
-        }
-
-        if (user.isVerified) {
-            const token = makeToken(user);
-            return res.status(200).json({
-                message: 'Account is already verified!',
-                user: { id: user.id, email: user.email, name: user.organizationName, type: user.accountType, isVerified: 1 },
-                token
-            });
-        }
-
-        if (user.verificationOtp !== otp.toString().trim()) {
-            return res.status(400).json({ error: 'Invalid 6-digit verification code. Please check your email.' });
+            return res.status(404).json({ error: 'User account not found with this email.' });
         }
 
         if (user.verificationTokenExpires && new Date(user.verificationTokenExpires) < new Date()) {
             return res.status(400).json({ error: 'Verification code has expired. Please request a new code.' });
         }
 
-        // Verify user
+        if (!user.verificationOtp || user.verificationOtp !== otp.toString().trim()) {
+            return res.status(400).json({ error: 'Invalid 6-digit verification code. Please check your email.' });
+        }
+
+        // Valid OTP! Verify user and clear OTP
         db.run(
             `UPDATE users SET isVerified = 1, verificationToken = NULL, verificationTokenExpires = NULL, verificationOtp = NULL WHERE id = ?`,
             [user.id],
@@ -1038,6 +1038,49 @@ app.post('/api/verify-otp', (req, res) => {
     });
 });
 
+// 2c-otp. SEND LOGIN OTP CODE (POST /api/send-login-otp)
+// Body: { email }
+app.post('/api/send-login-otp', (req, res) => {
+    const { email } = req.body;
+    if (!email) return res.status(400).json({ error: 'Please provide email address.' });
+
+    db.get(`SELECT * FROM users WHERE LOWER(email) = LOWER(?)`, [email.trim()], (err, user) => {
+        if (err) return res.status(500).json({ error: err.message });
+        if (!user) {
+            return res.status(404).json({ error: 'No account found with this email. Please Sign Up first!', notFound: true });
+        }
+
+        const verificationOtp = Math.floor(100000 + Math.random() * 900000).toString();
+        const verificationTokenExpires = new Date(Date.now() + 15 * 60 * 1000).toISOString(); // 15 mins
+        const verificationToken = crypto.randomBytes(32).toString('hex');
+
+        db.run(
+            `UPDATE users SET verificationOtp = ?, verificationToken = ?, verificationTokenExpires = ? WHERE id = ?`,
+            [verificationOtp, verificationToken, verificationTokenExpires, user.id],
+            (upErr) => {
+                if (upErr) return res.status(500).json({ error: upErr.message });
+
+                const hostUrl = req.headers.origin || (req.headers.host ? `${req.headers['x-forwarded-proto'] || req.protocol || 'http'}://${req.headers.host}` : 'http://localhost:3000');
+                setImmediate(() => {
+                    sendVerificationEmail({
+                        toEmail: user.email,
+                        name: user.organizationName,
+                        token: verificationToken,
+                        otp: verificationOtp,
+                        accountType: user.accountType,
+                        hostUrl
+                    }).catch(e => console.error("Async OTP Email Error:", e));
+                });
+
+                res.status(200).json({
+                    message: `6-digit verification code sent to ${user.email}!`,
+                    email: user.email
+                });
+            }
+        );
+    });
+});
+
 // 2c-bis. CHECK ACCOUNT VERIFICATION STATUS (GET /api/check-verification)
 // Query: ?email=...
 // Used by laptop/desktop to auto-detect when mobile verification link is tapped!
@@ -1045,7 +1088,7 @@ app.get('/api/check-verification', (req, res) => {
     const { email } = req.query;
     if (!email) return res.status(400).json({ error: 'Email address is required.' });
 
-    db.get(`SELECT * FROM users WHERE email = ?`, [email], (err, user) => {
+    db.get(`SELECT * FROM users WHERE LOWER(email) = LOWER(?)`, [email.trim()], (err, user) => {
         if (err || !user) return res.status(404).json({ verified: false });
 
         if (user.isVerified) {
@@ -1090,7 +1133,7 @@ app.post('/api/resend-verification', (req, res) => {
         return res.status(400).json({ error: 'Please provide email address.' });
     }
 
-    db.get(`SELECT * FROM users WHERE email = ?`, [email], async (err, user) => {
+    db.get(`SELECT * FROM users WHERE LOWER(email) = LOWER(?)`, [email.trim()], async (err, user) => {
         if (err || !user) {
             return res.status(404).json({ error: 'User account not found.' });
         }
@@ -1099,7 +1142,7 @@ app.post('/api/resend-verification', (req, res) => {
             return res.status(200).json({ message: 'This account is already verified!' });
         }
 
-        // Generate new token and 6-digit OTP
+        // Generate new verification token and 6-digit OTP (valid for 24h)
         const verificationToken = crypto.randomBytes(32).toString('hex');
         const verificationOtp = Math.floor(100000 + Math.random() * 900000).toString();
         const verificationTokenExpires = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
@@ -1110,17 +1153,20 @@ app.post('/api/resend-verification', (req, res) => {
             async (err) => {
                 if (err) return res.status(500).json({ error: err.message });
 
-                const hostUrl = `${req.protocol}://${req.get('host')}`;
-                sendVerificationEmail({
-                    toEmail: email,
-                    name: user.organizationName,
-                    token: verificationToken,
-                    otpCode: verificationOtp,
-                    hostUrl
-                }).catch(e => console.error("Async Resend Email Error:", e));
+                const hostUrl = req.headers.origin || (req.headers.host ? `${req.headers['x-forwarded-proto'] || req.protocol || 'http'}://${req.headers.host}` : 'http://localhost:3000');
+                setImmediate(() => {
+                    sendVerificationEmail({
+                        toEmail: email,
+                        name: user.organizationName,
+                        token: verificationToken,
+                        otp: verificationOtp,
+                        accountType: user.accountType,
+                        hostUrl
+                    }).catch(e => console.error("Async Resend Email Error:", e));
+                });
 
                 res.status(200).json({
-                    message: `Verification code sent to ${email}! Please check your inbox.`,
+                    message: `Verification link and code sent to ${email}! Please check your inbox.`,
                     email
                 });
             }
@@ -1323,7 +1369,12 @@ app.get('/api/stats', (req, res) => {
         totalMealsSaved: `SELECT SUM(CAST(quantity AS REAL)) as count FROM food_listings WHERE status IN ('claimed','sold')`,
         totalKgShared: `SELECT SUM(CASE WHEN LOWER(unit) = 'kg' THEN CAST(quantity AS REAL) ELSE CAST(quantity AS REAL) * 0.4 END) as count FROM food_listings WHERE status IN ('claimed','sold')`,
         totalVendors: `SELECT COUNT(*) as count FROM users WHERE accountType IN ('restaurant','vendor')`,
-        totalNGOs: `SELECT COUNT(*) as count FROM users WHERE accountType IN ('ngo','shelter')`
+        totalNGOs: `SELECT COUNT(*) as count FROM users WHERE accountType IN ('ngo','shelter')`,
+        totalCropsSaved: `SELECT SUM(CASE 
+            WHEN LOWER(unit) IN ('quintal','q') THEN CAST(quantity AS REAL) * 100 
+            WHEN LOWER(unit) IN ('ton','tonne','t') THEN CAST(quantity AS REAL) * 1000 
+            ELSE CAST(quantity AS REAL) 
+        END) as count FROM food_listings WHERE status IN ('claimed','sold') AND (cropGrade IS NOT NULL OR produceType = 'crop')`
     };
 
     const results = {};
@@ -1519,11 +1570,12 @@ app.post('/api/listings', authenticateToken, async (req, res) => {
     const {
         name, description, category, price,
         quantity, unit, expiryTime, pickupTime,
-        condition, allergens, imageUrl
+        condition, allergens, imageUrl,
+        cropGrade, produceType, harvestDate
     } = req.body;
 
     if (!name || !quantity) {
-        return res.status(400).json({ error: 'Food name and quantity are required.' });
+        return res.status(400).json({ error: 'Item name and quantity are required.' });
     }
 
     let finalImageUrl = imageUrl || null;
@@ -1533,37 +1585,45 @@ app.post('/api/listings', authenticateToken, async (req, res) => {
         } catch (e) { }
     }
 
+    const isCrop = produceType === 'crop' || cropGrade || req.user.type === 'crop_seller' || req.user.accountType === 'crop_seller';
+    const resolvedProduceType = isCrop ? 'crop' : (produceType || 'food');
+    const resolvedCropGrade = cropGrade || (isCrop ? 'Grade B' : null);
+
     const sql = `
         INSERT INTO food_listings
             (vendorId, vendorName, name, description, category, price, quantity, unit,
-             expiryTime, pickupTime, condition, allergens, imageUrl, datePosted)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+             expiryTime, pickupTime, condition, allergens, imageUrl, cropGrade, produceType, harvestDate, datePosted)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
     `;
     const params = [
         req.user.id,
         req.user.name,
         name,
         description || '',
-        category || 'Cooked',
+        category || (isCrop ? 'Vegetables' : 'Cooked'),
         parseFloat(price) || 0,
         quantity,
-        unit || 'Plate',
+        unit || (isCrop ? 'Quintal' : 'Plate'),
         expiryTime || null,
         pickupTime || null,
         condition || 'Fresh',
         allergens || null,
-        finalImageUrl || null
+        finalImageUrl || null,
+        resolvedCropGrade,
+        resolvedProduceType,
+        harvestDate || null
     ];
 
     db.run(sql, params, function (err) {
         if (err) return res.status(500).json({ error: err.message });
         const listingId = this.lastID;
 
-        // Broadcast notification email to all registered buyers/NGOs in background
+        // Broadcast notification email in background
         const hostUrl = `${req.protocol}://${req.get('host')}`;
+        const targetRoles = isCrop ? "('crop_buyer')" : "('ngo', 'shelter', 'buyer')";
         setImmediate(() => {
             db.all(
-                `SELECT email, organizationName FROM users WHERE accountType IN ('ngo', 'shelter', 'buyer') AND isVerified = 1`,
+                `SELECT email, organizationName FROM users WHERE accountType IN ${targetRoles} AND isVerified = 1`,
                 [],
                 (qErr, buyers) => {
                     if (!qErr && buyers && buyers.length > 0) {
@@ -1895,7 +1955,7 @@ app.post('/api/checkout', authenticateToken, (req, res) => {
 app.get('/api/orders', authenticateToken, (req, res) => {
     const userId = req.user.id;
     const accountType = (req.user.accountType || req.user.type || '').toLowerCase();
-    const isSeller = accountType === 'restaurant' || accountType === 'vendor';
+    const isSeller = accountType === 'restaurant' || accountType === 'vendor' || accountType === 'crop_seller' || accountType === 'farmer' || accountType === 'seller';
 
     if (isSeller) {
         // Seller sees all orders/claims for their food listings with full buyer NGO details
@@ -1913,6 +1973,8 @@ app.get('/api/orders', authenticateToken, (req, res) => {
                 f.imageUrl,
                 f.unit,
                 f.price AS unitPrice,
+                f.cropGrade,
+                f.produceType,
                 b.id AS buyerId,
                 b.organizationName AS buyerName,
                 b.accountType AS buyerType,
@@ -1952,6 +2014,8 @@ app.get('/api/orders', authenticateToken, (req, res) => {
                 f.imageUrl,
                 f.unit,
                 f.price AS unitPrice,
+                f.cropGrade,
+                f.produceType,
                 f.pickupTime,
                 s.id AS sellerId,
                 s.organizationName AS sellerName,

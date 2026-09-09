@@ -41,7 +41,7 @@
                     document.documentElement.classList.add('user-logged-in');
                     const user = JSON.parse(userStr);
                     const type = (user.type || user.accountType || user.role || '').toLowerCase();
-                    if (type === 'restaurant' || type === 'vendor' || type === 'seller' || type === 'ngo' || type === 'buyer') {
+                    if (type === 'restaurant' || type === 'vendor' || type === 'seller' || type === 'ngo' || type === 'buyer' || type === 'crop_seller' || type === 'crop_buyer') {
                         document.documentElement.classList.add('portal-pre-active');
                     }
                 }
@@ -219,6 +219,12 @@
                         <div class="stat-icon"><i class="fa-solid fa-house-chimney-medical"></i></div>
                         <div class="stat-number" data-target="0" data-target-stat="ngos">0</div>
                         <div class="stat-label">NGOs Helped</div>
+                    </div>
+                    <div class="stat-box animate-on-scroll zoom-in delay-500">
+                        <div class="stat-icon"><i class="fa-solid fa-wheat-awn" style="color: #f59e0b;"></i></div>
+                        <div class="stat-number" data-target="0" data-target-stat="cropsSaved">0</div>
+                        <div class="stat-suffix">kg</div>
+                        <div class="stat-label">Agri Crops Rescued / Sold</div>
                     </div>
                 </div>
             </div>
@@ -447,7 +453,7 @@
                         <i class="fa-regular fa-eye-slash toggle-password-icon minimal-eye-icon" data-target="loginPassword" title="Show/Hide Password"></i>
                     </div>
 
-                    <div class="minimal-forgot-wrap">
+                    <div class="minimal-forgot-wrap" style="display: flex; align-items: center; margin: -0.2rem 0 1.25rem 0.25rem;">
                         <a href="#" class="forgot-link minimal-forgot-link">Forgot Password</a>
                     </div>
 
@@ -464,22 +470,33 @@
                 <h2 class="minimal-auth-heading">Sign Up</h2>
 
                 <form id="registerForm" class="minimal-auth-form">
-                    <div class="minimal-account-type">
+                    <div class="minimal-account-type" style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 1.25rem;">
                         <label class="minimal-radio-card">
                             <input type="radio" name="accountType" value="restaurant" checked>
-                            <span class="mrc-content"><i class="fa-solid fa-shop"></i> Vendor</span>
+                            <span class="mrc-content"><i class="fa-solid fa-shop"></i> Food Seller</span>
                         </label>
                         <label class="minimal-radio-card">
                             <input type="radio" name="accountType" value="ngo">
-                            <span class="mrc-content"><i class="fa-solid fa-hands-holding-child"></i> NGO / Shelter</span>
+                            <span class="mrc-content"><i class="fa-solid fa-hands-holding-child"></i> Food Buyer</span>
+                        </label>
+                        <label class="minimal-radio-card">
+                            <input type="radio" name="accountType" value="crop_seller">
+                            <span class="mrc-content"><i class="fa-solid fa-wheat-awn" style="color: #f59e0b;"></i> Crop Seller</span>
+                        </label>
+                        <label class="minimal-radio-card">
+                            <input type="radio" name="accountType" value="crop_buyer">
+                            <span class="mrc-content"><i class="fa-solid fa-industry" style="color: #10b981;"></i> Crop Buyer</span>
                         </label>
                     </div>
 
                     <div class="minimal-input-wrap">
-                        <input type="text" id="regName" class="minimal-input" placeholder="Organization Name" required>
+                        <input type="text" id="regName" class="minimal-input" placeholder="Organization / Business Name" required>
                     </div>
                     <div class="minimal-input-wrap">
                         <input type="email" id="regEmail" class="minimal-input" placeholder="Email Address" required autocomplete="email">
+                    </div>
+                    <div class="minimal-input-wrap" id="regPhoneWrap" style="display: none;">
+                        <input type="tel" id="regPhone" class="minimal-input" placeholder="Phone Number (e.g. +91 98765 43210)">
                     </div>
                     <div class="minimal-input-wrap">
                         <input type="password" id="regPassword" class="minimal-input" placeholder="Password" required autocomplete="new-password">
@@ -529,25 +546,46 @@
             <button class="modal-close" id="closeEmailVerifyModal" title="Close"><i
                     class="fa-solid fa-xmark"></i></button>
             
-            <h2 class="minimal-auth-heading">Check Email</h2>
+            <h2 class="minimal-auth-heading">Verify Your Email</h2>
             
             <div class="minimal-info-card">
-                <p class="minimal-info-label">We sent a verification link to:</p>
+                <p class="minimal-info-label">Verification link sent to:</p>
                 <div class="minimal-info-email" id="verifySentEmail">you@domain.com</div>
             </div>
-            
-            <p style="color: rgba(255,255,255,0.7); font-size: 0.88rem; line-height: 1.6; margin-bottom: 1.25rem;">
-                Open your Gmail inbox on your phone or laptop and tap the verification link to activate your portal.
+
+            <p style="font-size: 0.9rem; color: var(--text-muted, rgba(255,255,255,0.55)); text-align: center; margin: 1rem 0 1.25rem 0; line-height: 1.6;">
+                Check your inbox and <strong style="color: var(--text-primary);">tap the verification link</strong> in the email to activate your account.
             </p>
 
-            <div style="display: flex; align-items: center; justify-content: center; gap: 9px; color: #34d399; font-size: 0.84rem; margin-bottom: 1.5rem; background: rgba(16, 185, 129, 0.08); padding: 10px 14px; border-radius: 12px; border: 1px solid rgba(16, 185, 129, 0.2);">
+            <div style="display: flex; align-items: center; justify-content: center; gap: 10px; color: #34d399; font-size: 0.82rem; font-weight: 500; margin-bottom: 1.25rem; background: rgba(16, 185, 129, 0.08); padding: 12px 14px; border-radius: 12px; border: 1px solid rgba(16, 185, 129, 0.2);">
                 <i class="fa-solid fa-circle-notch fa-spin"></i>
-                <span>Waiting for verification... (Auto-detects mobile click)</span>
+                <span>Auto-detecting verification across devices...</span>
             </div>
+
+            <!-- Divider -->
+            <div style="position: relative; text-align: center; margin: 0 0 1.25rem 0;">
+                <div style="position: absolute; top: 50%; left: 0; right: 0; height: 1px; background: rgba(255,255,255,0.08);"></div>
+                <span style="position: relative; background: var(--bg-surface, #0e1512); padding: 0 12px; font-size: 0.72rem; color: var(--text-muted, rgba(255,255,255,0.38)); text-transform: uppercase; letter-spacing: 1px;">Or enter the 6-digit code from the email</span>
+            </div>
+
+            <!-- OTP Code Form (secondary option) -->
+            <form id="verifyOtpForm" style="margin: 0 0 1rem 0;">
+                <div class="minimal-input-wrap" style="margin-bottom: 0.75rem;">
+                    <input type="text" id="verifyOtpInput" class="minimal-input" placeholder="Enter 6-Digit Code" maxlength="6" pattern="[0-9]{6}" autocomplete="one-time-code" inputmode="numeric" style="text-align: center; font-size: 1.4rem; letter-spacing: 8px; font-weight: 700; color: #34d399;">
+                </div>
+                <button type="submit" class="minimal-pill-btn" id="verifyOtpSubmitBtn" style="width: 100%; margin: 0; padding: 0.85rem 1.5rem;">
+                    <i class="fa-solid fa-shield-check"></i> Verify Code & Continue
+                </button>
+            </form>
             
-            <button class="minimal-pill-btn" id="dismissEmailVerifyModal">
-                Got it, Check Inbox
-            </button>
+            <div style="display: flex; gap: 10px; width: 100%; margin-top: 0.75rem;">
+                <button type="button" class="minimal-pill-btn" id="resendVerificationBtn" style="background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12); flex: 1; margin: 0; font-size: 0.88rem; padding: 0.75rem 1rem;">
+                    <i class="fa-solid fa-rotate-right"></i> Resend Email
+                </button>
+                <button type="button" class="minimal-pill-btn" id="dismissEmailVerifyModal" style="background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12); flex: 1; margin: 0; font-size: 0.88rem; padding: 0.75rem 1rem;">
+                    Back
+                </button>
+            </div>
         </div>
     </div>
 
@@ -868,6 +906,19 @@
                 <a href="#" class="nav-item seller-only" id="add-listing-dock" style="display: none;">
                     <i class="fa-solid fa-circle-plus"></i>
                     <span>Add</span>
+                </a>
+
+                <!-- Crop Seller specific items -->
+                <a href="#" class="nav-item crop-seller-only" id="add-crop-dock" style="display: none;">
+                    <i class="fa-solid fa-wheat-awn" style="color: #f59e0b;"></i>
+                    <span>Add Crop</span>
+                </a>
+
+                <!-- Crop Buyer specific items -->
+                <a href="javascript:void(0)" class="nav-item crop-buyer-only" id="crop-cart-dock" style="display: none;" onclick="const d = document.getElementById('cart-drawer'); if (d) d.classList.add('active'); if (typeof renderCartItems === 'function') renderCartItems(); return false;">
+                    <i class="fa-solid fa-basket-shopping" style="color: #10b981;"></i>
+                    <span>Cart</span>
+                    <span class="cart-count crop-cart-count">0</span>
                 </a>
 
                 <!-- Landing page specific items -->

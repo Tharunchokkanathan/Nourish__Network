@@ -122,7 +122,7 @@ async function dispatchEmail({ toEmail, subject, html, devFallbackUrl }) {
  * @param {string} params.accountType - User account type (restaurant/vendor/ngo/shelter)
  * @param {string} params.hostUrl - Base server URL (e.g. http://localhost:3000)
  */
-async function sendVerificationEmail({ toEmail, name, token, accountType, hostUrl }) {
+async function sendVerificationEmail({ toEmail, name, token, accountType, hostUrl, otp }) {
     const baseUrl = hostUrl || 'http://localhost:3000';
     const verifyUrl = `${baseUrl}/api/verify-email?token=${token}`;
 
@@ -177,7 +177,7 @@ async function sendVerificationEmail({ toEmail, name, token, accountType, hostUr
                 font-size: 15px;
                 color: #cbd5e1;
                 line-height: 1.6;
-                margin-bottom: 30px;
+                margin-bottom: 25px;
             }
             .btn-verify {
                 display: inline-block;
@@ -192,13 +192,29 @@ async function sendVerificationEmail({ toEmail, name, token, accountType, hostUr
                 box-shadow: 0 10px 25px rgba(16, 185, 129, 0.4);
                 transition: all 0.3s ease;
             }
+            .otp-box {
+                background: rgba(16, 185, 129, 0.08);
+                border: 2px dashed rgba(16, 185, 129, 0.45);
+                border-radius: 16px;
+                padding: 20px;
+                margin: 28px 0 15px;
+                text-align: center;
+            }
+            .otp-code {
+                font-size: 38px;
+                font-weight: 800;
+                letter-spacing: 8px;
+                color: #34d399;
+                font-family: monospace, 'Courier New', Courier;
+                margin: 10px 0;
+            }
             .info-box {
                 background: rgba(16, 185, 129, 0.06);
                 border-left: 4px solid #10b981;
                 border-radius: 8px;
                 padding: 15px 20px;
                 text-align: left;
-                margin: 30px 0 10px;
+                margin: 25px 0 10px;
                 font-size: 13px;
                 color: #94a3b8;
             }
@@ -220,13 +236,21 @@ async function sendVerificationEmail({ toEmail, name, token, accountType, hostUr
             <div class="content">
                 <h2 class="welcome-title">Welcome, ${name}!</h2>
                 <p class="subtitle">
-                    Thank you for signing up for Nourish Network. Please click the button below to verify your email address and activate your account access.
+                    Thank you for joining Nourish Network. Please verify your email to activate your account.
                 </p>
 
                 <a href="${verifyUrl}" class="btn-verify" target="_blank">Verify Email Address & Activate</a>
 
+                ${otp ? `
+                <div class="otp-box">
+                    <div style="font-size: 13px; color: #94a3b8; text-transform: uppercase; letter-spacing: 1.5px; font-weight: 600;">Or Enter 6-Digit Code On Screen</div>
+                    <div class="otp-code">${otp}</div>
+                    <div style="font-size: 12px; color: #64748b;">This verification code is valid for 24 hours</div>
+                </div>
+                ` : ''}
+
                 <div class="info-box">
-                    <strong>Note:</strong> If you signed up on your laptop or computer, tapping this button on your mobile phone will automatically activate your account and sign you in on your laptop!
+                    <strong>Pro-Tip:</strong> If you registered on your laptop, clicking the verify button on your phone or entering the 6-digit code will immediately unlock your portal!
                 </div>
             </div>
             <div class="footer">
