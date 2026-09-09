@@ -1270,6 +1270,10 @@ app.put('/api/user/me', (req, res) => {
 // 4. GET ALL LISTINGS (public feed)
 // GET /api/listings?vendorId=&category=&status=
 app.get('/api/listings', (req, res) => {
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
+
     const { vendorId, category, status } = req.query;
 
     let sql = `
@@ -1735,6 +1739,7 @@ app.post('/api/listings/claim', authenticateToken, (req, res) => {
 // POST /api/checkout
 // Body: { items: [{ listingId, quantity }], notes? }
 app.post('/api/checkout', authenticateToken, (req, res) => {
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
     const { items, notes } = req.body;
     const buyerId = req.user.id;
 
@@ -1742,102 +1747,145 @@ app.post('/api/checkout', authenticateToken, (req, res) => {
         return res.status(400).json({ error: 'No items in basket.' });
     }
 
-    let processed = 0;
-    const errors = [];
+    // Process items sequentially to guarantee strict stock validation and avoid race conditions
+    let index = 0;
+    const placedOrders = [];
 
-    items.forEach(({ listingId, quantity, price }) => {
-        const qty = parseInt(quantity) || 1;
-        const totalPrice = (parseFloat(price) || 0) * qty;
-        const numId = parseInt(listingId, 10);
-
-        if (isNaN(numId)) {
-            // Demo-generated listing (e.g. 'demo-123') — skip SQL update
-            processed++;
-            if (processed === items.length) {
-                return res.status(201).json({
-                    message: 'Order placed successfully! Thank you for reducing food waste. 🌱',
-                    count: processed
+    function processNextItem() {
+        if (index >= items.length) {
+            // All items processed successfully!
+            // Notify sellers asynchronously in background
+            const hostUrl = `${req.protocol}://${req.get('host')}`;
+            setImmediate(() => {
+                placedOrders.forEach(order => {
+                    db.get(
+                        `SELECT f.name as foodName, f.price, u.email as sellerEmail, u.organizationName as sellerName
+                         FROM food_listings f
+                         JOIN users u ON f.vendorId = u.id
+                         WHERE f.id = ?`,
+                        [order.listingId],
+                        (sErr, row) => {
+                            if (!sErr && row && row.sellerEmail) {
+                                sendSellerOrderNotificationEmail({
+                                    sellerEmail: row.sellerEmail,
+                                    sellerName: row.sellerName,
+                                    buyerName: req.user.name || 'Community Partner',
+                                    buyerEmail: req.user.email,
+                                    foodName: row.foodName,
+                                    quantity: order.quantity,
+                                    totalPrice: order.totalPrice,
+                                    notes,
+                                    hostUrl
+                                }).catch(e => console.error("Async Seller Order Email Error:", e));
+                            }
+                        }
+                    );
                 });
-            }
-            return;
+            });
+
+            return res.status(201).json({
+                message: 'Order placed successfully! Thank you for reducing food waste. 🌱',
+                orders: placedOrders
+            });
         }
 
-        // Step 1: Atomically deduct quantity and mark sold if depleted
-        db.run(
-            `UPDATE food_listings
-             SET quantity = CASE 
-                 WHEN CAST(quantity AS INTEGER) - ? <= 0 THEN '0' 
-                 ELSE CAST(CAST(quantity AS INTEGER) - ? AS TEXT) 
-             END,
-             status = CASE 
-                 WHEN CAST(quantity AS INTEGER) - ? <= 0 THEN 'sold' 
-                 ELSE status 
-             END
-             WHERE id = ?`,
-            [qty, qty, qty, numId],
-            function (updateErr) {
-                if (updateErr) {
-                    console.error("Checkout UPDATE error for listing", numId, updateErr);
+        const item = items[index];
+        index++;
+        const qty = parseInt(item.quantity, 10) || 1;
+        const numId = parseInt(item.listingId, 10);
+
+        if (isNaN(numId)) {
+            // Synthetic / Demo listing (e.g. 'demo-123') — skip SQL update
+            placedOrders.push({ listingId: item.listingId, quantity: qty, totalPrice: (parseFloat(item.price) || 0) * qty });
+            return processNextItem();
+        }
+
+        // 1. Fetch current stock and verify listing state
+        db.get(
+            `SELECT id, name, price, quantity, status FROM food_listings WHERE id = ?`,
+            [numId],
+            (getErr, row) => {
+                if (getErr) {
+                    console.error("Checkout stock check error:", getErr);
+                    return res.status(500).json({ error: "Database error during stock verification." });
                 }
 
-                // Step 2: Insert order record
+                if (!row) {
+                    return res.status(404).json({ error: "Food listing not found or no longer available." });
+                }
+
+                const currentStock = parseInt(row.quantity, 10) || 0;
+                const itemName = row.name || 'Food item';
+
+                if (row.status !== 'available' || currentStock <= 0) {
+                    return res.status(400).json({
+                        error: `"${itemName}" is sold out! Please remove it from your basket.`
+                    });
+                }
+
+                if (qty > currentStock) {
+                    return res.status(400).json({
+                        error: `Only ${currentStock} portion(s) of "${itemName}" remain available. Please adjust your quantity.`
+                    });
+                }
+
+                const finalUnitPrice = parseFloat(item.price != null ? item.price : row.price) || 0;
+                const itemTotalPrice = finalUnitPrice * qty;
+
+                // 2. Atomically deduct requested quantity ONLY if stock is still sufficient
                 db.run(
-                    `INSERT INTO orders (buyerId, listingId, quantity, totalPrice, notes)
-                     VALUES (?, ?, ?, ?, ?)`,
-                    [buyerId, numId, qty, totalPrice, notes || null],
-                    (insertErr) => {
-                        if (insertErr) {
-                            console.error("Checkout INSERT order error:", insertErr);
-                            errors.push(insertErr.message);
+                    `UPDATE food_listings
+                     SET quantity = CAST(CAST(quantity AS INTEGER) - ? AS TEXT),
+                         status = CASE 
+                             WHEN CAST(quantity AS INTEGER) - ? <= 0 THEN 'sold' 
+                             ELSE 'available' 
+                         END
+                     WHERE id = ? 
+                       AND status = 'available' 
+                       AND CAST(quantity AS INTEGER) >= ?`,
+                    [qty, qty, numId, qty],
+                    function (updateErr) {
+                        if (updateErr) {
+                            console.error("Checkout UPDATE error for listing", numId, updateErr);
+                            return res.status(500).json({ error: "Failed to update listing inventory." });
                         }
 
-                        processed++;
-                        if (processed === items.length) {
-                            if (errors.length > 0) {
-                                return res.status(500).json({ error: errors.join(', ') });
-                            }
+                        if (this.changes === 0) {
+                            // Another buyer beat them to it concurrently
+                            return res.status(409).json({
+                                error: `"${itemName}" was just claimed or ordered by another buyer. Please refresh and try again.`
+                            });
+                        }
 
-                            // Notify sellers asynchronously (non-blocking)
-                            const hostUrl = `${req.protocol}://${req.get('host')}`;
-                            setImmediate(() => {
-                                items.forEach(({ listingId, quantity, price }) => {
-                                    db.get(
-                                        `SELECT f.name as foodName, f.price, u.email as sellerEmail, u.organizationName as sellerName
-                                         FROM food_listings f
-                                         JOIN users u ON f.vendorId = u.id
-                                         WHERE f.id = ?`,
-                                        [listingId],
-                                        (sErr, row) => {
-                                            if (!sErr && row && row.sellerEmail) {
-                                                sendSellerOrderNotificationEmail({
-                                                    sellerEmail: row.sellerEmail,
-                                                    sellerName: row.sellerName,
-                                                    buyerName: req.user.name || 'Community Partner',
-                                                    buyerEmail: req.user.email,
-                                                    foodName: row.foodName,
-                                                    quantity: quantity || 1,
-                                                    totalPrice: (parseFloat(price || row.price) * (parseInt(quantity) || 1)) || 0,
-                                                    notes,
-                                                    hostUrl
-                                                }).catch(e => console.error("Async Seller Order Email Error:", e));
-                                            }
-                                        }
-                                    );
+                        // 3. Insert into orders table
+                        db.run(
+                            `INSERT INTO orders (buyerId, listingId, quantity, totalPrice, notes)
+                             VALUES (?, ?, ?, ?, ?)`,
+                            [buyerId, numId, qty, itemTotalPrice, notes || null],
+                            function (insertErr) {
+                                if (insertErr) {
+                                    console.error("Checkout INSERT order error:", insertErr);
+                                    return res.status(500).json({ error: "Failed to create order record." });
+                                }
+
+                                placedOrders.push({
+                                    orderId: this.lastID,
+                                    listingId: numId,
+                                    quantity: qty,
+                                    totalPrice: itemTotalPrice
                                 });
-                            });
 
-                            // ✅ Response sent INSIDE the final UPDATE callback —
-                            // guarantees DB is committed before client calls refreshState
-                            res.status(201).json({
-                                message: 'Order placed successfully! Thank you for reducing food waste. 🌱',
-                                count: processed
-                            });
-                        }
+                                // Process next item
+                                processNextItem();
+                            }
+                        );
                     }
                 );
             }
         );
-    });
+    }
+
+    processNextItem();
 });
 
 
