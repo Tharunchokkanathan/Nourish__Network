@@ -1401,10 +1401,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
                 // Merge in any demo listings saved to localStorage
                 const demoListings = JSON.parse(localStorage.getItem('nn_demo_listings') || '[]');
+                const deletedIds = JSON.parse(localStorage.getItem('nn_deleted_listings') || '[]');
                 const apiIds = apiListings.map(l => l.id);
-                // Only include demo listings that aren't sold out
+                // Only include demo listings that aren't sold out or deleted
                 const uniqueDemoListings = demoListings.filter(d =>
                     !apiIds.includes(d.id) &&
+                    !deletedIds.includes(String(d.id)) &&
                     d.status !== 'sold' &&
                     (parseInt(d.qty) || 0) > 0
                 );
@@ -1417,14 +1419,15 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (!purchase) return l;
                     const remainingQty = Math.max(0, (parseInt(l.qty) || 0) - (purchase.qtyBought || 0));
                     return { ...l, qty: remainingQty, status: remainingQty <= 0 ? 'sold' : l.status };
-                }).filter(l => l.status !== 'sold' && (parseInt(l.qty) || 0) > 0);
+                }).filter(l => !deletedIds.includes(String(l.id)) && l.status !== 'sold' && (parseInt(l.qty) || 0) > 0);
 
                 let combinedListings = [...uniqueDemoListings, ...filteredApiListings];
                 state.listings = combinedListings;
             } else {
-                // API failed — still load demo listings (filter sold-out ones)
+                // API failed — still load demo listings (filter sold-out and deleted ones)
                 const allDemo = JSON.parse(localStorage.getItem('nn_demo_listings') || '[]');
-                state.listings = allDemo.filter(d => d.status !== 'sold' && (parseInt(d.qty) || 0) > 0);
+                const deletedIds = JSON.parse(localStorage.getItem('nn_deleted_listings') || '[]');
+                state.listings = allDemo.filter(d => !deletedIds.includes(String(d.id)) && d.status !== 'sold' && (parseInt(d.qty) || 0) > 0);
             }
 
             const statsRes = await fetch(`${API_BASE}/stats`);
@@ -1483,6 +1486,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (typeof renderSellerListings === 'function') renderSellerListings();
                 } else if (state.activePortal === 'buyer') {
                     if (typeof renderExchangeGrid === 'function') renderExchangeGrid();
+                } else if (state.activePortal === 'crop_seller') {
+                    if (typeof renderCropSellerPortal === 'function') renderCropSellerPortal();
+                } else if (state.activePortal === 'crop_buyer') {
+                    if (typeof renderCropBuyerPortal === 'function') renderCropBuyerPortal();
                 }
             }
 
@@ -1499,12 +1506,18 @@ document.addEventListener('DOMContentLoaded', () => {
             console.error("Backend Sync Failed:", err);
             // Even if network fails, use cached or demo listings
             if (!state.listings || state.listings.length === 0) {
-                state.listings = JSON.parse(localStorage.getItem('nn_cached_listings') || localStorage.getItem('nn_demo_listings') || '[]');
+                const deletedIds = JSON.parse(localStorage.getItem('nn_deleted_listings') || '[]');
+                const baseListings = JSON.parse(localStorage.getItem('nn_cached_listings') || localStorage.getItem('nn_demo_listings') || '[]');
+                state.listings = baseListings.filter(l => !deletedIds.includes(String(l.id)));
             }
             if (state.activePortal === 'seller' && typeof renderSellerListings === 'function') {
                 renderSellerListings();
             } else if (state.activePortal === 'buyer' && typeof renderExchangeGrid === 'function') {
                 renderExchangeGrid();
+            } else if (state.activePortal === 'crop_seller' && typeof renderCropSellerPortal === 'function') {
+                renderCropSellerPortal();
+            } else if (state.activePortal === 'crop_buyer' && typeof renderCropBuyerPortal === 'function') {
+                renderCropBuyerPortal();
             }
         }
     }
@@ -4010,7 +4023,18 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        list.innerHTML = state.cart.map((cartItem, idx) => `
+        list.innerHTML = state.cart.map((cartItem, idx) => {
+            const u = (cartItem.item.unit || '').toLowerCase().trim();
+            let metricSubtext = '';
+            if (u === 'quintal' || u === 'quintals' || u === 'q') {
+                metricSubtext = ` ≈ ${(cartItem.qty * 100).toLocaleString()} kg`;
+            } else if (u === 'ton' || u === 'tonne' || u === 'tons' || u.includes('metric')) {
+                metricSubtext = ` ≈ ${(cartItem.qty * 1000).toLocaleString()} kg`;
+            } else if (u === 'crate' || u === 'crates') {
+                metricSubtext = ` ≈ ${(cartItem.qty * 25).toLocaleString()} kg`;
+            }
+
+            return `
             <div class="cart-item-row" style="display:flex; justify-content:space-between; margin-bottom: 1.5rem; padding-bottom: 1rem; border-bottom: 1px solid var(--border-glow);">
                 <div>
                     <strong>${cartItem.item.name}</strong><br>
@@ -4018,7 +4042,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     ${cartItem.item.unit ? `<small style="color: #10b981; font-weight: 600;">Rate: ₹${cartItem.item.price}/${cartItem.item.unit}</small><br>` : ''}
                     <div class="stepper-wrap" style="display:flex; align-items:center; gap: 10px; margin-top: 5px;">
                         <button class="cart-minus btn-outline btn-sm" data-idx="${idx}" style="padding: 2px 8px; color: var(--text-color); border-color: var(--border-glow);"><i class="fa-solid fa-minus"></i></button>
-                        <span style="font-weight: bold;">${cartItem.qty} ${cartItem.item.unit || ''}</span>
+                        <span style="font-weight: bold;">${cartItem.qty} ${cartItem.item.unit || ''} ${metricSubtext ? `<span style="font-size:0.75rem; color:#10b981; font-weight:600;">(${metricSubtext})</span>` : ''}</span>
                         <button class="cart-plus btn-outline btn-sm" data-idx="${idx}" style="padding: 2px 8px; color: var(--text-color); border-color: var(--border-glow);"><i class="fa-solid fa-plus"></i></button>
                     </div>
                 </div>
@@ -4027,7 +4051,16 @@ document.addEventListener('DOMContentLoaded', () => {
                     <button class="remove-item" data-idx="${idx}" style="background:none; border:none; color:#e74c3c; cursor:pointer; margin-top: 5px;"><i class="fa-solid fa-trash"></i> Remove</button>
                 </div>
             </div>
-        `).join('');
+            `;
+        }).join('');
+
+        const syncPortalOnCartChange = () => {
+            if (state.activePortal === 'crop_buyer' && typeof renderCropBuyerPortal === 'function') {
+                renderCropBuyerPortal();
+            } else if (typeof renderExchangeGrid === 'function') {
+                renderExchangeGrid();
+            }
+        };
 
         document.querySelectorAll('.cart-minus').forEach(btn => {
             btn.addEventListener('click', () => {
@@ -4041,7 +4074,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
                 renderCartItems();
                 updateCartBadge();
-                renderExchangeGrid();
+                syncPortalOnCartChange();
             });
         });
 
@@ -4059,7 +4092,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     cartItem.qty++;
                     renderCartItems();
                     updateCartBadge();
-                    renderExchangeGrid();
+                    syncPortalOnCartChange();
                 } else {
                     showToast(`Maximum available portions (${totalStock}) reached!`, "error");
                 }
@@ -4072,7 +4105,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 state.cart.splice(idx, 1);
                 renderCartItems();
                 updateCartBadge();
-                renderExchangeGrid();
+                syncPortalOnCartChange();
             });
         });
 
@@ -4415,10 +4448,10 @@ document.addEventListener('DOMContentLoaded', () => {
                                     <div style="display: flex; align-items: center; justify-content: space-between; font-size: 0.78rem; color: var(--crop-text-muted); border-top: 1px solid var(--crop-divider); padding-top: 10px; gap: 8px;">
                                         <span><i class="fa-regular fa-calendar-check" style="color: #f59e0b;"></i> ${formatHarvestLabel(crop.harvestDate)}</span>
                                         <div style="display: flex; gap: 6px;">
-                                            <button onclick="window.openEditCropModal(${crop.id})" style="background: none; border: 1px solid rgba(245,158,11,0.4); color: #fbbf24; border-radius: 8px; padding: 4px 10px; font-size: 0.75rem; cursor: pointer; display: flex; align-items: center; gap: 5px;">
+                                            <button onclick="window.openEditCropModal('${crop.id}')" style="background: none; border: 1px solid rgba(245,158,11,0.4); color: #fbbf24; border-radius: 8px; padding: 4px 10px; font-size: 0.75rem; cursor: pointer; display: flex; align-items: center; gap: 5px;">
                                                 <i class="fa-solid fa-pen-to-square"></i> Edit
                                             </button>
-                                            <button onclick="window.deleteCropListing(${crop.id})" style="background: none; border: 1px solid rgba(239, 68, 68, 0.3); color: #f87171; border-radius: 8px; padding: 4px 10px; font-size: 0.75rem; cursor: pointer; display: flex; align-items: center; gap: 5px;">
+                                            <button onclick="window.deleteCropListing('${crop.id}')" style="background: none; border: 1px solid rgba(239, 68, 68, 0.3); color: #f87171; border-radius: 8px; padding: 4px 10px; font-size: 0.75rem; cursor: pointer; display: flex; align-items: center; gap: 5px;">
                                                 <i class="fa-solid fa-trash-can"></i> Remove
                                             </button>
                                         </div>
@@ -4562,12 +4595,40 @@ document.addEventListener('DOMContentLoaded', () => {
         // Close modal immediately
         document.getElementById('editCropModal')?.remove();
 
+        const numericQty = parseInt(updates.quantity, 10) || 1;
+        const normalizedUpdates = {
+            ...updates,
+            qty: numericQty,
+            quantity: String(numericQty)
+        };
+
         // Update state.listings instantly → re-render without refresh
         const idx = state.listings.findIndex(l => String(l.id) === String(cropId));
         if (idx !== -1) {
-            state.listings[idx] = { ...state.listings[idx], ...updates };
+            state.listings[idx] = { ...state.listings[idx], ...normalizedUpdates };
         }
+
+        // Also update local caches
+        try {
+            let demo = JSON.parse(localStorage.getItem('nn_demo_listings') || '[]');
+            const dIdx = demo.findIndex(l => String(l.id) === String(cropId));
+            if (dIdx !== -1) {
+                demo[dIdx] = { ...demo[dIdx], ...normalizedUpdates };
+                localStorage.setItem('nn_demo_listings', JSON.stringify(demo));
+            }
+
+            let cached = JSON.parse(localStorage.getItem('nn_cached_listings') || '[]');
+            const cIdx = cached.findIndex(l => String(l.id) === String(cropId));
+            if (cIdx !== -1) {
+                cached[cIdx] = { ...cached[cIdx], ...normalizedUpdates };
+                localStorage.setItem('nn_cached_listings', JSON.stringify(cached));
+            }
+        } catch (e) { }
+
         renderCropSellerPortal();
+        if (state.activePortal === 'crop_buyer' && typeof renderCropBuyerPortal === 'function') {
+            renderCropBuyerPortal();
+        }
         showToast('Crop listing updated! 🌾', 'success');
 
         // Sync with server in background
@@ -4575,7 +4636,7 @@ document.addEventListener('DOMContentLoaded', () => {
             await fetch(`${API_BASE}/listings/${cropId}`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                body: JSON.stringify(updates)
+                body: JSON.stringify(normalizedUpdates)
             });
         } catch (err) {
             console.warn('Edit sync error (changes kept locally):', err);
@@ -5172,17 +5233,42 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     window.deleteCropListing = async function(cropId) {
+        if (!confirm('Are you sure you want to remove this crop harvest listing?')) return;
         const token = sessionStorage.getItem('nourishToken');
+
+        // Instantly remove from in-memory state
+        state.listings = state.listings.filter(l => String(l.id) !== String(cropId));
+
+        // Immediately update localStorage so it stays removed across refreshes
+        try {
+            let demo = JSON.parse(localStorage.getItem('nn_demo_listings') || '[]');
+            demo = demo.filter(l => String(l.id) !== String(cropId));
+            localStorage.setItem('nn_demo_listings', JSON.stringify(demo));
+
+            let cached = JSON.parse(localStorage.getItem('nn_cached_listings') || '[]');
+            cached = cached.filter(l => String(l.id) !== String(cropId));
+            localStorage.setItem('nn_cached_listings', JSON.stringify(cached));
+
+            let deleted = JSON.parse(localStorage.getItem('nn_deleted_listings') || '[]');
+            if (!deleted.includes(String(cropId))) deleted.push(String(cropId));
+            localStorage.setItem('nn_deleted_listings', JSON.stringify(deleted));
+        } catch (e) { }
+
+        // Immediately re-render the crop seller portal DOM
+        renderCropSellerPortal();
+        if (state.activePortal === 'crop_buyer' && typeof renderCropBuyerPortal === 'function') {
+            renderCropBuyerPortal();
+        }
+        showToast("Crop batch removed successfully. 🌾", "info");
+
+        // Sync with backend API in background
         try {
             await fetch(`${API_BASE}/listings/${cropId}`, {
                 method: 'DELETE',
                 headers: { 'Authorization': `Bearer ${token}` }
             });
-            showToast("Crop batch listing removed.", "info");
-            refreshState();
         } catch (err) {
-            state.listings = state.listings.filter(l => l.id != cropId);
-            renderCropSellerPortal();
+            console.warn('Server delete error (already removed locally):', err);
         }
     };
 
