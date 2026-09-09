@@ -1,3 +1,98 @@
+// ---- GPS LIVE LOCATION ENGINE ----
+// Requests browser geolocation after login/signup, reverse-geocodes to readable address,
+// stores in session and syncs to server profile for delivery coordination.
+window.__nnGpsRequested = false;
+window.requestGPSLocation = function () {
+    if (window.__nnGpsRequested) return; // Only request once per page session
+    if (!navigator.geolocation) {
+        console.warn('Geolocation not supported by this browser.');
+        return;
+    }
+
+    window.__nnGpsRequested = true;
+
+    navigator.geolocation.getCurrentPosition(
+        async (position) => {
+            const lat = position.coords.latitude;
+            const lng = position.coords.longitude;
+            const accuracy = Math.round(position.coords.accuracy);
+
+            // Store raw coords in session
+            const user = JSON.parse(sessionStorage.getItem('nourishUser') || '{}');
+            user.gpsLat = lat;
+            user.gpsLng = lng;
+            user.gpsAccuracy = accuracy;
+
+            // Reverse geocode using OpenStreetMap Nominatim (free, no API key)
+            let readableAddress = `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
+            try {
+                const geoRes = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=16&addressdetails=1`, {
+                    headers: { 'Accept-Language': 'en' }
+                });
+                if (geoRes.ok) {
+                    const geoData = await geoRes.json();
+                    if (geoData && geoData.address) {
+                        const a = geoData.address;
+                        // Build a concise address: suburb/neighbourhood, city/town, state
+                        const parts = [
+                            a.neighbourhood || a.suburb || a.village || a.hamlet || '',
+                            a.city || a.town || a.county || a.state_district || '',
+                            a.state || ''
+                        ].filter(Boolean);
+                        if (parts.length > 0) readableAddress = parts.join(', ');
+                    }
+                }
+            } catch (e) {
+                console.warn('Reverse geocode failed, using coordinates:', e);
+            }
+
+            user.gpsAddress = readableAddress;
+            // Only update user.address if they haven't manually set one
+            if (!user.address) {
+                user.address = readableAddress;
+            }
+
+            sessionStorage.setItem('nourishUser', JSON.stringify(user));
+            localStorage.setItem('nourishUser', JSON.stringify(user));
+
+            // Show subtle toast
+            if (typeof window.showToast === 'function' || (typeof showToast === 'function')) {
+                const toastFn = window.showToast || showToast;
+                toastFn(`📍 Location detected: ${readableAddress}`, 'success');
+            }
+
+            // Re-render portal to show updated location
+            if (window.__appState && typeof window.__renderPortalFn === 'function') {
+                window.__renderPortalFn();
+            }
+
+            // Sync GPS address to server profile (background, non-blocking)
+            const token = sessionStorage.getItem('nourishToken');
+            if (token && !token.startsWith('demo-token')) {
+                try {
+                    const API = window.__nnApiBase || '/api';
+                    await fetch(`${API}/user/me`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                        body: JSON.stringify({ address: user.address })
+                    });
+                } catch (e) {
+                    console.warn('GPS address sync to server failed:', e);
+                }
+            }
+        },
+        (error) => {
+            console.warn('GPS location denied or unavailable:', error.message);
+            window.__nnGpsRequested = false; // Allow retry on next login
+        },
+        {
+            enableHighAccuracy: true,
+            timeout: 10000,
+            maximumAge: 60000 // Cache for 1 minute
+        }
+    );
+};
+
 // ---- GLOBAL DELETE COMMENT (must be outside DOMContentLoaded so onclick can find it) ----
 window.deleteComment = function (commentId, btnEl) {
     const bubble = btnEl ? btnEl.closest('.comment-bubble') : null;
@@ -951,8 +1046,10 @@ document.addEventListener('DOMContentLoaded', () => {
     });
     localStorage.setItem('nn_comments', JSON.stringify(state.communityComments));
 
-    // Expose to global scope for window.deleteComment (defined outside DOMContentLoaded)
+    // Expose to global scope for window.deleteComment and GPS engine (defined outside DOMContentLoaded)
     window.__appState = state;
+    window.__nnApiBase = API_BASE;
+    window.__renderPortalFn = renderPortal;
 
 
 
@@ -1443,6 +1540,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // Render instantly on frame 1 using cached session + cached listings (zero wait, zero flash)
             renderPortal();
+
+            // Request GPS location for delivery coordination
+            window.requestGPSLocation();
 
             // Background sync (silent mode - no screen flicker!)
             refreshState(true);
@@ -2264,6 +2364,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     renderPortal();
                     syncDock();
                     refreshState();
+
+                    // Request GPS location after login
+                    window.requestGPSLocation();
                 }, 1000);
             } else if (response.status === 403 && data.unverified) {
                 showToast(data.error || "Please verify your email address first.", "warning");
@@ -2455,6 +2558,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     renderPortal();
                     syncDock();
                     refreshState();
+
+                    // Request GPS location after signup verification
+                    window.requestGPSLocation();
                 } else {
                     showToast(data.error || "Invalid code. Please check your email and try again.", "error");
                     if (verifyOtpInput) { verifyOtpInput.select(); verifyOtpInput.focus(); }
