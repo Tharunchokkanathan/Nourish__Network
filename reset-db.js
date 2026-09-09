@@ -35,7 +35,7 @@ async function resetDatabase() {
             await pool.query(`
                 CREATE TABLE IF NOT EXISTS users (
                     id SERIAL PRIMARY KEY,
-                    accounttype TEXT NOT NULL CHECK(accounttype IN ('restaurant','vendor','ngo','shelter')),
+                    accounttype TEXT NOT NULL CHECK(accounttype IN ('restaurant','vendor','ngo','shelter','crop_seller','crop_buyer')),
                     organizationname TEXT NOT NULL,
                     email TEXT NOT NULL UNIQUE,
                     password TEXT NOT NULL,
@@ -86,6 +86,9 @@ async function resetDatabase() {
                     imageurl TEXT,
                     status TEXT NOT NULL DEFAULT 'available' CHECK(status IN ('available','claimed','sold','expired')),
                     claimedby INTEGER REFERENCES users(id) ON DELETE SET NULL,
+                    cropgrade TEXT,
+                    producetype TEXT DEFAULT 'food',
+                    harvestdate TEXT,
                     dateposted TIMESTAMP NOT NULL DEFAULT NOW()
                 );
 
@@ -101,14 +104,22 @@ async function resetDatabase() {
                 );
 
                 -- Re-seed demo users so instant demo logins and foreign keys work cleanly
-                INSERT INTO users (id, accounttype, organizationname, email, password, isverified, darpanid, ngoregtype, fssaicode)
+                INSERT INTO users (id, accounttype, organizationname, email, password, isverified, darpanid, ngoregtype, fssaicode, phone)
                 VALUES 
-                (888, 'restaurant', 'Elite Catering Services', 'serverdemo@gmail.com', '$2a$10$demoHashedPasswordPlaceHolder888', 1, '', '', '12345678901234'),
-                (999, 'ngo', 'Global Outreach Foundation', 'ngodemo@gmail.com', '$2a$10$demoHashedPasswordPlaceHolder999', 1, 'TN/2023/0345678', 'darpan', '')
+                (888, 'restaurant', 'Elite Catering Services', 'serverdemo@gmail.com', '$2a$10$demoHashedPasswordPlaceHolder888', 1, '', '', '12345678901234', '+91 98765 43210'),
+                (999, 'ngo', 'Global Outreach Foundation', 'ngodemo@gmail.com', '$2a$10$demoHashedPasswordPlaceHolder999', 1, 'TN/2023/0345678', 'darpan', '', '+91 98765 87654'),
+                (777, 'crop_seller', 'Green Valley Farmers FPO', 'farmerdemo@gmail.com', '$2a$10$demoHashedPasswordPlaceHolder888', 1, '', '', '', '+91 98765 12340'),
+                (666, 'crop_buyer', 'Sahyadri Agro-Processing MSME', 'buyeragridemo@gmail.com', '$2a$10$demoHashedPasswordPlaceHolder999', 1, '', '', '', '+91 98765 56780')
                 ON CONFLICT (id) DO UPDATE SET 
                     organizationname = EXCLUDED.organizationname,
                     accounttype = EXCLUDED.accounttype,
                     email = EXCLUDED.email;
+
+                INSERT INTO food_listings (id, vendorid, vendorname, name, description, category, price, quantity, unit, condition, status, cropgrade, producetype)
+                VALUES 
+                (901, 777, 'Green Valley Farmers FPO', 'Nashik Farm Fresh Tomatoes (Puree Grade)', 'Harvested surplus ripe tomatoes. Highly suitable for bulk ketchup, sauce, or puree processing units.', 'Vegetables', 6, '15', 'Quintal', 'Fresh Harvest', 'available', 'Grade B', 'crop'),
+                (902, 777, 'Green Valley Farmers FPO', 'Nagpur Organic Oranges (Pulp Grade)', 'Slightly bruised, high-sugar content oranges ideal for juice or pulp extraction.', 'Fruits', 12, '8', 'Quintal', 'Fresh Harvest', 'available', 'Grade B', 'crop')
+                ON CONFLICT (id) DO NOTHING;
             `);
             console.log('  ✓ PostgreSQL tables recreated & demo accounts seeded successfully!');
             await pool.end();

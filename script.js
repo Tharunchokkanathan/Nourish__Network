@@ -287,6 +287,81 @@ window.renderNgoTrustBadge = function (user) {
     return `<span class="darpan-trust-badge" style="font-size:0.75rem; padding: 3px 10px; border-radius: 12px; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.35); display: inline-flex; align-items: center; gap: 5px;" title="NITI Aayog DARPAN Verified NGO"><i class="fa-solid fa-building-ngo"></i> <strong style="font-family:monospace; letter-spacing:1px;">${code}</strong> <span style="font-weight:700;">DARPAN</span></span>`;
 };
 
+// ---- CROP SELLER (FARMER / FPO / MANDI) COMPLIANCE VALIDATOR ----
+window.validateCropSellerCompliance = function (type, code) {
+    if (!code) return { valid: false, message: 'Agricultural trade accreditation ID is required' };
+    const clean = code.trim().toUpperCase();
+    if (type === 'fssai') {
+        return window.validateFSSAI(clean);
+    }
+    if (type === 'apmc') {
+        if (clean.length < 4) return { valid: false, message: 'APMC License must be at least 4 characters' };
+        if (!/^[A-Z0-9\/\-]+$/.test(clean)) return { valid: false, message: 'Use only letters, numbers, hyphens or slashes' };
+        const digits = clean.replace(/\D/g, '');
+        if (digits.length < 2) return { valid: false, message: 'Must contain license registration numbers' };
+        return { valid: true, clean, message: `✓ Valid APMC Mandi License: ${clean} · Registered Trader` };
+    }
+    if (type === 'fpo') {
+        if (clean.length < 4) return { valid: false, message: 'FPO Registration must be at least 4 characters' };
+        if (!/^[A-Z0-9\/\-]+$/.test(clean)) return { valid: false, message: 'Use only letters, numbers, hyphens or slashes' };
+        return { valid: true, clean, message: `✓ Valid FPO Accreditation: ${clean} · Producer Co.` };
+    }
+    if (type === 'kisan') {
+        const digits = clean.replace(/\D/g, '');
+        if (digits.length < 5) return { valid: false, message: 'Kisan / KCC ID requires at least 5 digits' };
+        return { valid: true, clean, message: `✓ Valid Kisan ID: ${clean} · Farm-Gate Registered` };
+    }
+    return { valid: true, clean, message: `✓ Valid Trade Accreditation: ${clean}` };
+};
+
+// ---- CROP BUYER (AGRO MSME / PROCESSOR) COMPLIANCE VALIDATOR ----
+window.validateCropBuyerCompliance = function (type, code) {
+    if (!code) return { valid: false, message: 'Agro-processing or MSME ID is required' };
+    const clean = code.trim().toUpperCase();
+    if (type === 'fssai') {
+        return window.validateFSSAI(clean);
+    }
+    if (type === 'udyam') {
+        const regex = /^UDYAM-[A-Z]{2}-\d{2}-\d{7}$/;
+        if (!regex.test(clean)) {
+            return { valid: false, message: 'Format: UDYAM-State-2digits-7digits (e.g. UDYAM-MH-12-0012345)' };
+        }
+        return { valid: true, clean, message: `✓ Valid Udyam MSME: ${clean} · Registered Agro-Unit` };
+    }
+    if (type === 'gstin') {
+        if (clean.length !== 15) return { valid: false, message: `GSTIN must be 15 characters (${clean.length}/15 entered)` };
+        if (!/^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/.test(clean)) {
+            return { valid: false, message: 'Invalid GSTIN format (e.g. 27AAAAA0000A1Z5)' };
+        }
+        return { valid: true, clean, message: `✓ Valid GSTIN: ${clean} · Commercial Entity` };
+    }
+    return { valid: true, clean, message: `✓ Valid Commercial ID: ${clean}` };
+};
+
+// ---- DYNAMIC CROP PORTAL TRUST BADGE RENDERER ----
+window.renderCropTrustBadge = function (user) {
+    if (!user) return '';
+    const role = (user.accountType || user.type || '').toLowerCase();
+    const code = user.darpanId || user.fssaiCode || '';
+    const type = (user.ngoRegType || '').toLowerCase();
+
+    if (role === 'crop_seller') {
+        const label = type === 'apmc' ? 'APMC Mandi' : (type === 'fpo' ? 'FPO' : (type === 'kisan' ? 'Kisan ID' : 'Agri Trade'));
+        if (code) {
+            return `<span class="crop-trust-badge seller-badge" title="Verified Agricultural Producer"><i class="fa-solid fa-shield-halved"></i> <strong>${code}</strong> · ${label} Verified</span>`;
+        }
+        return `<span class="crop-trust-badge seller-badge"><i class="fa-solid fa-wheat-awn"></i> Verified Mandi / Farmer Collective</span>`;
+    }
+    if (role === 'crop_buyer') {
+        const label = type === 'udyam' ? 'Udyam MSME' : (type === 'fssai' ? 'FSSAI Processor' : 'Industrial');
+        if (code) {
+            return `<span class="crop-trust-badge buyer-badge" title="Verified Agro-Processing Entity"><i class="fa-solid fa-circle-check"></i> <strong>${code}</strong> · ${label} Verified</span>`;
+        }
+        return `<span class="crop-trust-badge buyer-badge"><i class="fa-solid fa-industry"></i> Verified Agro-Processing MSME</span>`;
+    }
+    return '';
+};
+
 window.toLocalDateTimeLocalString = function (dateInput) {
     if (!dateInput) return '';
     const d = new Date(dateInput);
@@ -951,44 +1026,47 @@ document.addEventListener('DOMContentLoaded', () => {
             const newOrders = state.cart.map(c => {
                 const qty = parseInt(c.qty, 10) || 1;
                 const unitPrice = parseFloat(c.item.price) || 0;
+                const isCropItem = c.item.isCrop || c.item.produceType === 'crop' || c.item.cropGrade != null || state.activePortal === 'crop_buyer';
                 return {
                     orderId: 'ORD-' + Date.now() + '-' + Math.floor(Math.random() * 1000),
                     listingId: c.item.id,
-                    foodName: c.item.name || 'Surplus Food Meal',
-                    category: c.item.category || 'Cooked',
-                    imageUrl: c.item.img || c.item.imageUrl || '',
-                    unit: c.item.unit || 'portions',
+                    foodName: c.item.name || (isCropItem ? 'Surplus Crop Produce' : 'Surplus Food Meal'),
+                    category: c.item.category || (isCropItem ? 'Agricultural Produce' : 'Cooked'),
+                    cropGrade: c.item.cropGrade || (isCropItem ? 'Grade B' : null),
+                    isCrop: isCropItem,
+                    imageUrl: c.item.img || c.item.imageUrl || (isCropItem ? 'https://images.unsplash.com/photo-1574323347407-f5e1ad6d020b?w=600&q=80' : ''),
+                    unit: c.item.unit || (isCropItem ? 'Quintals' : 'portions'),
                     unitPrice: unitPrice,
                     quantity: qty,
                     totalPrice: unitPrice * qty,
                     orderStatus: 'confirmed',
                     notes: notes,
                     createdAt: new Date().toISOString(),
-                    pickupTime: c.item.pickupTime || c.item.pickup || 'Ready for Pickup',
+                    pickupTime: c.item.pickupTime || c.item.pickup || 'Ready for Pickup / Mandi Dispatch',
 
                     // Seller information (viewed in Buyer history)
-                    vendorId: c.item.vendorId || c.item.vendorid || 888,
-                    sellerId: c.item.vendorId || c.item.vendorid || 888,
-                    sellerName: c.item.vendorName || c.item.vendorname || 'Elite Catering Services',
-                    sellerType: 'restaurant',
-                    sellerEmail: c.item.vendorEmail || 'serverdemo@gmail.com',
-                    sellerPhone: c.item.vendorPhone || '+91 98400 12345',
-                    sellerContactPerson: c.item.contactPerson || 'Verified Seller Lead',
-                    sellerFssaiCode: c.item.fssaiCode || '12345678901234',
-                    sellerAddress: c.item.address || '45, Sterling Road, Nungambakkam, Chennai',
-                    sellerPickupWindow: c.item.pickupWindow || '9:00 PM - 11:00 PM',
+                    vendorId: c.item.vendorId || c.item.vendorid || (isCropItem ? 777 : 888),
+                    sellerId: c.item.vendorId || c.item.vendorid || (isCropItem ? 777 : 888),
+                    sellerName: c.item.vendorName || c.item.vendorname || (isCropItem ? 'Green Valley Farmers FPO' : 'Elite Catering Services'),
+                    sellerType: isCropItem ? 'crop_seller' : 'restaurant',
+                    sellerEmail: c.item.vendorEmail || (isCropItem ? 'farmerdemo@gmail.com' : 'serverdemo@gmail.com'),
+                    sellerPhone: c.item.vendorPhone || (isCropItem ? '+91 98765 12340' : '+91 98400 12345'),
+                    sellerContactPerson: c.item.contactPerson || (isCropItem ? 'Verified Crop Producer' : 'Verified Seller Lead'),
+                    sellerFssaiCode: c.item.fssaiCode || '',
+                    sellerAddress: c.item.address || (isCropItem ? 'APMC Yard / Regional Mandi Hub' : '45, Sterling Road, Nungambakkam, Chennai'),
+                    sellerPickupWindow: c.item.pickupWindow || (isCropItem ? '6:00 AM - 6:00 PM' : '9:00 PM - 11:00 PM'),
                     sellerAvatar: c.item.vendorAvatar || 'assets/default-avatar.jpg',
 
                     // Buyer information (viewed in Seller history)
-                    buyerId: user.id || 999,
-                    buyerName: user.organizationName || user.name || 'Global Outreach Foundation',
-                    buyerType: user.accountType || user.type || 'ngo',
-                    buyerEmail: user.email || 'ngodemo@gmail.com',
-                    buyerPhone: user.publicPhone || user.phone || '+91 98840 56789',
-                    buyerContactPerson: user.contactPerson || 'Verified NGO Lead',
-                    buyerDarpanId: user.darpanId || 'TN/2023/0345678',
-                    buyerNgoRegType: user.ngoRegType || 'darpan',
-                    buyerAddress: user.address || '12, Besant Nagar, Chennai',
+                    buyerId: user.id || (isCropItem ? 666 : 999),
+                    buyerName: user.organizationName || user.name || (isCropItem ? 'Sahyadri Agro-Processing MSME' : 'Global Outreach Foundation'),
+                    buyerType: user.accountType || user.type || (isCropItem ? 'crop_buyer' : 'ngo'),
+                    buyerEmail: user.email || (isCropItem ? 'buyeragridemo@gmail.com' : 'ngodemo@gmail.com'),
+                    buyerPhone: user.publicPhone || user.phone || '+91 98765 56780',
+                    buyerContactPerson: user.contactPerson || (isCropItem ? 'Agro Procurement Lead' : 'Verified NGO Lead'),
+                    buyerDarpanId: user.darpanId || '',
+                    buyerNgoRegType: user.ngoRegType || '',
+                    buyerAddress: user.address || (isCropItem ? 'Sector 4, Agro-Processing Industrial Zone' : '12, Besant Nagar, Chennai'),
                     buyerAvatar: user.avatarUrl || 'assets/default-avatar.jpg'
                 };
             });
@@ -1001,16 +1079,35 @@ document.addEventListener('DOMContentLoaded', () => {
             localOrders.unshift(...newOrders);
             localStorage.setItem('nn_local_orders', JSON.stringify(localOrders));
 
-            // Log purchase for platform live impact stats
+            // Log purchases for platform live impact stats
             const purchases = JSON.parse(localStorage.getItem('nn_purchases') || '[]');
             const totalPortions = state.cart.reduce((sum, item) => sum + (parseInt(item.qty, 10) || 1), 0);
             purchases.push({
                 id: Date.now().toString(),
-                buyerOrg: user.organizationName || user.name || 'NGO Partner',
+                buyerOrg: user.organizationName || user.name || (state.activePortal === 'crop_buyer' ? 'Agro Buyer' : 'NGO Partner'),
                 qty: totalPortions,
                 ts: Date.now()
             });
             localStorage.setItem('nn_purchases', JSON.stringify(purchases));
+
+            // Also log to nn_crop_purchases for live agricultural impact box
+            const cropPurchases = JSON.parse(localStorage.getItem('nn_crop_purchases') || '[]');
+            state.cart.forEach(c => {
+                const isCrop = c.item.isCrop || c.item.produceType === 'crop' || c.item.cropGrade != null || state.activePortal === 'crop_buyer';
+                if (isCrop) {
+                    const u = (c.item.unit || '').toLowerCase();
+                    const factor = (u === 'quintal' || u === 'q') ? 100 : ((u === 'ton' || u === 'tonne') ? 1000 : 1);
+                    const qty = parseInt(c.qty, 10) || 1;
+                    cropPurchases.push({
+                        cropId: c.item.id,
+                        cropName: c.item.name || 'Crop Produce',
+                        qty: qty,
+                        kg: qty * factor,
+                        date: new Date().toISOString()
+                    });
+                }
+            });
+            localStorage.setItem('nn_crop_purchases', JSON.stringify(cropPurchases));
 
             if (typeof updateLiveStats === 'function') {
                 updateLiveStats();
@@ -1146,6 +1243,28 @@ document.addEventListener('DOMContentLoaded', () => {
                 console.log("Dock: Cart Clicked");
                 const drawer = document.getElementById('cart-drawer');
                 if (drawer) drawer.classList.add('active');
+            };
+        }
+
+        const addCropDock = document.getElementById('add-crop-dock');
+        if (addCropDock) {
+            addCropDock.onclick = (e) => {
+                e.preventDefault();
+                console.log("Dock: Add Crop Clicked");
+                if (window.openAddCropModal) window.openAddCropModal();
+            };
+        }
+
+        const cropCartDock = document.getElementById('crop-cart-dock');
+        if (cropCartDock) {
+            cropCartDock.onclick = (e) => {
+                e.preventDefault();
+                console.log("Dock: Crop Cart Clicked");
+                const drawer = document.getElementById('cart-drawer');
+                if (drawer) {
+                    drawer.classList.add('active');
+                    if (typeof renderCartItems === 'function') renderCartItems();
+                }
             };
         }
 
@@ -1293,6 +1412,14 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    function getPortalForUserType(t) {
+        const role = (t || '').toLowerCase();
+        if (role === 'crop_seller' || role === 'farmer' || role === 'fpo') return 'crop_seller';
+        if (role === 'crop_buyer' || role === 'processor' || role === 'agro_processor') return 'crop_buyer';
+        if (role === 'restaurant' || role === 'vendor' || role === 'seller') return 'seller';
+        return 'buyer';
+    }
+
     // --- SESSION PERSISTENCE ---
     function checkSession() {
         console.log("Checking session...");
@@ -1307,7 +1434,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (userStr && token) {
             const user = JSON.parse(userStr);
             const type = (user.type || user.accountType || user.role || '').toLowerCase();
-            state.activePortal = (type === 'restaurant' || type === 'vendor' || type === 'seller') ? 'seller' : 'buyer';
+            state.activePortal = getPortalForUserType(type);
             console.log("Session found, active portal:", state.activePortal);
             sessionStorage.setItem('nourishUser', JSON.stringify(user));
             sessionStorage.setItem('nourishToken', token);
@@ -1352,6 +1479,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function computeLocalStats() {
         const purchases = JSON.parse(localStorage.getItem('nn_purchases') || '[]');
         const demoListings = JSON.parse(localStorage.getItem('nn_demo_listings') || '[]');
+        const cropPurchases = JSON.parse(localStorage.getItem('nn_crop_purchases') || '[]');
 
         // Meals Saved = total qty across all listings + purchased qty
         const listingMeals = state.listings.reduce((sum, l) => sum + (parseInt(l.qty) || parseInt(l.quantity) || 0), 0);
@@ -1369,7 +1497,17 @@ document.addEventListener('DOMContentLoaded', () => {
         const buyerOrgs = new Set(purchases.map(p => p.buyerOrg).filter(Boolean));
         const totalNGOs = buyerOrgs.size + (purchases.length > 0 ? 1 : 0);
 
-        return { totalMeals, totalKg, totalVendors, totalNGOs };
+        // Crops Rescued/Sold = calculate KG for crop harvests
+        const cropListingsKg = state.listings.filter(l => l.cropGrade || l.produceType === 'crop').reduce((sum, l) => {
+            const q = parseFloat(l.qty || l.quantity || 0);
+            const u = (l.unit || '').toLowerCase();
+            const factor = (u === 'quintal' || u === 'q') ? 100 : ((u === 'ton' || u === 'tonne') ? 1000 : 1);
+            return sum + (q * factor);
+        }, 0);
+        const cropPurchasesKg = cropPurchases.reduce((sum, p) => sum + (p.kg || 0), 0);
+        const totalCropsSaved = Math.round(cropListingsKg + cropPurchasesKg + 2450);
+
+        return { totalMeals, totalKg, totalVendors, totalNGOs, totalCropsSaved };
     }
 
     function updateLiveStats() {
@@ -1380,16 +1518,19 @@ document.addEventListener('DOMContentLoaded', () => {
         const kg = Math.max(localStats.totalKg, state.stats.totalKgShared || 0);
         const vendors = Math.max(localStats.totalVendors, state.stats.totalVendors || 0);
         const ngos = Math.max(localStats.totalNGOs, state.stats.totalNGOs || 0);
+        const crops = Math.max(localStats.totalCropsSaved, state.stats.totalCropsSaved || 0);
 
         const listedEl = document.querySelector('[data-target-stat="listed"]');
         const fulfilledEl = document.querySelector('[data-target-stat="fulfilled"]');
         const vendorsEl = document.querySelector('[data-target-stat="vendors"]');
         const ngosEl = document.querySelector('[data-target-stat="ngos"]');
+        const cropsEl = document.querySelector('[data-target-stat="cropsSaved"]');
 
         if (listedEl) listedEl.setAttribute('data-target', meals);
         if (fulfilledEl) fulfilledEl.setAttribute('data-target', kg);
         if (vendorsEl) vendorsEl.setAttribute('data-target', vendors);
         if (ngosEl) ngosEl.setAttribute('data-target', ngos);
+        if (cropsEl) cropsEl.setAttribute('data-target', crops);
 
         startCounters();
     }
@@ -1722,6 +1863,12 @@ document.addEventListener('DOMContentLoaded', () => {
     // Toggle Forms
     function showLoginForm() {
         authModal.classList.add('active');
+        const loginEmailInput = document.getElementById('loginEmail');
+        const loginPasswordInput = document.getElementById('loginPassword');
+        if (loginEmailInput && loginEmailInput.value && loginEmailInput.value.includes('demo')) {
+            loginEmailInput.value = '';
+            if (loginPasswordInput) loginPasswordInput.value = '';
+        }
         sessionStorage.removeItem('nourishUser');
         sessionStorage.removeItem('nourishToken');
         localStorage.removeItem('nourishUser');
@@ -1819,9 +1966,32 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // Check if coming from email verification link (?verified=true)
+    // Check if coming from email verification link (?verified=true or ?authToken=...)
     const urlParams = new URLSearchParams(window.location.search);
-    if (urlParams.get('verified') === 'true') {
+    const incomingAuthToken = urlParams.get('authToken');
+    if (incomingAuthToken) {
+        fetch(`${API_BASE}/user/me`, {
+            headers: { 'Authorization': `Bearer ${incomingAuthToken}` }
+        })
+        .then(r => r.ok ? r.json() : null)
+        .then(liveUser => {
+            if (liveUser && liveUser.id) {
+                sessionStorage.setItem('nourishUser', JSON.stringify(liveUser));
+                sessionStorage.setItem('nourishToken', incomingAuthToken);
+                localStorage.setItem('nourishUser', JSON.stringify(liveUser));
+                localStorage.setItem('nourishToken', incomingAuthToken);
+                document.documentElement.classList.add('user-logged-in');
+
+                const t = (liveUser.type || liveUser.accountType || '').toLowerCase();
+                state.activePortal = getPortalForUserType(t);
+                showToast(`✨ Account verified! Welcome, ${liveUser.organizationName || liveUser.name || 'Partner'}! 🎉`, 'success');
+                window.history.replaceState({}, document.title, window.location.pathname);
+                renderPortal();
+                syncDock();
+                refreshState();
+            }
+        }).catch(() => {});
+    } else if (urlParams.get('verified') === 'true') {
         const storedUser = sessionStorage.getItem('nourishUser') || localStorage.getItem('nourishUser');
         const storedToken = sessionStorage.getItem('nourishToken') || localStorage.getItem('nourishToken');
         if (storedUser && storedToken) {
@@ -1831,7 +2001,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const parsedUser = JSON.parse(storedUser);
             const t = (parsedUser.type || parsedUser.accountType || '').toLowerCase();
-            state.activePortal = (t === 'restaurant' || t === 'vendor' || t === 'seller') ? 'seller' : 'buyer';
+            state.activePortal = getPortalForUserType(t);
             showToast(`Email verified successfully! Welcome, ${parsedUser.name || 'Partner'} 🎉`, 'success');
             window.history.replaceState({}, document.title, window.location.pathname);
         }
@@ -2089,7 +2259,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     authModal.classList.remove('active');
                     if (data.user) {
                         const t = (data.user.type || data.user.accountType || data.user.role || '').toLowerCase();
-                        state.activePortal = (t === 'restaurant' || t === 'vendor' || t === 'seller') ? 'seller' : 'buyer';
+                        state.activePortal = getPortalForUserType(t);
                     }
                     renderPortal();
                     syncDock();
@@ -2102,6 +2272,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (sentEmailEl) sentEmailEl.innerText = data.email || email;
                 const emailModal = document.getElementById('emailVerifyModal');
                 if (emailModal) emailModal.classList.add('active');
+                const otpInput = document.getElementById('verifyOtpInput');
+                if (otpInput) {
+                    otpInput.value = '';
+                    setTimeout(() => otpInput.focus(), 300);
+                }
                 startVerificationPolling(data.email || email);
             } else {
                 showToast(data.error || "Login failed", "error");
@@ -2154,14 +2329,16 @@ document.addEventListener('DOMContentLoaded', () => {
                     localStorage.setItem('last_login_email', email);
                     sessionStorage.setItem('nourishUser', JSON.stringify(data.user));
                     sessionStorage.setItem('nourishToken', data.token);
+                    localStorage.setItem('nourishUser', JSON.stringify(data.user));
+                    localStorage.setItem('nourishToken', data.token);
                     document.documentElement.classList.add('user-logged-in');
 
                     if (data.user) {
                         const t = (data.user.type || data.user.accountType || data.user.role || '').toLowerCase();
-                        state.activePortal = (t === 'restaurant' || t === 'vendor' || t === 'seller') ? 'seller' : 'buyer';
+                        state.activePortal = getPortalForUserType(t);
                     }
 
-                    showToast(`✨ Account verified via mobile! Welcome, ${data.user.name || email}! 🎉`, "success");
+                    showToast(`✨ Account verified! Welcome, ${data.user.name || email}! 🎉`, "success");
                     renderPortal();
                     syncDock();
                     refreshState();
@@ -2191,26 +2368,173 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Dynamic Role-Based Compliance Fields (FSSAI vs DARPAN / Multi-tier NGO)
+    // Resend Verification Email Button
+    const resendVerificationBtn = document.getElementById('resendVerificationBtn');
+    if (resendVerificationBtn) {
+        resendVerificationBtn.addEventListener('click', async () => {
+            const email = (document.getElementById('verifySentEmail')?.innerText || '').trim();
+            if (!email) return;
+            const origText = resendVerificationBtn.innerHTML;
+            resendVerificationBtn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Resending...';
+            resendVerificationBtn.disabled = true;
+            try {
+                const res = await fetch(`${API_BASE}/resend-verification`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email })
+                });
+                const data = await res.json();
+                if (res.ok) {
+                    showToast("Verification code & link resent! Check your inbox. ✉️", "success");
+                    const otpInput = document.getElementById('verifyOtpInput');
+                    if (otpInput) {
+                        otpInput.value = '';
+                        otpInput.focus();
+                    }
+                } else {
+                    showToast(data.error || "Failed to resend verification.", "error");
+                }
+            } catch (err) {
+                showToast("Network error resending verification.", "error");
+            } finally {
+                resendVerificationBtn.innerHTML = origText;
+                resendVerificationBtn.disabled = false;
+            }
+        });
+    }
+
+    // 1c. Direct 6-Digit OTP Code Submission (secondary option)
+    const verifyOtpForm = document.getElementById('verifyOtpForm');
+    const verifyOtpInput = document.getElementById('verifyOtpInput');
+    const verifyOtpSubmitBtn = document.getElementById('verifyOtpSubmitBtn');
+
+    if (verifyOtpForm) {
+        verifyOtpForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = (document.getElementById('verifySentEmail')?.innerText || '').trim();
+            const otp = (verifyOtpInput?.value || '').trim();
+
+            if (!otp || otp.length !== 6 || !/^\d{6}$/.test(otp)) {
+                showToast("Please enter the 6-digit code from your email.", "warning");
+                if (verifyOtpInput) verifyOtpInput.focus();
+                return;
+            }
+
+            const origText = verifyOtpSubmitBtn ? verifyOtpSubmitBtn.innerHTML : 'Verify';
+            if (verifyOtpSubmitBtn) {
+                verifyOtpSubmitBtn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Verifying...';
+                verifyOtpSubmitBtn.disabled = true;
+            }
+
+            try {
+                const res = await fetch(`${API_BASE}/verify-otp`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, otp })
+                });
+                const data = await res.json();
+
+                if (res.ok && data.token) {
+                    stopVerificationPolling();
+                    const emailModal = document.getElementById('emailVerifyModal');
+                    if (emailModal) emailModal.classList.remove('active');
+
+                    localStorage.setItem('last_login_email', email);
+                    sessionStorage.setItem('nourishUser', JSON.stringify(data.user));
+                    sessionStorage.setItem('nourishToken', data.token);
+                    localStorage.setItem('nourishUser', JSON.stringify(data.user));
+                    localStorage.setItem('nourishToken', data.token);
+                    document.documentElement.classList.add('user-logged-in');
+
+                    if (data.user) {
+                        const t = (data.user.type || data.user.accountType || data.user.role || '').toLowerCase();
+                        state.activePortal = getPortalForUserType(t);
+                    }
+
+                    showToast(`Email verified! Welcome, ${data.user?.name || email}!`, "success");
+                    renderPortal();
+                    syncDock();
+                    refreshState();
+                } else {
+                    showToast(data.error || "Invalid code. Please check your email and try again.", "error");
+                    if (verifyOtpInput) { verifyOtpInput.select(); verifyOtpInput.focus(); }
+                }
+            } catch (err) {
+                showToast("Network error. Please check your connection.", "error");
+            } finally {
+                if (verifyOtpSubmitBtn) {
+                    verifyOtpSubmitBtn.innerHTML = origText;
+                    verifyOtpSubmitBtn.disabled = false;
+                }
+            }
+        });
+    }
+
+    // Dynamic Role-Based Compliance Fields (FSSAI vs DARPAN vs APMC/FPO vs Udyam/MSME)
     const regAccountTypeRadios = document.querySelectorAll('input[name="accountType"]');
     const regFssaiWrap = document.getElementById('regFssaiWrap');
     const regDarpanWrap = document.getElementById('regDarpanWrap');
+    const regCropSellerWrap = document.getElementById('regCropSellerWrap');
+    const regCropBuyerWrap = document.getElementById('regCropBuyerWrap');
+
     const regFssai = document.getElementById('regFssai');
     const regDarpan = document.getElementById('regDarpan');
     const regNgoType = document.getElementById('regNgoType');
+    const regCropSellerType = document.getElementById('regCropSellerType');
+    const regCropSellerCode = document.getElementById('regCropSellerCode');
+    const regCropBuyerType = document.getElementById('regCropBuyerType');
+    const regCropBuyerCode = document.getElementById('regCropBuyerCode');
+
     const regFssaiFeedback = document.getElementById('regFssaiFeedback');
     const regDarpanFeedback = document.getElementById('regDarpanFeedback');
+    const regCropSellerFeedback = document.getElementById('regCropSellerFeedback');
+    const regCropBuyerFeedback = document.getElementById('regCropBuyerFeedback');
 
     const NGO_PLACEHOLDERS = {
         darpan: 'NITI Aayog DARPAN ID (e.g. TN/2026/0123456)',
         trust: 'State Society / Trust Deed No. (e.g. SOC/TN/2022/04812)'
     };
 
+    const CROP_SELLER_PLACEHOLDERS = {
+        apmc: 'APMC Mandi License (e.g. APMC/MH/2026/0491)',
+        fpo: 'Farmer Producer Org Reg (e.g. FPO/MH/2023/1024)',
+        kisan: 'PM-Kisan / KCC ID (e.g. KCC-9876543210)',
+        fssai: '14-Digit FSSAI License (e.g. 13326001000001)'
+    };
+
+    const CROP_BUYER_PLACEHOLDERS = {
+        udyam: 'Udyam MSME ID (e.g. UDYAM-MH-12-0012345)',
+        fssai: '14-Digit FSSAI License (e.g. 13326001000001)',
+        gstin: 'GSTIN Registration (e.g. 27AAAAA0000A1Z5)'
+    };
+
     function updateRegComplianceVisibility() {
         const selected = document.querySelector('input[name="accountType"]:checked');
-        const isVendor = selected ? (selected.value === 'restaurant' || selected.value === 'vendor') : true;
-        if (regFssaiWrap) regFssaiWrap.style.display = isVendor ? 'block' : 'none';
-        if (regDarpanWrap) regDarpanWrap.style.display = isVendor ? 'none' : 'block';
+        const role = selected ? selected.value : 'restaurant';
+        const regPhoneWrap = document.getElementById('regPhoneWrap');
+        const regName = document.getElementById('regName');
+
+        if (role === 'crop_seller') {
+            if (regFssaiWrap) regFssaiWrap.style.display = 'none';
+            if (regDarpanWrap) regDarpanWrap.style.display = 'none';
+            if (regPhoneWrap) regPhoneWrap.style.display = 'block';
+            if (regName) regName.placeholder = 'Farmer / FPO / Mandi Name';
+        } else if (role === 'crop_buyer') {
+            if (regFssaiWrap) regFssaiWrap.style.display = 'none';
+            if (regDarpanWrap) regDarpanWrap.style.display = 'none';
+            if (regPhoneWrap) regPhoneWrap.style.display = 'block';
+            if (regName) regName.placeholder = 'Agro-Processor / Procurement Entity';
+        } else if (role === 'restaurant' || role === 'vendor') {
+            if (regFssaiWrap) regFssaiWrap.style.display = 'block';
+            if (regDarpanWrap) regDarpanWrap.style.display = 'none';
+            if (regPhoneWrap) regPhoneWrap.style.display = 'none';
+            if (regName) regName.placeholder = 'Restaurant / Food Business Name';
+        } else {
+            if (regFssaiWrap) regFssaiWrap.style.display = 'none';
+            if (regDarpanWrap) regDarpanWrap.style.display = 'block';
+            if (regPhoneWrap) regPhoneWrap.style.display = 'none';
+            if (regName) regName.placeholder = 'Organization Name';
+        }
     }
 
     regAccountTypeRadios.forEach(r => r.addEventListener('change', updateRegComplianceVisibility));
@@ -2238,11 +2562,13 @@ document.addEventListener('DOMContentLoaded', () => {
             const res = window.validateFSSAI(clean);
             regFssaiFeedback.style.display = 'block';
             if (res.valid) {
+                regFssaiFeedback.className = 'fssai-feedback-valid';
                 regFssaiFeedback.style.color = '#34d399';
                 regFssaiFeedback.style.background = 'rgba(16, 185, 129, 0.12)';
                 regFssaiFeedback.style.border = '1px solid rgba(16, 185, 129, 0.3)';
                 regFssaiFeedback.innerHTML = `<i class="fa-solid fa-circle-check"></i> <strong>Valid FSSAI</strong>: ${res.stateName} · ${res.typeStr} (${res.year})`;
             } else {
+                regFssaiFeedback.className = 'fssai-feedback-invalid';
                 regFssaiFeedback.style.color = '#f87171';
                 regFssaiFeedback.style.background = 'rgba(239, 68, 68, 0.12)';
                 regFssaiFeedback.style.border = '1px solid rgba(239, 68, 68, 0.3)';
@@ -2265,11 +2591,13 @@ document.addEventListener('DOMContentLoaded', () => {
             const res = window.validateNGOCompliance(currentType, val);
             regDarpanFeedback.style.display = 'block';
             if (res.valid) {
+                regDarpanFeedback.className = 'darpan-feedback-valid';
                 regDarpanFeedback.style.color = '#34d399';
                 regDarpanFeedback.style.background = 'rgba(16, 185, 129, 0.12)';
                 regDarpanFeedback.style.border = '1px solid rgba(16, 185, 129, 0.3)';
                 regDarpanFeedback.innerHTML = `<i class="fa-solid fa-circle-check"></i> ${res.message}`;
             } else {
+                regDarpanFeedback.className = 'darpan-feedback-invalid';
                 regDarpanFeedback.style.color = '#f87171';
                 regDarpanFeedback.style.background = 'rgba(239, 68, 68, 0.12)';
                 regDarpanFeedback.style.border = '1px solid rgba(239, 68, 68, 0.3)';
@@ -2286,6 +2614,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const organizationName = document.getElementById('regName').value.trim();
         const email = document.getElementById('regEmail').value.trim();
         const password = document.getElementById('regPassword').value.trim();
+        const phone = document.getElementById('regPhone') ? document.getElementById('regPhone').value.trim() : '';
         const fssaiCode = regFssai ? regFssai.value.trim() : '';
         const darpanId = regDarpan ? regDarpan.value.trim().toUpperCase() : '';
         const ngoRegType = regNgoType ? regNgoType.value : 'darpan';
@@ -2295,7 +2624,7 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        // FSSAI is mandatory for Vendor / Restaurant accounts
+        // FSSAI is mandatory ONLY for Food Vendor / Restaurant accounts
         if (accountType === 'restaurant' || accountType === 'vendor') {
             if (!fssaiCode) {
                 showToast("FSSAI License Code is required to register as a food vendor.", "error");
@@ -2310,7 +2639,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
 
-        // DARPAN / Trust Deed is mandatory for NGO / Shelter accounts
+        // DARPAN / Trust Deed is mandatory ONLY for Food NGO / Shelter accounts
         if (accountType === 'ngo' || accountType === 'shelter') {
             if (!darpanId) {
                 const label = ngoRegType === 'trust' ? 'State Society / Trust Deed number' : 'NITI Aayog DARPAN ID';
@@ -2326,16 +2655,30 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
 
+        // Crop accounts (crop_seller & crop_buyer) require NO government accreditation:
+        // Purely Name, Email, Password, and Phone Number (for logistics / demo).
+
         const submitBtn = registerForm.querySelector('button[type="submit"]');
         const originalText = submitBtn.innerHTML;
 
         setLoading(submitBtn, true, originalText);
 
+        const regPayload = {
+            accountType,
+            organizationName,
+            email,
+            password,
+            phone,
+            fssaiCode: (accountType === 'restaurant' || accountType === 'vendor') ? fssaiCode : '',
+            darpanId: (accountType === 'ngo' || accountType === 'shelter') ? darpanId : '',
+            ngoRegType: (accountType === 'ngo' || accountType === 'shelter') ? ngoRegType : ''
+        };
+
         try {
             const response = await fetch(`${API_BASE}/register`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ accountType, organizationName, email, password, fssaiCode, darpanId, ngoRegType })
+                body: JSON.stringify(regPayload)
             });
 
             const data = await response.json();
@@ -2349,9 +2692,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 const emailModal = document.getElementById('emailVerifyModal');
                 if (emailModal) emailModal.classList.add('active');
+                const otpInput = document.getElementById('verifyOtpInput');
+                if (otpInput) {
+                    otpInput.value = '';
+                    setTimeout(() => otpInput.focus(), 300);
+                }
 
-                // Start cross-device verification polling: when user taps verify on phone,
-                // this browser will automatically log in!
+                // Start cross-device verification polling
                 startVerificationPolling(email);
 
                 showToast("Account created! Please check your email to activate.", "success");
@@ -2549,6 +2896,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // Visual feedback
             showToast(`Switched to ${newTheme.charAt(0).toUpperCase() + newTheme.slice(1)} Mode`, 'info');
+
+            // Re-render active portal so theme changes apply instantly to dynamic views
+            if (typeof renderPortal === 'function' && state.activePortal && state.activePortal !== 'home') {
+                renderPortal();
+            }
         });
     }
 
@@ -2758,6 +3110,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 renderSellerPortal();
             } else if (state.activePortal === 'buyer') {
                 renderBuyerPortal();
+            } else if (state.activePortal === 'crop_seller') {
+                renderCropSellerPortal();
+            } else if (state.activePortal === 'crop_buyer') {
+                renderCropBuyerPortal();
             }
         }
     }
@@ -2793,19 +3149,21 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         // --- Show/hide dock items based on portal ---
-        // IDs from index.html: cart-toggle-dock (buyer), add-listing-dock (seller)
         const cartDockItem = document.getElementById('cart-toggle-dock');
         const addDockItem = document.getElementById('add-listing-dock');
+        const addCropDockItem = document.getElementById('add-crop-dock');
+        const cropCartDockItem = document.getElementById('crop-cart-dock');
         const historyDockItem = document.getElementById('history-toggle-dock');
         const loginDockItem = document.getElementById('login-toggle-dock');
         const settingsDockItem = document.getElementById('settings-toggle-dock');
-        const settingsNavItem = document.getElementById('settings-toggle-nav');
         const landingItems = document.querySelectorAll('.landing-only');
 
         if (state.activePortal === 'buyer') {
             landingItems.forEach(el => el.style.setProperty('display', 'none', 'important'));
             if (cartDockItem) cartDockItem.style.setProperty('display', 'flex', 'important');
             if (addDockItem) addDockItem.style.setProperty('display', 'none', 'important');
+            if (addCropDockItem) addCropDockItem.style.setProperty('display', 'none', 'important');
+            if (cropCartDockItem) cropCartDockItem.style.setProperty('display', 'none', 'important');
             if (historyDockItem) historyDockItem.style.setProperty('display', 'flex', 'important');
             if (settingsDockItem) settingsDockItem.style.setProperty('display', 'flex', 'important');
             if (loginDockItem) loginDockItem.style.setProperty('display', 'flex', 'important');
@@ -2813,6 +3171,26 @@ document.addEventListener('DOMContentLoaded', () => {
             landingItems.forEach(el => el.style.setProperty('display', 'none', 'important'));
             if (cartDockItem) cartDockItem.style.setProperty('display', 'none', 'important');
             if (addDockItem) addDockItem.style.setProperty('display', 'flex', 'important');
+            if (addCropDockItem) addCropDockItem.style.setProperty('display', 'none', 'important');
+            if (cropCartDockItem) cropCartDockItem.style.setProperty('display', 'none', 'important');
+            if (historyDockItem) historyDockItem.style.setProperty('display', 'flex', 'important');
+            if (settingsDockItem) settingsDockItem.style.setProperty('display', 'flex', 'important');
+            if (loginDockItem) loginDockItem.style.setProperty('display', 'flex', 'important');
+        } else if (state.activePortal === 'crop_seller') {
+            landingItems.forEach(el => el.style.setProperty('display', 'none', 'important'));
+            if (cartDockItem) cartDockItem.style.setProperty('display', 'none', 'important');
+            if (addDockItem) addDockItem.style.setProperty('display', 'none', 'important');
+            if (addCropDockItem) addCropDockItem.style.setProperty('display', 'flex', 'important');
+            if (cropCartDockItem) cropCartDockItem.style.setProperty('display', 'none', 'important');
+            if (historyDockItem) historyDockItem.style.setProperty('display', 'flex', 'important');
+            if (settingsDockItem) settingsDockItem.style.setProperty('display', 'flex', 'important');
+            if (loginDockItem) loginDockItem.style.setProperty('display', 'flex', 'important');
+        } else if (state.activePortal === 'crop_buyer') {
+            landingItems.forEach(el => el.style.setProperty('display', 'none', 'important'));
+            if (cartDockItem) cartDockItem.style.setProperty('display', 'none', 'important');
+            if (addDockItem) addDockItem.style.setProperty('display', 'none', 'important');
+            if (addCropDockItem) addCropDockItem.style.setProperty('display', 'none', 'important');
+            if (cropCartDockItem) cropCartDockItem.style.setProperty('display', 'flex', 'important');
             if (historyDockItem) historyDockItem.style.setProperty('display', 'flex', 'important');
             if (settingsDockItem) settingsDockItem.style.setProperty('display', 'flex', 'important');
             if (loginDockItem) loginDockItem.style.setProperty('display', 'flex', 'important');
@@ -2820,6 +3198,8 @@ document.addEventListener('DOMContentLoaded', () => {
             landingItems.forEach(el => el.style.setProperty('display', 'flex', 'important'));
             if (cartDockItem) cartDockItem.style.setProperty('display', 'none', 'important');
             if (addDockItem) addDockItem.style.setProperty('display', 'none', 'important');
+            if (addCropDockItem) addCropDockItem.style.setProperty('display', 'none', 'important');
+            if (cropCartDockItem) cropCartDockItem.style.setProperty('display', 'none', 'important');
             if (historyDockItem) historyDockItem.style.setProperty('display', 'none', 'important');
             if (settingsDockItem) settingsDockItem.style.setProperty('display', 'none', 'important');
             if (loginDockItem) loginDockItem.style.setProperty('display', 'flex', 'important');
@@ -2835,14 +3215,31 @@ document.addEventListener('DOMContentLoaded', () => {
         sessionStorage.removeItem('nourishToken');
         localStorage.removeItem('nourishUser');
         localStorage.removeItem('nourishToken');
+
+        // Remove logged-in class so CSS anti-flash rules show home & hide portals
         document.documentElement.classList.remove('user-logged-in');
+        document.documentElement.classList.remove('portal-pre-active');
+
+        // Reset state
         state.activePortal = 'home';
         state.cart = [];
-        renderPortal();
-        updateLiquidIndicator();
+
+        // Explicitly show/hide the right sections
+        const homePortal = document.getElementById('home-portal');
+        const portalsRootEl = document.getElementById('nn-portals-root');
+        if (homePortal) homePortal.style.removeProperty('display');
+        if (portalsRootEl) portalsRootEl.style.setProperty('display', 'none', 'important');
+
+        // Clear the portals root content so stale portal HTML is gone
+        const root = portalsRoot || portalsRootEl;
+        if (root) root.innerHTML = '';
+
         syncDock();
+        updateLiquidIndicator();
+        window.scrollTo({ top: 0, behavior: 'smooth' });
         showToast("Logged out successfully.", "info");
     }
+
 
 
     function renderSellerPortal() {
@@ -3484,9 +3881,14 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function updateCartBadge() {
-        const counts = document.querySelectorAll('.cart-count');
-        const totalItems = state.cart.reduce((sum, c) => sum + c.qty, 0);
-        counts.forEach(c => c.innerText = totalItems);
+        const counts = document.querySelectorAll('.cart-count, .crop-cart-count');
+        const totalItems = state.cart.reduce((sum, c) => sum + (parseInt(c.qty, 10) || 1), 0);
+        counts.forEach(c => {
+            c.innerText = totalItems;
+            if (c.classList.contains('crop-cart-count')) {
+                c.style.display = totalItems > 0 ? 'inline-block' : 'none';
+            }
+        });
     }
 
     function renderCartItems() {
@@ -3503,10 +3905,11 @@ document.addEventListener('DOMContentLoaded', () => {
             <div class="cart-item-row" style="display:flex; justify-content:space-between; margin-bottom: 1.5rem; padding-bottom: 1rem; border-bottom: 1px solid var(--border-glow);">
                 <div>
                     <strong>${cartItem.item.name}</strong><br>
-                    <small>${cartItem.item.vendorName}</small><br>
+                    <small style="color: var(--text-muted);">${cartItem.item.vendorName || cartItem.item.vendorname || 'Verified Partner'}</small><br>
+                    ${cartItem.item.unit ? `<small style="color: #10b981; font-weight: 600;">Rate: ₹${cartItem.item.price}/${cartItem.item.unit}</small><br>` : ''}
                     <div class="stepper-wrap" style="display:flex; align-items:center; gap: 10px; margin-top: 5px;">
                         <button class="cart-minus btn-outline btn-sm" data-idx="${idx}" style="padding: 2px 8px; color: var(--text-color); border-color: var(--border-glow);"><i class="fa-solid fa-minus"></i></button>
-                        <span style="font-weight: bold;">${cartItem.qty}</span>
+                        <span style="font-weight: bold;">${cartItem.qty} ${cartItem.item.unit || ''}</span>
                         <button class="cart-plus btn-outline btn-sm" data-idx="${idx}" style="padding: 2px 8px; color: var(--text-color); border-color: var(--border-glow);"><i class="fa-solid fa-plus"></i></button>
                     </div>
                 </div>
@@ -3781,13 +4184,916 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    // =========================================================================
+    // CROP SELLER PORTAL (DARK THEME - SIH 2026 AGRI EXTENSION)
+    // =========================================================================
+
+    // Helper: grammatically correct harvest label
+    function formatHarvestLabel(dateStr) {
+        if (!dateStr) return 'Fresh Yield';
+        const today = new Date();
+        today.setHours(0, 0, 0, 0); // strip time — compare by calendar day
+        const harvestDay = new Date(dateStr);
+        harvestDay.setHours(0, 0, 0, 0);
+        const formatted = harvestDay.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+        return harvestDay > today
+            ? `Harvests on ${formatted}`
+            : `Harvested ${formatted}`;
+    }
+
+    function renderCropSellerPortal() {
+        const root = portalsRoot || document.getElementById('nn-portals-root');
+        if (!root) return;
+        const user = JSON.parse(sessionStorage.getItem('nourishUser') || '{}');
+        const cropListings = state.listings.filter(l => l.vendorId == user.id || l.produceType === 'crop' || l.cropGrade);
+
+        let totalCropKg = 0;
+        cropListings.forEach(l => {
+            const q = parseFloat(l.qty || l.quantity || 0);
+            const u = (l.unit || '').toLowerCase();
+            const factor = (u === 'quintal' || u === 'q') ? 100 : ((u === 'ton' || u === 'tonne') ? 1000 : 1);
+            totalCropKg += (q * factor);
+        });
+        const totalQuintals = (totalCropKg / 100).toFixed(1);
+
+        root.innerHTML = `
+            <div class="crop-portal-dark-theme animate-reveal">
+                <div class="container" style="max-width: 1300px; margin: 0 auto; padding: 1.5rem 2rem 3rem;">
+                    
+                    <!-- Header Banner -->
+                    <div class="crop-card-dark" style="margin-bottom: 2rem; border-left: 4px solid #f59e0b !important;">
+                        <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1.5rem;">
+                            <div style="display: flex; align-items: center; gap: 1.25rem;">
+                                <div style="width: 68px; height: 68px; border-radius: 18px; background: linear-gradient(135deg, rgba(245, 158, 11, 0.2), rgba(217, 119, 6, 0.3)); border: 1.5px solid #f59e0b; display: flex; align-items: center; justify-content: center; font-size: 1.8rem; color: #fbbf24;">
+                                    <i class="fa-solid fa-wheat-awn"></i>
+                                </div>
+                                <div>
+                                    <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+                                        <h1 class="crop-portal-title" style="font-size: 1.65rem; font-weight: 800; margin: 0; color: var(--crop-text-title);">${user.organizationName || user.name || 'Green Valley Farmers FPO'}</h1>
+                                        ${window.renderCropTrustBadge ? window.renderCropTrustBadge(user) : `
+                                            <span class="crop-trust-badge seller-badge">
+                                                <i class="fa-solid fa-seedling"></i> Verified Crop Producer / Mandi
+                                            </span>
+                                        `}
+                                    </div>
+                                    <div style="display: flex; align-items: center; gap: 18px; margin-top: 6px; font-size: 0.85rem; color: var(--crop-text-muted); flex-wrap: wrap;">
+                                        <span><i class="fa-solid fa-phone" style="color: #f59e0b;"></i> ${user.phone || '+91 98765 12340'}</span>
+                                        <span><i class="fa-solid fa-envelope" style="color: #f59e0b;"></i> ${user.email || 'farmer@domain.com'}</span>
+                                        <span><i class="fa-solid fa-location-dot" style="color: #f59e0b;"></i> ${user.address || 'APMC Yard / Regional Mandi Hub'}</span>
+                                    </div>
+                                </div>
+                            </div>
 
 
+                        </div>
+
+                        <!-- Stats Strip -->
+                        <div class="crop-divider" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-top: 1.75rem; padding-top: 1.5rem; border-top: 1px solid var(--crop-divider);">
+                            <div class="crop-stat-box" style="padding: 1rem; border-radius: 14px;">
+                                <div class="crop-stat-label" style="font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.8px;">Active Crop Batches</div>
+                                <div class="crop-stat-val" style="font-size: 1.7rem; font-weight: 800; margin-top: 4px;">${cropListings.length}</div>
+                            </div>
+                            <div class="crop-stat-box" style="padding: 1rem; border-radius: 14px;">
+                                <div class="crop-stat-label" style="font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.8px;">Total Harvest Volume</div>
+                                <div style="font-size: 1.7rem; font-weight: 800; color: #f59e0b; margin-top: 4px;">${totalQuintals} <span style="font-size: 0.95rem; font-weight: 600; color: var(--crop-text-muted);">Quintals</span></div>
+                            </div>
+                            <div class="crop-stat-box" style="padding: 1rem; border-radius: 14px;">
+                                <div class="crop-stat-label" style="font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.8px;">Est. Weight Rescued</div>
+                                <div style="font-size: 1.7rem; font-weight: 800; color: #10b981; margin-top: 4px;">${totalCropKg.toLocaleString()} <span style="font-size: 0.95rem; font-weight: 600; color: var(--crop-text-muted);">kg</span></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Crop Listings Section -->
+                    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.25rem;">
+                        <h2 style="font-size: 1.25rem; font-weight: 700; margin: 0; display: flex; align-items: center; gap: 8px; color: var(--crop-text-title);">
+                            <i class="fa-solid fa-boxes-stacked" style="color: #f59e0b;"></i> Current Crop Listings
+                        </h2>
+                        <span style="font-size: 0.85rem; color: var(--crop-text-muted);">Showing ${cropListings.length} produce batches</span>
+                    </div>
+
+                    <div class="crop-grid" id="crop-seller-grid">
+                        ${cropListings.length === 0 ? `
+                            <div class="crop-empty-state" style="grid-column: 1 / -1; text-align: center; padding: 4rem 1.5rem; border-radius: 20px;">
+                                <i class="fa-solid fa-wheat-awn" style="font-size: 3rem; color: #f59e0b; margin-bottom: 1rem; display: block;"></i>
+                                <h3 style="font-size: 1.3rem; margin-bottom: 0.5rem;">No Crop Harvests Listed Yet</h3>
+                                <p style="font-size: 0.95rem; max-width: 450px; margin: 0 auto 1.5rem;">List surplus fruits, vegetables, grains, or tubers to connect directly with agro-processors and bulk buyers.</p>
+                                <button onclick="window.openAddCropModal()" class="btn-crop-gold"><i class="fa-solid fa-circle-plus"></i> List Your First Harvest</button>
+                            </div>
+                        ` : cropListings.map(crop => {
+                            const grade = crop.cropGrade || 'Grade B';
+                            const gradeClass = grade.includes('A') ? 'grade-badge-a' : (grade.includes('C') ? 'grade-badge-c' : 'grade-badge-b');
+                            const gradeLabel = grade.includes('A') ? 'Grade A · Retail Ready' : (grade.includes('C') ? 'Grade C · Animal Feed / Bio-CNG' : 'Grade B · Agro-Processing MSME');
+                            const defaultImg = crop.category === 'Fruits' ? 'https://images.unsplash.com/photo-1619566636858-adf3ef46400b?w=600&q=80' : (crop.category === 'Grains' ? 'https://images.unsplash.com/photo-1574323347407-f5e1ad6d020b?w=600&q=80' : 'https://images.unsplash.com/photo-1592924357228-91a4daadcfea?w=600&q=80');
+                            const cropImg = crop.imageUrl || crop.img || defaultImg;
+
+                            return `
+                                <div class="crop-card-dark">
+                                    <div style="position: relative; height: 180px; border-radius: 14px; overflow: hidden; margin-bottom: 1rem;">
+                                        <img src="${cropImg}" alt="${crop.name}" style="width: 100%; height: 100%; object-fit: cover;">
+                                        <div style="position: absolute; inset: 0; background: linear-gradient(to top, rgba(0,0,0,0.85) 0%, transparent 60%);"></div>
+                                        <div style="position: absolute; top: 12px; left: 12px; display: flex; gap: 6px; flex-wrap: wrap;">
+                                            <span class="badge" style="background: rgba(0,0,0,0.7); color: #ffffff; border: 1px solid rgba(255,255,255,0.2); font-size: 0.72rem; padding: 3px 8px; border-radius: 6px;">${crop.category || 'Produce'}</span>
+                                            <span class="grade-badge ${gradeClass}">${gradeLabel}</span>
+                                        </div>
+                                        <div style="position: absolute; bottom: 10px; left: 12px; right: 12px; display: flex; justify-content: space-between; align-items: flex-end;">
+                                            <div style="font-size: 1.25rem; font-weight: 800; color: #fbbf24;">₹${crop.price || 0} <span style="font-size: 0.75rem; color: #e2e8f0; font-weight: 500;">/${crop.unit || 'Kg'}</span></div>
+                                            <div style="font-size: 0.85rem; font-weight: 700; color: #34d399; background: rgba(0,0,0,0.6); padding: 2px 8px; border-radius: 6px;"><i class="fa-solid fa-scale-balanced"></i> ${crop.quantity || crop.qty || 1} ${crop.unit || 'Quintals'}</div>
+                                        </div>
+                                    </div>
+                                    <h3 style="font-size: 1.15rem; font-weight: 700; color: var(--crop-text-title); margin: 0 0 6px;">${crop.name}</h3>
+                                    <p style="font-size: 0.85rem; color: var(--crop-text-muted); line-height: 1.4; margin: 0 0 12px; height: 38px; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;">${crop.description || 'Harvest surplus produce available for procurement.'}</p>
+                                    <div style="display: flex; align-items: center; justify-content: space-between; font-size: 0.78rem; color: var(--crop-text-muted); border-top: 1px solid var(--crop-divider); padding-top: 10px; gap: 8px;">
+                                        <span><i class="fa-regular fa-calendar-check" style="color: #f59e0b;"></i> ${formatHarvestLabel(crop.harvestDate)}</span>
+                                        <div style="display: flex; gap: 6px;">
+                                            <button onclick="window.openEditCropModal(${crop.id})" style="background: none; border: 1px solid rgba(245,158,11,0.4); color: #fbbf24; border-radius: 8px; padding: 4px 10px; font-size: 0.75rem; cursor: pointer; display: flex; align-items: center; gap: 5px;">
+                                                <i class="fa-solid fa-pen-to-square"></i> Edit
+                                            </button>
+                                            <button onclick="window.deleteCropListing(${crop.id})" style="background: none; border: 1px solid rgba(239, 68, 68, 0.3); color: #f87171; border-radius: 8px; padding: 4px 10px; font-size: 0.75rem; cursor: pointer; display: flex; align-items: center; gap: 5px;">
+                                                <i class="fa-solid fa-trash-can"></i> Remove
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            `;
+                        }).join('')}
+                    </div>
+
+                </div>
+            </div>
+        `;
+    }
+
+    // =========================================================================
+    // EDIT CROP LISTING MODAL
+    // =========================================================================
+    window.openEditCropModal = function(cropId) {
+        const crop = state.listings.find(l => String(l.id) === String(cropId));
+        if (!crop) { showToast("Crop listing not found.", "error"); return; }
+
+        // Remove existing modal if any
+        const existing = document.getElementById('editCropModal');
+        if (existing) existing.remove();
+
+        const modal = document.createElement('div');
+        modal.id = 'editCropModal';
+        modal.style.cssText = 'position: fixed; inset: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.85); z-index: 99999; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(8px); padding: 15px;';
+        modal.innerHTML = `
+            <div class="crop-card-dark" style="max-width: 580px; width: 100%; max-height: 90vh; overflow-y: auto; padding: 2rem;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; border-bottom: 1px solid var(--crop-divider); padding-bottom: 1rem;">
+                    <h2 style="font-size: 1.4rem; font-weight: 800; color: var(--crop-text-title); margin: 0; display: flex; align-items: center; gap: 10px;">
+                        <i class="fa-solid fa-pen-to-square" style="color: #f59e0b;"></i> Edit Crop Listing
+                    </h2>
+                    <button onclick="document.getElementById('editCropModal').remove()" style="background: none; border: none; font-size: 1.2rem; color: var(--crop-text-muted); cursor: pointer;">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
+                </div>
+
+                <form id="cropEditForm" onsubmit="window.handleCropEditSubmit(event, '${cropId}')">
+                    <div class="minimal-input-wrap" style="margin-bottom: 1rem;">
+                        <label style="font-size: 0.8rem; color: var(--crop-text-muted); display: block; margin-bottom: 5px;">Crop / Produce Name</label>
+                        <input type="text" id="editCropName" class="minimal-input" value="${crop.name || ''}" required>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+                        <div>
+                            <label style="font-size: 0.8rem; color: var(--crop-text-muted); display: block; margin-bottom: 5px;">Category</label>
+                            <select id="editCropCat" class="minimal-input minimal-input-select" style="cursor: pointer;">
+                                <option value="Vegetables" ${crop.category === 'Vegetables' ? 'selected' : ''}>Vegetables</option>
+                                <option value="Fruits" ${crop.category === 'Fruits' ? 'selected' : ''}>Fruits</option>
+                                <option value="Grains" ${crop.category === 'Grains' ? 'selected' : ''}>Grains &amp; Pulses</option>
+                                <option value="Tubers" ${crop.category === 'Tubers' ? 'selected' : ''}>Tubers / Potatoes</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label style="font-size: 0.8rem; color: var(--crop-text-muted); display: block; margin-bottom: 5px;">Quality Grade</label>
+                            <select id="editCropGrade" class="minimal-input minimal-input-select" style="cursor: pointer;">
+                                <option value="Grade B" ${(crop.cropGrade || '') === 'Grade B' ? 'selected' : ''}>Grade B (Agro-Processing MSME)</option>
+                                <option value="Grade A" ${(crop.cropGrade || '') === 'Grade A' ? 'selected' : ''}>Grade A (Direct Retail Ready)</option>
+                                <option value="Grade C" ${(crop.cropGrade || '') === 'Grade C' ? 'selected' : ''}>Grade C (Animal Feed / Bio-CNG)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+                        <div>
+                            <label style="font-size: 0.8rem; color: var(--crop-text-muted); display: block; margin-bottom: 5px;">Quantity</label>
+                            <input type="number" id="editCropQty" class="minimal-input" value="${crop.quantity || crop.qty || ''}" min="1" required>
+                        </div>
+                        <div>
+                            <label style="font-size: 0.8rem; color: var(--crop-text-muted); display: block; margin-bottom: 5px;">Unit</label>
+                            <select id="editCropUnit" class="minimal-input minimal-input-select" style="cursor: pointer;">
+                                <option value="Quintal" ${crop.unit === 'Quintal' ? 'selected' : ''}>Quintals (100 kg)</option>
+                                <option value="Kg" ${crop.unit === 'Kg' ? 'selected' : ''}>Kilograms (kg)</option>
+                                <option value="Tons" ${crop.unit === 'Tons' ? 'selected' : ''}>Metric Tons</option>
+                                <option value="Crates" ${crop.unit === 'Crates' ? 'selected' : ''}>Crates</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+                        <div>
+                            <label style="font-size: 0.8rem; color: var(--crop-text-muted); display: block; margin-bottom: 5px;">Price per Unit (₹)</label>
+                            <input type="number" id="editCropPrice" class="minimal-input" value="${crop.price || ''}" min="0" step="0.5" required>
+                        </div>
+                        <div>
+                            <label style="font-size: 0.8rem; color: var(--crop-text-muted); display: block; margin-bottom: 5px;">Harvest Date</label>
+                            <input type="date" id="editCropHarvestDate" class="minimal-input" value="${crop.harvestDate || ''}">
+                        </div>
+                    </div>
+
+                    <div class="minimal-input-wrap" style="margin-bottom: 1rem;">
+                        <label style="font-size: 0.8rem; color: var(--crop-text-muted); display: block; margin-bottom: 5px;">Produce Notes / Storage Conditions</label>
+                        <textarea id="editCropDesc" class="minimal-input" rows="2">${crop.description || ''}</textarea>
+                    </div>
+
+                    <div class="minimal-input-wrap" style="margin-bottom: 0.5rem;">
+                        <label style="font-size: 0.8rem; color: var(--crop-text-muted); display: block; margin-bottom: 5px;">
+                            <i class="fa-solid fa-image" style="color: #f59e0b;"></i> Crop Image URL <span style="font-weight:400; opacity:0.65;">(paste image link)</span>
+                        </label>
+                        <input type="url" id="editCropImageUrl" class="minimal-input" value="${crop.imageUrl || crop.img || ''}" placeholder="https://..." oninput="window.previewEditCropImage(this.value)">
+                    </div>
+                    <div id="editCropImagePreviewWrap" style="margin-bottom: 1.5rem; display: ${(crop.imageUrl || crop.img) ? 'block' : 'none'};">
+                        <img id="editCropImagePreview" src="${crop.imageUrl || crop.img || ''}" alt="Preview" style="width: 100%; height: 140px; object-fit: cover; border-radius: 12px; border: 1.5px solid rgba(245,158,11,0.35);" onerror="document.getElementById('editCropImagePreviewWrap').style.display='none'">
+                    </div>
+
+                    <button type="submit" class="btn-crop-gold w-100" style="width: 100%; justify-content: center; height: 50px; font-size: 1rem;">
+                        <i class="fa-solid fa-floppy-disk"></i> Save Changes
+                    </button>
+                </form>
+            </div>
+        `;
+        document.body.appendChild(modal);
+    };
+
+    window.previewEditCropImage = function(url) {
+        const wrap = document.getElementById('editCropImagePreviewWrap');
+        const img = document.getElementById('editCropImagePreview');
+        if (!url || !url.startsWith('http')) { if (wrap) wrap.style.display = 'none'; return; }
+        if (img) img.src = url;
+        if (wrap) wrap.style.display = 'block';
+    };
+
+    window.handleCropEditSubmit = async function(e, cropId) {
+        e.preventDefault();
+        const token = sessionStorage.getItem('nourishToken');
+
+        const updates = {
+            name:        document.getElementById('editCropName').value.trim(),
+            category:    document.getElementById('editCropCat').value,
+            cropGrade:   document.getElementById('editCropGrade').value,
+            quantity:    document.getElementById('editCropQty').value,
+            unit:        document.getElementById('editCropUnit').value,
+            price:       parseFloat(document.getElementById('editCropPrice').value) || 0,
+            harvestDate: document.getElementById('editCropHarvestDate').value,
+            description: document.getElementById('editCropDesc').value.trim(),
+            imageUrl:    (document.getElementById('editCropImageUrl')?.value || '').trim() || null
+        };
+
+        // Close modal immediately
+        document.getElementById('editCropModal')?.remove();
+
+        // Update state.listings instantly → re-render without refresh
+        const idx = state.listings.findIndex(l => String(l.id) === String(cropId));
+        if (idx !== -1) {
+            state.listings[idx] = { ...state.listings[idx], ...updates };
+        }
+        renderCropSellerPortal();
+        showToast('Crop listing updated! 🌾', 'success');
+
+        // Sync with server in background
+        try {
+            await fetch(`${API_BASE}/listings/${cropId}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                body: JSON.stringify(updates)
+            });
+        } catch (err) {
+            console.warn('Edit sync error (changes kept locally):', err);
+        }
+    };
+
+
+
+    // =========================================================================
+    // CROP BUYER PORTAL (DARK THEME - SIH 2026 AGRI EXTENSION)
+    // =========================================================================
+    let currentCropFilterCat = 'All';
+    let currentCropFilterGrade = 'All';
+
+    function renderCropBuyerPortal() {
+        const root = portalsRoot || document.getElementById('nn-portals-root');
+        if (!root) return;
+        const user = JSON.parse(sessionStorage.getItem('nourishUser') || '{}');
+
+        // Filter available crops (crops or items with cropGrade or produceType === 'crop')
+        let allCrops = state.listings.filter(l => l.produceType === 'crop' || l.cropGrade || l.unit === 'Quintal' || l.unit === 'q');
+        if (allCrops.length === 0) {
+            allCrops = state.listings; // fallback
+        }
+
+        let filteredCrops = allCrops.filter(item => {
+            if (item.status === 'sold' || item.status === 'claimed') return false;
+            if (currentCropFilterCat !== 'All' && item.category !== currentCropFilterCat) return false;
+            if (currentCropFilterGrade !== 'All') {
+                const g = item.cropGrade || 'Grade B';
+                if (!g.includes(currentCropFilterGrade)) return false;
+            }
+            return true;
+        });
+
+        root.innerHTML = `
+            <div class="crop-portal-dark-theme animate-reveal">
+                <div class="container" style="max-width: 1300px; margin: 0 auto; padding: 1.5rem 2rem 3rem;">
+                    
+                    <!-- Header Banner -->
+                    <div class="crop-card-dark" style="margin-bottom: 2rem; border-left: 4px solid #10b981 !important;">
+                        <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1.5rem;">
+                            <div style="display: flex; align-items: center; gap: 1.25rem;">
+                                <div style="width: 68px; height: 68px; border-radius: 18px; background: linear-gradient(135deg, rgba(16, 185, 129, 0.2), rgba(5, 150, 105, 0.3)); border: 1.5px solid #10b981; display: flex; align-items: center; justify-content: center; font-size: 1.8rem; color: #34d399;">
+                                    <i class="fa-solid fa-industry"></i>
+                                </div>
+                                <div>
+                                    <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+                                        <h1 class="crop-portal-title" style="font-size: 1.65rem; font-weight: 800; margin: 0; color: var(--crop-text-title);">${user.organizationName || user.name || 'Sahyadri Agro-Processing MSME'}</h1>
+                                        ${window.renderCropTrustBadge ? window.renderCropTrustBadge(user) : `
+                                            <span class="crop-trust-badge buyer-badge">
+                                                <i class="fa-solid fa-industry"></i> Verified Agro-Processing MSME
+                                            </span>
+                                        `}
+                                    </div>
+                                    <div style="display: flex; align-items: center; gap: 18px; margin-top: 6px; font-size: 0.85rem; color: var(--crop-text-muted); flex-wrap: wrap;">
+                                        <span><i class="fa-solid fa-phone" style="color: #10b981;"></i> ${user.phone || '+91 98765 56780'}</span>
+                                        <span><i class="fa-solid fa-envelope" style="color: #10b981;"></i> ${user.email || 'buyer@agroprocessing.com'}</span>
+                                        <span><i class="fa-solid fa-truck-ramp-box" style="color: #10b981;"></i> Bulk Sourcing & Logistics Enabled</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Multi-Tier Procurement Guide -->
+                        <div class="crop-divider" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1rem; margin-top: 1.5rem; padding-top: 1.25rem; border-top: 1px solid var(--crop-divider);">
+                            <div class="crop-guide-box-a" style="padding: 12px 16px; border-radius: 12px;">
+                                <span class="grade-badge grade-badge-a" style="margin-bottom: 6px;">Grade A · Retail Ready</span>
+                                <p style="font-size: 0.78rem; margin: 4px 0 0; color: var(--crop-text-muted);">Ideal for immediate wholesale distribution, retail, and community canteens.</p>
+                            </div>
+                            <div class="crop-guide-box-b" style="padding: 12px 16px; border-radius: 12px;">
+                                <span class="grade-badge grade-badge-b" style="margin-bottom: 6px;">Grade B · Agro-Processing</span>
+                                <p style="font-size: 0.78rem; margin: 4px 0 0; color: var(--crop-text-muted);">Overripe/bruised produce at huge discounts for puree, paste, juice, and dehydration.</p>
+                            </div>
+                            <div class="crop-guide-box-c" style="padding: 12px 16px; border-radius: 12px;">
+                                <span class="grade-badge grade-badge-c" style="margin-bottom: 6px;">Grade C · Feed & Bio-CNG</span>
+                                <p style="font-size: 0.78rem; margin: 4px 0 0; color: var(--crop-text-muted);">Damaged biomass for dairy cattle feed, silage, vermicompost, and Bio-CNG plants.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Filter Controls -->
+                    <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem; margin-bottom: 1.5rem;">
+                        <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                            <span style="font-size: 0.8rem; font-weight: 700; color: var(--crop-text-muted); text-transform: uppercase; margin-right: 4px;">Category:</span>
+                            <button class="crop-filter-btn ${currentCropFilterCat === 'All' ? 'active' : ''}" onclick="window.filterCropBuyer('All', null)">All Produce</button>
+                            <button class="crop-filter-btn ${currentCropFilterCat === 'Vegetables' ? 'active' : ''}" onclick="window.filterCropBuyer('Vegetables', null)">Vegetables</button>
+                            <button class="crop-filter-btn ${currentCropFilterCat === 'Fruits' ? 'active' : ''}" onclick="window.filterCropBuyer('Fruits', null)">Fruits</button>
+                            <button class="crop-filter-btn ${currentCropFilterCat === 'Grains' ? 'active' : ''}" onclick="window.filterCropBuyer('Grains', null)">Grains & Pulses</button>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                            <span style="font-size: 0.8rem; font-weight: 700; color: var(--crop-text-muted); text-transform: uppercase; margin-right: 4px;">Target Grade:</span>
+                            <button class="crop-filter-btn ${currentCropFilterGrade === 'All' ? 'active' : ''}" onclick="window.filterCropBuyer(null, 'All')">All Grades</button>
+                            <button class="crop-filter-btn ${currentCropFilterGrade === 'A' ? 'active' : ''}" onclick="window.filterCropBuyer(null, 'A')">Grade A</button>
+                            <button class="crop-filter-btn ${currentCropFilterGrade === 'B' ? 'active' : ''}" onclick="window.filterCropBuyer(null, 'B')">Grade B (MSME)</button>
+                            <button class="crop-filter-btn ${currentCropFilterGrade === 'C' ? 'active' : ''}" onclick="window.filterCropBuyer(null, 'C')">Grade C (Feed)</button>
+                        </div>
+                    </div>
+
+                    <!-- Marketplace Grid -->
+                    <div class="crop-grid" id="crop-buyer-grid">
+                        ${filteredCrops.length === 0 ? `
+                            <div class="crop-empty-state" style="grid-column: 1 / -1; text-align: center; padding: 4rem 1.5rem; border-radius: 20px;">
+                                <i class="fa-solid fa-basket-shopping" style="font-size: 3rem; color: #10b981; margin-bottom: 1rem; display: block;"></i>
+                                <h3 style="font-size: 1.3rem; margin-bottom: 0.5rem;">No Produce Matching Filters</h3>
+                                <p style="font-size: 0.95rem;">Try resetting your filters or check back as farmers list fresh harvests throughout the day.</p>
+                            </div>
+                        ` : filteredCrops.map(crop => {
+                            const grade = crop.cropGrade || 'Grade B';
+                            const gradeClass = grade.includes('A') ? 'grade-badge-a' : (grade.includes('C') ? 'grade-badge-c' : 'grade-badge-b');
+                            const gradeLabel = grade.includes('A') ? 'Grade A · Retail Ready' : (grade.includes('C') ? 'Grade C · Animal Feed / Bio-CNG' : 'Grade B · Agro-Processing MSME');
+                            const defaultImg = crop.category === 'Fruits' ? 'https://images.unsplash.com/photo-1619566636858-adf3ef46400b?w=600&q=80' : (crop.category === 'Grains' ? 'https://images.unsplash.com/photo-1574323347407-f5e1ad6d020b?w=600&q=80' : 'https://images.unsplash.com/photo-1592924357228-91a4daadcfea?w=600&q=80');
+                            const cropImg = crop.imageUrl || crop.img || defaultImg;
+
+                            const inCartEntry = (state.cart || []).find(c => String(c.item.id) === String(crop.id));
+                            const inCartQty = inCartEntry ? (parseInt(inCartEntry.qty, 10) || 0) : 0;
+                            const maxStock = parseInt(crop.quantity || crop.qty || 1, 10);
+                            const isAllInCart = inCartQty >= maxStock;
+                            const stepperVal = inCartQty || 0;
+
+                            return `
+                                <div class="crop-card-dark" data-crop-id="${crop.id}">
+                                    <div style="position: relative; height: 180px; border-radius: 14px; overflow: hidden; margin-bottom: 1rem;">
+                                        <img src="${cropImg}" alt="${crop.name}" style="width: 100%; height: 100%; object-fit: cover;">
+                                        <div style="position: absolute; inset: 0; background: linear-gradient(to top, rgba(0,0,0,0.85) 0%, transparent 60%);"></div>
+                                        <div style="position: absolute; top: 12px; left: 12px; display: flex; gap: 6px; flex-wrap: wrap;">
+                                            <span class="badge" style="background: rgba(0,0,0,0.7); color: #ffffff; border: 1px solid rgba(255,255,255,0.2); font-size: 0.72rem; padding: 3px 8px; border-radius: 6px;">${crop.category || 'Produce'}</span>
+                                            <span class="grade-badge ${gradeClass}">${gradeLabel}</span>
+                                        </div>
+                                        <div style="position: absolute; bottom: 10px; left: 12px; right: 12px; display: flex; justify-content: space-between; align-items: flex-end;">
+                                            <div style="font-size: 1.3rem; font-weight: 800; color: #fbbf24;">₹${crop.price || 0} <span style="font-size: 0.75rem; color: #e2e8f0; font-weight: 500;">/${crop.unit || 'Kg'}</span></div>
+                                            <div style="font-size: 0.85rem; font-weight: 700; color: #34d399; background: rgba(0,0,0,0.6); padding: 2px 8px; border-radius: 6px;"><i class="fa-solid fa-cubes-stacked"></i> ${maxStock} ${crop.unit || 'Quintals'}</div>
+                                        </div>
+                                    </div>
+                                    <div style="font-size: 0.78rem; color: #10b981; font-weight: 700; text-transform: uppercase; margin-bottom: 4px;">
+                                        <i class="fa-solid fa-wheat-awn"></i> ${crop.vendorName || 'Local Farmer / Mandi Collective'}
+                                    </div>
+                                    <h3 style="font-size: 1.15rem; font-weight: 700; margin: 0 0 6px; color: var(--crop-text-title);">${crop.name}</h3>
+                                    <p style="font-size: 0.85rem; color: var(--crop-text-muted); line-height: 1.4; margin: 0 0 12px; height: 38px; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;">${crop.description || 'Verified agricultural produce available for rapid collection and value-addition.'}</p>
+
+                                    <div style="border-top: 1px solid var(--crop-divider); padding-top: 12px; display: flex; gap: 10px; align-items: center;">
+                                        <div class="nn-stepper" style="display: flex; align-items: center; gap: 0; background: rgba(0,0,0,0.35); border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); overflow: hidden; flex-shrink: 0;">
+                                            <button class="crop-step-btn crop-step-minus nn-step-btn" data-crop-id="${crop.id}" ${isAllInCart ? 'disabled' : ''} style="width:36px; height:40px; display:flex; align-items:center; justify-content:center; background:none; border:none; color:#94a3b8; cursor:pointer; font-size:0.85rem;">
+                                                <i class="fa-solid fa-minus"></i>
+                                            </button>
+                                            <span class="crop-step-val" id="crop-stepper-${crop.id}" style="min-width:28px; text-align:center; font-size:0.95rem; font-weight:700; color:#f1f5f9;">${stepperVal}</span>
+                                            <button class="crop-step-btn crop-step-plus nn-step-btn" data-crop-id="${crop.id}" ${isAllInCart ? 'disabled' : ''} style="width:36px; height:40px; display:flex; align-items:center; justify-content:center; background:none; border:none; color:#10b981; cursor:pointer; font-size:0.85rem;">
+                                                <i class="fa-solid fa-plus"></i>
+                                            </button>
+                                        </div>
+                                        <button class="crop-add-btn btn-crop-emerald" data-crop-id="${crop.id}" ${isAllInCart ? 'disabled' : ''} style="flex:1; height:40px; display:flex; align-items:center; justify-content:center; gap:8px; font-size:0.9rem; ${isAllInCart ? 'opacity:0.5;' : ''}">
+                                            <i class="fa-solid fa-cart-plus"></i> ${isAllInCart ? 'All in Cart' : 'Add to Cart'}
+                                        </button>
+                                    </div>
+                                </div>
+                            `;
+                        }).join('')}
+                    </div>
+
+                </div>
+            </div>
+        `;
+
+        attachCropBuyerListeners();
+    }
+
+    // Add Crop to Cart Function
+    window.addCropToCart = function(cropId, e) {
+        const crop = state.listings.find(l => l.id == cropId);
+        if (!crop) {
+            showToast("Crop batch not found.", "error");
+            return;
+        }
+
+        const maxQty = parseInt(crop.quantity || crop.qty || 1, 10);
+        const inCart = (state.cart || []).find(c => String(c.item.id) === String(crop.id));
+        const currentQty = inCart ? (parseInt(inCart.qty, 10) || 0) : 0;
+
+        if (currentQty >= maxQty) {
+            showToast(`All available ${maxQty} ${crop.unit || 'Quintals'} are already in your cart!`, "info");
+            return;
+        }
+
+        if (inCart) {
+            inCart.qty += 1;
+        } else {
+            state.cart.push({
+                item: {
+                    ...crop,
+                    isCrop: true,
+                    vendorName: crop.vendorName || crop.organizationName || 'Local Farmer / Mandi Collective'
+                },
+                qty: 1
+            });
+        }
+
+        updateCartBadge();
+        renderCartItems();
+
+        // Flying animation towards cart dock
+        if (e && e.target) {
+            const btn = e.target.closest('button') || e.target;
+            const rect = btn.getBoundingClientRect();
+            const flyItem = document.createElement('div');
+            flyItem.className = 'flying-item';
+            flyItem.style.cssText = `position: fixed; z-index: 999999; width: 32px; height: 32px; border-radius: 50%; background: #10b981; color: white; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 15px rgba(16, 185, 129, 0.6); pointer-events: none; left: ${rect.left + rect.width / 2 - 16}px; top: ${rect.top}px;`;
+            flyItem.innerHTML = '<i class="fa-solid fa-wheat-awn"></i>';
+            document.body.appendChild(flyItem);
+
+            const flyTarget = document.getElementById('crop-cart-dock') || document.getElementById('cart-toggle-dock') || document.body;
+            const targetRect = flyTarget.getBoundingClientRect();
+
+            flyItem.animate([
+                { transform: 'scale(1)', left: `${rect.left + rect.width / 2 - 16}px`, top: `${rect.top}px` },
+                { transform: 'scale(0.2)', left: `${targetRect.left + targetRect.width / 2 - 16}px`, top: `${targetRect.top}px` }
+            ], {
+                duration: 650,
+                easing: 'cubic-bezier(0.165, 0.84, 0.44, 1)'
+            }).onfinish = () => flyItem.remove();
+        }
+
+        showToast(`Added 1 ${crop.unit || 'Quintal'} of ${crop.name} to Cart! 🌾`, "success");
+    };
+
+    function attachCropBuyerListeners() {
+        // Stepper buttons: + and -
+        document.querySelectorAll('.crop-step-plus, .crop-step-minus').forEach(btn => {
+            btn.onclick = (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                const cropId = btn.dataset.cropId;
+                const crop = state.listings.find(l => String(l.id) === String(cropId));
+                if (!crop) return;
+
+                const span = document.getElementById(`crop-stepper-${cropId}`);
+                if (!span) return;
+
+                const maxStock = parseInt(crop.quantity || crop.qty || 1, 10);
+                const inCart = (state.cart || []).find(c => String(c.item.id) === String(cropId));
+                let stepVal = parseInt(span.textContent || '0', 10) || 0;
+
+                if (btn.classList.contains('crop-step-plus')) {
+                    if (stepVal >= maxStock) {
+                        showToast(`Only ${maxStock} ${crop.unit || 'Quintals'} available!`, "info");
+                        return;
+                    }
+                    stepVal = Math.min(stepVal + 1, maxStock);
+                } else {
+                    stepVal = Math.max(stepVal - 1, 0);
+                }
+
+                span.textContent = stepVal;
+
+                // Update add button state
+                const card = btn.closest('[data-crop-id]');
+                if (card) {
+                    const addBtn = card.querySelector('.crop-add-btn');
+                    const isAllInCart = stepVal >= maxStock;
+                    if (addBtn) {
+                        addBtn.disabled = isAllInCart;
+                        addBtn.style.opacity = isAllInCart ? '0.5' : '1';
+                        addBtn.innerHTML = `<i class="fa-solid fa-cart-plus"></i> ${isAllInCart ? 'All in Cart' : 'Add to Cart'}`;
+                    }
+                    const minusBtn = card.querySelector('.crop-step-minus');
+                    const plusBtn = card.querySelector('.crop-step-plus');
+                    if (plusBtn) plusBtn.disabled = isAllInCart;
+                }
+            };
+        });
+
+        // Add to Cart button
+        document.querySelectorAll('.crop-add-btn').forEach(btn => {
+            btn.onclick = (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                const cropId = btn.dataset.cropId;
+                const crop = state.listings.find(l => String(l.id) === String(cropId));
+                if (!crop) return;
+
+                const span = document.getElementById(`crop-stepper-${cropId}`);
+                const qtyToAdd = span ? (parseInt(span.textContent || '0', 10) || 1) : 1;
+                const maxStock = parseInt(crop.quantity || crop.qty || 1, 10);
+
+                const inCart = (state.cart || []).find(c => String(c.item.id) === String(cropId));
+                const inCartQty = inCart ? (parseInt(inCart.qty, 10) || 0) : 0;
+
+                const canAdd = Math.min(qtyToAdd, maxStock - inCartQty);
+                if (canAdd <= 0) {
+                    showToast(`All ${maxStock} ${crop.unit || 'Quintals'} are already in your cart!`, "info");
+                    return;
+                }
+
+                if (inCart) {
+                    inCart.qty = inCartQty + canAdd;
+                } else {
+                    state.cart.push({
+                        item: { ...crop, isCrop: true, vendorName: crop.vendorName || 'Local Farmer / Mandi Collective' },
+                        qty: canAdd
+                    });
+                }
+
+                updateCartBadge();
+                renderCartItems();
+
+                // Flying animation
+                const rect = btn.getBoundingClientRect();
+                const flyItem = document.createElement('div');
+                flyItem.style.cssText = `position:fixed;z-index:999999;width:32px;height:32px;border-radius:50%;background:#10b981;color:white;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 15px rgba(16,185,129,0.6);pointer-events:none;left:${rect.left+rect.width/2-16}px;top:${rect.top}px;`;
+                flyItem.innerHTML = '<i class="fa-solid fa-wheat-awn"></i>';
+                document.body.appendChild(flyItem);
+                const flyTarget = document.getElementById('crop-cart-dock') || document.getElementById('cart-toggle-dock') || document.body;
+                const tr = flyTarget.getBoundingClientRect();
+                flyItem.animate([
+                    { transform:'scale(1)', left:`${rect.left+rect.width/2-16}px`, top:`${rect.top}px` },
+                    { transform:'scale(0.2)', left:`${tr.left+tr.width/2-16}px`, top:`${tr.top}px` }
+                ], { duration:650, easing:'cubic-bezier(0.165,0.84,0.44,1)' }).onfinish = () => flyItem.remove();
+
+                showToast(`Added ${canAdd} ${crop.unit || 'Quintal'} of ${crop.name} to Cart! 🌾`, "success");
+            };
+        });
+    }
+
+    window.filterCropBuyer = function(cat, grade) {
+        if (cat !== null) currentCropFilterCat = cat;
+        if (grade !== null) currentCropFilterGrade = grade;
+        renderCropBuyerPortal();
+
+    };
+
+    // Modal for Adding Crop Harvest
+    window.openAddCropModal = function() {
+        let modal = document.getElementById('addCropModal');
+        if (!modal) {
+            modal = document.createElement('div');
+            modal.id = 'addCropModal';
+            modal.className = 'modal-overlay active';
+            modal.style.cssText = 'position: fixed; inset: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.85); z-index: 99999; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(8px); padding: 15px;';
+            modal.innerHTML = `
+                <div class="crop-card-dark" style="max-width: 580px; width: 100%; max-height: 90vh; overflow-y: auto; padding: 2rem;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; border-bottom: 1px solid var(--crop-divider); padding-bottom: 1rem;">
+                        <h2 style="font-size: 1.4rem; font-weight: 800; color: var(--crop-text-title); margin: 0; display: flex; align-items: center; gap: 10px;">
+                            <i class="fa-solid fa-wheat-awn" style="color: #f59e0b;"></i> List Produce / Harvest
+                        </h2>
+                        <button onclick="document.getElementById('addCropModal').remove()" style="background: none; border: none; font-size: 1.2rem; color: var(--crop-text-muted); cursor: pointer;">
+                            <i class="fa-solid fa-xmark"></i>
+                        </button>
+                    </div>
+
+                    <form id="cropAddForm" onsubmit="window.handleCropSubmit(event)">
+                        <div class="minimal-input-wrap" style="margin-bottom: 1rem;">
+                            <label style="font-size: 0.8rem; color: var(--crop-text-muted); display: block; margin-bottom: 5px;">Crop / Produce Name</label>
+                            <input type="text" id="cropName" class="minimal-input" placeholder="e.g. Nashik Red Tomatoes (Bumper Harvest)" required>
+                        </div>
+
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+                            <div>
+                                <label style="font-size: 0.8rem; color: var(--crop-text-muted); display: block; margin-bottom: 5px;">Category</label>
+                                <select id="cropCat" class="minimal-input minimal-input-select" style="cursor: pointer;">
+                                    <option value="Vegetables">Vegetables</option>
+                                    <option value="Fruits">Fruits</option>
+                                    <option value="Grains">Grains & Pulses</option>
+                                    <option value="Tubers">Tubers / Potatoes</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label style="font-size: 0.8rem; color: var(--crop-text-muted); display: block; margin-bottom: 5px;">Quality Grade</label>
+                                <select id="cropGrade" class="minimal-input minimal-input-select" style="cursor: pointer;">
+                                    <option value="Grade B">Grade B (Agro-Processing MSME)</option>
+                                    <option value="Grade A">Grade A (Direct Retail Ready)</option>
+                                    <option value="Grade C">Grade C (Animal Feed / Bio-CNG)</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+                            <div>
+                                <label style="font-size: 0.8rem; color: var(--crop-text-muted); display: block; margin-bottom: 5px;">Quantity</label>
+                                <input type="number" id="cropQty" class="minimal-input" placeholder="e.g. 15" min="1" required>
+                            </div>
+                            <div>
+                                <label style="font-size: 0.8rem; color: var(--crop-text-muted); display: block; margin-bottom: 5px;">Unit</label>
+                                <select id="cropUnit" class="minimal-input minimal-input-select" style="cursor: pointer;">
+                                    <option value="Quintal">Quintals (100 kg)</option>
+                                    <option value="Kg">Kilograms (kg)</option>
+                                    <option value="Tons">Metric Tons</option>
+                                    <option value="Crates">Crates</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+                            <div>
+                                <label style="font-size: 0.8rem; color: var(--crop-text-muted); display: block; margin-bottom: 5px;">Price per Unit (₹)</label>
+                                <input type="number" id="cropPrice" class="minimal-input" placeholder="e.g. 6" min="0" step="0.5" required>
+                            </div>
+                            <div>
+                                <label style="font-size: 0.8rem; color: var(--crop-text-muted); display: block; margin-bottom: 5px;">Harvest Date</label>
+                                <input type="date" id="cropHarvestDate" class="minimal-input">
+                            </div>
+                        </div>
+
+                        <div class="minimal-input-wrap" style="margin-bottom: 1rem;">
+                            <label style="font-size: 0.8rem; color: var(--crop-text-muted); display: block; margin-bottom: 5px;">Produce Notes / Storage Conditions</label>
+                            <textarea id="cropDesc" class="minimal-input" rows="2" placeholder="e.g. Freshly harvested surplus, high sugar content. Ready for immediate pickup at APMC Gate 4."></textarea>
+                        </div>
+
+                        <div class="minimal-input-wrap" style="margin-bottom: 0.5rem;">
+                            <label style="font-size: 0.8rem; color: var(--crop-text-muted); display: block; margin-bottom: 5px;">
+                                <i class="fa-solid fa-image" style="color: #f59e0b;"></i> Crop Image URL <span style="font-weight: 400; opacity: 0.65;">(paste Google image link)</span>
+                            </label>
+                            <input type="url" id="cropImageUrl" class="minimal-input" placeholder="https://images.unsplash.com/... or any direct image link" oninput="window.previewCropImage(this.value)">
+                        </div>
+                        <div id="cropImagePreviewWrap" style="margin-bottom: 1.5rem; display: none;">
+                            <img id="cropImagePreview" src="" alt="Preview" style="width: 100%; height: 140px; object-fit: cover; border-radius: 12px; border: 1.5px solid rgba(245,158,11,0.35);" onerror="document.getElementById('cropImagePreviewWrap').style.display='none'">
+                        </div>
+
+                        <button type="submit" class="btn-crop-gold w-100" style="width: 100%; justify-content: center; height: 50px; font-size: 1rem;">
+                            <i class="fa-solid fa-leaf"></i> Publish Harvest Listing
+                        </button>
+                    </form>
+                </div>
+            `;
+            document.body.appendChild(modal);
+        } else {
+            modal.style.display = 'flex';
+        }
+    };
+
+    window.previewCropImage = function(url) {
+        const wrap = document.getElementById('cropImagePreviewWrap');
+        const img = document.getElementById('cropImagePreview');
+        if (!url || !url.startsWith('http')) {
+            if (wrap) wrap.style.display = 'none';
+            return;
+        }
+        if (img) img.src = url;
+        if (wrap) wrap.style.display = 'block';
+    };
+
+    window.handleCropSubmit = async function(e) {
+        e.preventDefault();
+        const user = JSON.parse(sessionStorage.getItem('nourishUser') || '{}');
+        const name = document.getElementById('cropName').value.trim();
+        const category = document.getElementById('cropCat').value;
+        const cropGrade = document.getElementById('cropGrade').value;
+        const quantity = document.getElementById('cropQty').value;
+        const unit = document.getElementById('cropUnit').value;
+        const price = document.getElementById('cropPrice').value;
+        const harvestDate = document.getElementById('cropHarvestDate').value;
+        const description = document.getElementById('cropDesc').value.trim();
+        const imageUrl = (document.getElementById('cropImageUrl')?.value || '').trim();
+
+        const token = sessionStorage.getItem('nourishToken');
+        const payload = {
+            name,
+            category,
+            cropGrade,
+            quantity,
+            unit,
+            price: parseFloat(price) || 0,
+            harvestDate,
+            description,
+            imageUrl: imageUrl || null,
+            produceType: 'crop',
+            condition: 'Fresh Harvest'
+        };
+
+        // Close modal immediately
+        const m = document.getElementById('addCropModal');
+        if (m) m.remove();
+
+        // Instantly push into state.listings so the portal re-renders right away
+        const tempId = 'temp_' + Date.now();
+        const tempListing = {
+            ...payload,
+            id: tempId,
+            vendorId: user.id,
+            vendorName: user.organizationName || user.name || 'My Farm',
+            status: 'available',
+            createdAt: new Date().toISOString()
+        };
+        state.listings.unshift(tempListing);
+        renderCropSellerPortal();
+        showToast('Crop harvest published! 🌾', 'success');
+
+        // Sync with server in background
+        try {
+            const res = await fetch(`${API_BASE}/listings`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                body: JSON.stringify(payload)
+            });
+            if (res.ok) {
+                // Replace temp entry with real server entry
+                const data = await res.json();
+                const idx = state.listings.findIndex(l => l.id === tempId);
+                if (idx !== -1 && data.listing) state.listings[idx] = { ...data.listing, isMine: true };
+                renderCropSellerPortal();
+            } else {
+                // Server failed — keep temp in state but warn
+                const d = await res.json().catch(() => ({}));
+                showToast(d.error || 'Server sync failed — listing shown locally.', 'warning');
+            }
+        } catch (err) {
+            // Network error — listing stays in local state
+            console.warn('Crop publish network error (listing kept locally):', err);
+        }
+    };
+
+    // Procurement Modal for Crop Buyer
+    window.openProcureCropModal = function(cropId) {
+        const crop = state.listings.find(l => l.id == cropId);
+        if (!crop) return;
+
+        let modal = document.getElementById('procureModal');
+        if (!modal) {
+            modal = document.createElement('div');
+            modal.id = 'procureModal';
+            modal.className = 'modal-overlay active';
+            modal.style.cssText = 'position: fixed; inset: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.85); z-index: 99999; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(8px); padding: 15px;';
+            modal.innerHTML = `
+                <div class="crop-card-dark" style="max-width: 500px; width: 100%; padding: 2rem;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 1rem;">
+                        <h2 style="font-size: 1.3rem; font-weight: 800; color: #ffffff; margin: 0; display: flex; align-items: center; gap: 10px;">
+                            <i class="fa-solid fa-truck-ramp-box" style="color: #10b981;"></i> Confirm Procurement
+                        </h2>
+                        <button onclick="document.getElementById('procureModal').remove()" style="background: none; border: none; font-size: 1.2rem; color: #94a3b8; cursor: pointer;">
+                            <i class="fa-solid fa-xmark"></i>
+                        </button>
+                    </div>
+
+                    <div style="background: rgba(0,0,0,0.4); padding: 1rem; border-radius: 12px; margin-bottom: 1.25rem;">
+                        <div style="font-size: 1.1rem; font-weight: 700; color: #ffffff; margin-bottom: 4px;">${crop.name}</div>
+                        <div style="font-size: 0.85rem; color: #94a3b8;">Seller: <strong style="color: #fbbf24;">${crop.vendorName || 'Registered Producer'}</strong></div>
+                        <div style="font-size: 0.85rem; color: #34d399; margin-top: 4px;">Available: <strong>${crop.quantity || crop.qty || 1} ${crop.unit || 'Quintals'}</strong> @ ₹${crop.price}/${crop.unit || 'Kg'}</div>
+                    </div>
+
+                    <form id="procureForm" onsubmit="window.handleProcureSubmit(event, ${crop.id})">
+                        <div class="minimal-input-wrap" style="margin-bottom: 1rem;">
+                            <label style="font-size: 0.8rem; color: #94a3b8; display: block; margin-bottom: 5px;">Procurement Quantity (${crop.unit || 'Quintals'})</label>
+                            <input type="number" id="procureQty" class="minimal-input" value="${crop.quantity || crop.qty || 1}" min="1" max="${crop.quantity || crop.qty || 1}" required>
+                        </div>
+                        <div class="minimal-input-wrap" style="margin-bottom: 1.5rem;">
+                            <label style="font-size: 0.8rem; color: #94a3b8; display: block; margin-bottom: 5px;">Pickup Vehicle / Logistics Note</label>
+                            <input type="text" id="procureNote" class="minimal-input" placeholder="e.g. Tata Ace mini-truck reaching mandi yard tomorrow 9 AM">
+                        </div>
+
+                        <button type="submit" class="btn-crop-emerald w-100" style="width: 100%; justify-content: center; height: 50px; font-size: 1rem;">
+                            <i class="fa-solid fa-check"></i> Complete Bulk Procurement
+                        </button>
+                    </form>
+                </div>
+            `;
+            document.body.appendChild(modal);
+        } else {
+            modal.style.display = 'flex';
+        }
+    };
+
+    window.handleProcureSubmit = async function(e, cropId) {
+        e.preventDefault();
+        const qty = parseInt(document.getElementById('procureQty').value) || 1;
+        const note = document.getElementById('procureNote') ? document.getElementById('procureNote').value : '';
+        const token = sessionStorage.getItem('nourishToken');
+
+        // Calculate KG for impact
+        const crop = state.listings.find(l => l.id == cropId);
+        const u = crop ? (crop.unit || '').toLowerCase() : 'quintal';
+        const factor = (u === 'quintal' || u === 'q') ? 100 : ((u === 'ton' || u === 'tonne') ? 1000 : 1);
+        const procuredKg = qty * factor;
+
+        // Save to local purchases
+        const cropPurchases = JSON.parse(localStorage.getItem('nn_crop_purchases') || '[]');
+        cropPurchases.push({
+            cropId,
+            cropName: crop ? crop.name : 'Crop Batch',
+            qty,
+            kg: procuredKg,
+            date: new Date().toISOString()
+        });
+        localStorage.setItem('nn_crop_purchases', JSON.stringify(cropPurchases));
+
+        try {
+            await fetch(`${API_BASE}/listings/claim`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({ listingId: cropId, quantity: qty, notes: note })
+            });
+            const m = document.getElementById('procureModal');
+            if (m) m.remove();
+            showToast(`Batch procured successfully! Rescued ${procuredKg.toLocaleString()} kg of agricultural produce. 🌾`, "success");
+            refreshState();
+        } catch (err) {
+            const m = document.getElementById('procureModal');
+            if (m) m.remove();
+            showToast(`Batch procured! Rescued ${procuredKg.toLocaleString()} kg of crops. 🌾`, "success");
+            refreshState();
+        }
+    };
+
+    window.deleteCropListing = async function(cropId) {
+        const token = sessionStorage.getItem('nourishToken');
+        try {
+            await fetch(`${API_BASE}/listings/${cropId}`, {
+                method: 'DELETE',
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            showToast("Crop batch listing removed.", "info");
+            refreshState();
+        } catch (err) {
+            state.listings = state.listings.filter(l => l.id != cropId);
+            renderCropSellerPortal();
+        }
+    };
 
     // 7. Initialize Everything
 
 
-    const openCart = () => cartDrawer.classList.add('active');
+    const openCart = () => {
+        if (cartDrawer) {
+            cartDrawer.classList.add('active');
+            if (typeof renderCartItems === 'function') renderCartItems();
+        }
+    };
 
     if (cartToggle) {
         cartToggle.addEventListener('click', openCart);
@@ -3796,6 +5102,14 @@ document.addEventListener('DOMContentLoaded', () => {
     const cartToggleDock = document.getElementById('cart-toggle-dock');
     if (cartToggleDock) {
         cartToggleDock.addEventListener('click', (e) => {
+            e.preventDefault();
+            openCart();
+        });
+    }
+
+    const cropCartDockEl = document.getElementById('crop-cart-dock');
+    if (cropCartDockEl) {
+        cropCartDockEl.addEventListener('click', (e) => {
             e.preventDefault();
             openCart();
         });
@@ -3998,6 +5312,19 @@ document.addEventListener('DOMContentLoaded', () => {
         modal.style.setProperty('pointer-events', 'auto', 'important');
         modal.style.setProperty('z-index', '999999', 'important');
 
+        const titleEl = modal.querySelector('h2');
+        if (titleEl) {
+            if (state.activePortal === 'crop_seller') {
+                titleEl.textContent = 'Crop Sales & Dispatch History';
+            } else if (state.activePortal === 'crop_buyer') {
+                titleEl.textContent = 'Crop Procurement History';
+            } else if (state.activePortal === 'seller') {
+                titleEl.textContent = 'Food Distribution History';
+            } else {
+                titleEl.textContent = 'Claim & Order History';
+            }
+        }
+
         loadPortalHistory();
     }
     window.openHistoryModal = openHistoryModal;
@@ -4078,7 +5405,17 @@ document.addEventListener('DOMContentLoaded', () => {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
                 if (res.ok) {
-                    apiOrders = await res.json();
+                    const rawApi = await res.json();
+                    apiOrders = (Array.isArray(rawApi) ? rawApi : []).map(a => ({
+                        ...a,
+                        isCrop: !!(a.cropGrade || a.produceType === 'crop' || a.unit === 'Quintal' || a.unit === 'q' || state.activePortal === 'crop_seller' || state.activePortal === 'crop_buyer')
+                    }));
+
+                    if (state.activePortal === 'crop_seller' || state.activePortal === 'crop_buyer') {
+                        apiOrders = apiOrders.filter(a => a.isCrop || a.cropGrade || a.produceType === 'crop' || a.unit === 'Quintal');
+                    } else if (state.activePortal === 'seller' || state.activePortal === 'buyer') {
+                        apiOrders = apiOrders.filter(a => !a.cropGrade && a.produceType !== 'crop' && a.unit !== 'Quintal');
+                    }
                 }
             } catch (netErr) {
                 console.warn("Orders fetch network fallback to local:", netErr);
@@ -4091,23 +5428,41 @@ document.addEventListener('DOMContentLoaded', () => {
             } catch (e) { localOrders = []; }
 
             const user = JSON.parse(sessionStorage.getItem('nourishUser') || localStorage.getItem('nourishUser') || '{}');
-            const isSellerPortal = state.activePortal === 'seller';
+            const isSellerPortal = state.activePortal === 'seller' || state.activePortal === 'crop_seller';
 
             // Filter local orders relevant to the current user and portal
             const relevantLocalOrders = localOrders.filter(o => {
-                if (isSellerPortal) {
-                    return String(o.vendorId) === String(user.id) ||
+                const isCropOrder = o.isCrop || o.cropGrade || o.sellerType === 'crop_seller' || o.buyerType === 'crop_buyer' || o.unit === 'Quintal' || o.unit === 'q';
+                if (state.activePortal === 'crop_seller') {
+                    const matchUser = String(o.vendorId) === String(user.id) ||
+                           String(o.sellerId) === String(user.id) ||
+                           o.sellerName === user.organizationName ||
+                           o.sellerEmail === user.email ||
+                           String(user.id) === '777' ||
+                           !o.vendorId;
+                    return matchUser && isCropOrder;
+                } else if (state.activePortal === 'seller') {
+                    const matchUser = String(o.vendorId) === String(user.id) ||
                            String(o.sellerId) === String(user.id) ||
                            o.sellerName === user.organizationName ||
                            o.sellerEmail === user.email ||
                            String(user.id) === '888' ||
                            !o.vendorId;
+                    return matchUser && !isCropOrder;
+                } else if (state.activePortal === 'crop_buyer') {
+                    const matchUser = String(o.buyerId) === String(user.id) ||
+                           o.buyerName === user.organizationName ||
+                           o.buyerEmail === user.email ||
+                           String(user.id) === '666' ||
+                           !o.buyerId;
+                    return matchUser && isCropOrder;
                 } else {
-                    return String(o.buyerId) === String(user.id) ||
+                    const matchUser = String(o.buyerId) === String(user.id) ||
                            o.buyerName === user.organizationName ||
                            o.buyerEmail === user.email ||
                            String(user.id) === '999' ||
                            !o.buyerId;
+                    return matchUser && !isCropOrder;
                 }
             });
 
@@ -4139,7 +5494,27 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!container) return;
 
             if (count === 0) {
-                if (state.activePortal === 'seller') {
+                if (state.activePortal === 'crop_seller') {
+                    container.innerHTML = `
+                        <div class="empty-listings-wrap" style="text-align: center; padding: 4rem 2rem; background: var(--card-bg, rgba(255,255,255,0.02)); border: 1px dashed var(--border-glow); border-radius: 16px;">
+                            <i class="fa-solid fa-wheat-awn" style="font-size: 3rem; color: #f59e0b; margin-bottom: 1rem; opacity: 0.7;"></i>
+                            <h3 style="color: var(--text-primary); margin-bottom: 0.5rem;">No Crop Dispatch History Yet</h3>
+                            <p style="color: var(--text-muted); max-width: 480px; margin: 0 auto; line-height: 1.6;">
+                                When verified agro-processors or bulk buyers procure your listed crop batches, their purchase details, logistics notes, and pickup status will appear here live.
+                            </p>
+                        </div>
+                    `;
+                } else if (state.activePortal === 'crop_buyer') {
+                    container.innerHTML = `
+                        <div class="empty-listings-wrap" style="text-align: center; padding: 4rem 2rem; background: var(--card-bg, rgba(255,255,255,0.02)); border: 1px dashed var(--border-glow); border-radius: 16px;">
+                            <i class="fa-solid fa-basket-shopping" style="font-size: 3rem; color: #10b981; margin-bottom: 1rem; opacity: 0.7;"></i>
+                            <h3 style="color: var(--text-primary); margin-bottom: 0.5rem;">No Crop Procurements Yet</h3>
+                            <p style="color: var(--text-muted); max-width: 480px; margin: 0 auto; line-height: 1.6;">
+                                Add surplus agricultural batches to your <strong>Cart</strong> and confirm your order. Your procurement history, mandi locations, and seller contact details will appear here live.
+                            </p>
+                        </div>
+                    `;
+                } else if (state.activePortal === 'seller') {
                     container.innerHTML = `
                         <div class="empty-listings-wrap" style="text-align: center; padding: 4rem 2rem; background: var(--card-bg, rgba(255,255,255,0.02)); border: 1px dashed var(--border-glow); border-radius: 16px;">
                             <i class="fa-solid fa-clock-rotate-left" style="font-size: 3rem; color: var(--text-muted); margin-bottom: 1rem; opacity: 0.5;"></i>
@@ -4164,30 +5539,34 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             // Render Cards based on Portal
-            if (state.activePortal === 'seller') {
+            if (isSellerPortal) {
                 container.innerHTML = orders.map(o => {
                     const dateStr = o.createdAt ? new Date(o.createdAt).toLocaleString('en-IN', {
                         day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit'
                     }) : 'Just now';
                     const isCompleted = o.orderStatus === 'completed';
+                    const isCrop = o.isCrop || o.cropGrade || state.activePortal === 'crop_seller';
+                    const gradeBadge = o.cropGrade ? `<span class="grade-badge grade-badge-b" style="margin-left: 6px; font-size: 0.68rem; padding: 2px 6px;">${o.cropGrade}</span>` : '';
+                    const defaultImg = isCrop ? 'https://images.unsplash.com/photo-1574323347407-f5e1ad6d020b?w=600&q=80' : 'assets/default-food.jpg';
+                    const foodImg = o.imageUrl || (window.getSmartFoodImage ? window.getSmartFoodImage(o.foodName, o.category, null) : defaultImg);
                     const ngoBadge = window.renderNgoTrustBadge ? window.renderNgoTrustBadge({
                         darpanId: o.buyerDarpanId,
                         ngoRegType: o.buyerNgoRegType
                     }) : '';
-                    const foodImg = o.imageUrl || (window.getSmartFoodImage ? window.getSmartFoodImage(o.foodName, o.category, null) : 'assets/default-food.jpg');
 
                     return `
                         <div class="history-card" id="order-card-${o.orderId}">
                             <div class="history-top-row">
                                 <div class="history-item-info">
-                                    <img src="${foodImg}" alt="${o.foodName || 'Food'}" class="history-food-thumb" onerror="this.onerror=null; this.src='assets/default-food.jpg';">
+                                    <img src="${foodImg}" alt="${o.foodName || 'Food'}" class="history-food-thumb" onerror="this.onerror=null; this.src='${defaultImg}';">
                                     <div>
                                         <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                                            <h4 style="font-size: 1.1rem; font-weight: 700; color: var(--text-primary); margin: 0;">${o.foodName || 'Surplus Meal'}</h4>
-                                            <span class="badge" style="background: rgba(255, 255, 255, 0.06); color: #d1d5db; border: 1px solid rgba(255, 255, 255, 0.1); font-size: 0.72rem; padding: 2px 8px; border-radius: 6px;">${o.category || 'Cooked'}</span>
+                                            <h4 style="font-size: 1.1rem; font-weight: 700; color: var(--text-primary); margin: 0;">${o.foodName || (isCrop ? 'Crop Harvest' : 'Surplus Meal')}</h4>
+                                            <span class="badge" style="background: rgba(255, 255, 255, 0.06); color: #d1d5db; border: 1px solid rgba(255, 255, 255, 0.1); font-size: 0.72rem; padding: 2px 8px; border-radius: 6px;">${o.category || (isCrop ? 'Produce' : 'Cooked')}</span>
+                                            ${gradeBadge}
                                         </div>
                                         <div style="font-size: 0.85rem; color: var(--text-muted); margin-top: 4px;">
-                                            <span style="font-weight: 700; color: var(--text-primary);">${o.quantity} ${o.unit || 'portions'}</span> · 
+                                            <span style="font-weight: 700; color: var(--text-primary);">${o.quantity} ${o.unit || (isCrop ? 'Quintals' : 'portions')}</span> · 
                                             <span>${o.totalPrice > 0 ? '₹' + o.totalPrice : '<strong style="color:#e5e5e5;">Free Surplus Donation</strong>'}</span> · 
                                             <span><i class="fa-regular fa-clock"></i> ${dateStr}</span>
                                         </div>
@@ -4196,18 +5575,18 @@ document.addEventListener('DOMContentLoaded', () => {
                                 <div>
                                     <span class="history-status-badge ${isCompleted ? 'status-completed' : 'status-confirmed'}">
                                         <i class="fa-solid ${isCompleted ? 'fa-circle-check' : 'fa-hourglass-half'}"></i>
-                                        ${isCompleted ? 'Picked Up / Completed' : 'Confirmed & Active'}
+                                        ${isCompleted ? (isCrop ? 'Dispatched / Collected' : 'Picked Up / Completed') : 'Confirmed & Active'}
                                     </span>
                                 </div>
                             </div>
 
-                            <!-- Buyer NGO Details Box -->
+                            <!-- Buyer Counterparty Details Box -->
                             <div class="history-party-box">
                                 <div style="display: flex; align-items: center; gap: 12px; flex: 1; min-width: 240px;">
                                     <img src="${o.buyerAvatar || 'assets/default-avatar.jpg'}" style="width: 44px; height: 44px; border-radius: 50%; object-fit: cover; border: 1.5px solid rgba(255, 255, 255, 0.15);">
                                     <div>
                                         <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                                            <strong style="font-size: 0.95rem; color: var(--text-primary);">${o.buyerName || 'Accredited NGO Partner'}</strong>
+                                            <strong style="font-size: 0.95rem; color: var(--text-primary);">${o.buyerName || (isCrop ? 'Verified Agro-Processing MSME / Procurement Partner' : 'Accredited NGO Partner')}</strong>
                                             ${ngoBadge}
                                         </div>
                                         <div style="font-size: 0.82rem; color: var(--text-muted); margin-top: 3px;">
@@ -4219,16 +5598,16 @@ document.addEventListener('DOMContentLoaded', () => {
                                 </div>
 
                                 <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
-                                    <div class="pickup-code-pill" title="NGO Pickup Verification Code">
+                                    <div class="pickup-code-pill" title="Procurement / Order PIN Code">
                                         <i class="fa-solid fa-ticket"></i> PIN: <strong>NN-${String(o.orderId).padStart(4, '0')}</strong>
                                     </div>
                                     ${!isCompleted ? `
                                         <button class="history-action-btn btn-update-order-status" data-order-id="${o.orderId}" data-status="completed" style="background: rgba(255, 255, 255, 0.1); color: #ffffff; border: 1px solid rgba(255, 255, 255, 0.18); border-radius: 10px; padding: 8px 16px; font-weight: 600; font-size: 0.82rem; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;">
-                                            <i class="fa-solid fa-handshake"></i> Mark as Handed Over
+                                            <i class="fa-solid fa-handshake"></i> ${isCrop ? 'Mark as Dispatched' : 'Mark as Handed Over'}
                                         </button>
                                     ` : `
                                         <span style="color: #9ca3af; font-size: 0.85rem; font-weight: 700; display: inline-flex; align-items: center; gap: 6px;">
-                                            <i class="fa-solid fa-check-double"></i> Handover Complete
+                                            <i class="fa-solid fa-check-double"></i> ${isCrop ? 'Dispatch Complete' : 'Handover Complete'}
                                         </span>
                                     `}
                                 </div>
@@ -4243,20 +5622,22 @@ document.addEventListener('DOMContentLoaded', () => {
                         day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit'
                     }) : 'Just now';
                     const isCompleted = o.orderStatus === 'completed';
-                    const foodImg = o.imageUrl || (window.getSmartFoodImage ? window.getSmartFoodImage(o.foodName, o.category, null) : 'assets/default-food.jpg');
+                    const isCrop = o.isCrop || o.cropGrade || state.activePortal === 'crop_buyer';
+                    const defaultImg = isCrop ? 'https://images.unsplash.com/photo-1574323347407-f5e1ad6d020b?w=600&q=80' : 'assets/default-food.jpg';
+                    const foodImg = o.imageUrl || (window.getSmartFoodImage ? window.getSmartFoodImage(o.foodName, o.category, null) : defaultImg);
 
                     return `
                         <div class="history-card" id="order-card-${o.orderId}">
                             <div class="history-top-row">
                                 <div class="history-item-info">
-                                    <img src="${foodImg}" alt="${o.foodName || 'Food'}" class="history-food-thumb" onerror="this.onerror=null; this.src='assets/default-food.jpg';">
+                                    <img src="${foodImg}" alt="${o.foodName || 'Food'}" class="history-food-thumb" onerror="this.onerror=null; this.src='${defaultImg}';">
                                     <div>
                                         <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                                            <h4 style="font-size: 1.1rem; font-weight: 700; color: var(--text-primary); margin: 0;">${o.foodName || 'Rescued Food'}</h4>
-                                            <span class="badge" style="background: rgba(255, 255, 255, 0.06); color: #d1d5db; border: 1px solid rgba(255, 255, 255, 0.1); font-size: 0.72rem; padding: 2px 8px; border-radius: 6px;">${o.category || 'Cooked'}</span>
+                                            <h4 style="font-size: 1.1rem; font-weight: 700; color: var(--text-primary); margin: 0;">${o.foodName || (isCrop ? 'Procured Crop Produce' : 'Rescued Food')}</h4>
+                                            <span class="badge" style="background: rgba(255, 255, 255, 0.06); color: #d1d5db; border: 1px solid rgba(255, 255, 255, 0.1); font-size: 0.72rem; padding: 2px 8px; border-radius: 6px;">${o.category || (isCrop ? 'Produce' : 'Cooked')}</span>
                                         </div>
                                         <div style="font-size: 0.85rem; color: var(--text-muted); margin-top: 4px;">
-                                            <span style="font-weight: 700; color: var(--text-primary);">${o.quantity} portions</span> · 
+                                            <span style="font-weight: 700; color: var(--text-primary);">${o.quantity} ${o.unit || (isCrop ? 'Quintals' : 'portions')}</span> · 
                                             <span>${o.totalPrice > 0 ? '₹' + o.totalPrice : '<strong style="color:#e5e5e5;">Free Surplus Donation</strong>'}</span> · 
                                             <span><i class="fa-regular fa-clock"></i> ${dateStr}</span>
                                         </div>
@@ -4265,31 +5646,31 @@ document.addEventListener('DOMContentLoaded', () => {
                                 <div>
                                     <span class="history-status-badge ${isCompleted ? 'status-completed' : 'status-confirmed'}">
                                         <i class="fa-solid ${isCompleted ? 'fa-circle-check' : 'fa-box'}"></i>
-                                        ${isCompleted ? 'Picked Up' : 'Ready for Pickup'}
+                                        ${isCompleted ? (isCrop ? 'Delivered / Collected' : 'Picked Up') : (isCrop ? 'Order Placed · Awaiting Logistics' : 'Ready for Pickup')}
                                     </span>
                                 </div>
                             </div>
 
-                            <!-- Donating Restaurant Details Box -->
+                            <!-- Donating / Producing Seller Details Box -->
                             <div class="history-party-box">
                                 <div style="display: flex; align-items: center; gap: 12px; flex: 1; min-width: 240px;">
                                     <img src="${o.sellerAvatar || 'assets/default-avatar.jpg'}" style="width: 44px; height: 44px; border-radius: 50%; object-fit: cover; border: 1.5px solid rgba(255, 255, 255, 0.15);">
                                     <div>
                                         <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                                            <strong style="font-size: 0.95rem; color: var(--text-primary);">${o.sellerName || 'Donor Restaurant / Kitchen'}</strong>
+                                            <strong style="font-size: 0.95rem; color: var(--text-primary);">${o.sellerName || (isCrop ? 'Farmer Producer / Mandi Collective' : 'Donor Restaurant / Kitchen')}</strong>
                                             ${o.sellerFssaiCode ? `<span class="fssai-trust-badge" title="FSSAI Verified Food Establishment"><i class="fa-solid fa-shield-halved"></i> FSSAI Certified</span>` : ''}
                                         </div>
                                         <div style="font-size: 0.82rem; color: var(--text-muted); margin-top: 3px;">
                                             ${o.sellerContactPerson ? `<span><i class="fa-solid fa-user-tie" style="color:#9ca3af;"></i> ${o.sellerContactPerson}</span> · ` : ''}
                                             ${o.sellerPhone ? `<a href="tel:${o.sellerPhone}" style="color:#d1d5db; text-decoration: none;"><i class="fa-solid fa-phone"></i> ${o.sellerPhone}</a>` : ''}
                                         </div>
-                                        ${o.sellerAddress ? `<div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;"><i class="fa-solid fa-location-dot" style="color:#9ca3af;"></i> Pickup: ${o.sellerAddress}</div>` : ''}
-                                        ${o.sellerPickupWindow ? `<div style="font-size: 0.8rem; color: #9ca3af; margin-top: 2px;"><i class="fa-regular fa-clock"></i> Pickup Window: ${o.sellerPickupWindow}</div>` : ''}
+                                        ${o.sellerAddress ? `<div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;"><i class="fa-solid fa-location-dot" style="color:#9ca3af;"></i> ${isCrop ? 'Mandi / Farm: ' : 'Pickup: '}${o.sellerAddress}</div>` : ''}
+                                        ${o.sellerPickupWindow ? `<div style="font-size: 0.8rem; color: #9ca3af; margin-top: 2px;"><i class="fa-regular fa-clock"></i> Window: ${o.sellerPickupWindow}</div>` : ''}
                                     </div>
                                 </div>
 
                                 <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
-                                    <div class="pickup-code-pill" title="Show this code at the restaurant counter for pickup">
+                                    <div class="pickup-code-pill" title="Show this code upon collection or truck arrival">
                                         <i class="fa-solid fa-ticket"></i> PIN: <strong>NN-${String(o.orderId).padStart(4, '0')}</strong>
                                     </div>
                                 </div>
@@ -4546,12 +5927,23 @@ document.addEventListener('DOMContentLoaded', () => {
             const subtitle = modal.querySelector('p');
             const user = JSON.parse(sessionStorage.getItem('nourishUser') || '{}');
             const role = (user.accountType || user.type || user.role || (state.activePortal === 'seller' ? 'vendor' : 'ngo')).toLowerCase();
-            const isSeller = role.includes('restaurant') || role.includes('vendor') || role.includes('seller') || state.activePortal === 'seller';
+            const isCrop = role.includes('crop') || state.activePortal.includes('crop');
+            const isSeller = !isCrop && (role.includes('restaurant') || role.includes('vendor') || role.includes('seller') || state.activePortal === 'seller');
+            const isFoodBuyer = !isCrop && (role.includes('ngo') || role.includes('shelter') || state.activePortal === 'buyer');
+
             if (fssaiWrap) fssaiWrap.style.display = isSeller ? 'block' : 'none';
-            if (darpanWrap) darpanWrap.style.display = isSeller ? 'none' : 'block';
-            if (subtitle) subtitle.textContent = isSeller
-                ? "Manage your restaurant's profile, compliance & pickup details"
-                : "Manage your NGO's profile, compliance & pickup details";
+            if (darpanWrap) darpanWrap.style.display = isFoodBuyer ? 'block' : 'none';
+            if (subtitle) {
+                if (isCrop) {
+                    subtitle.textContent = role.includes('seller')
+                        ? "Manage your farm / mandi producer details & contact"
+                        : "Manage your agro-processor procurement details & contact";
+                } else {
+                    subtitle.textContent = isSeller
+                        ? "Manage your restaurant's profile, compliance & pickup details"
+                        : "Manage your NGO's profile, compliance & pickup details";
+                }
+            }
             document.dispatchEvent(new CustomEvent('load-profile-data'));
         }
     };
@@ -4685,13 +6077,14 @@ document.addEventListener('DOMContentLoaded', () => {
                     accountTypeInput.value = role.toUpperCase();
                 }
 
-                // Show FSSAI field for food vendors, DARPAN for NGOs
-                const isSeller = (profile.accountType || profile.role || profile.type || '').toLowerCase().includes('restaurant') ||
-                                 (profile.accountType || profile.role || profile.type || '').toLowerCase().includes('vendor') ||
-                                 (profile.accountType || profile.role || profile.type || '').toLowerCase().includes('seller') ||
-                                 state.activePortal === 'seller';
+                // Show FSSAI field for food vendors, DARPAN for NGOs (Crop roles hide both)
+                const roleLower = (profile.accountType || profile.role || profile.type || state.activePortal || '').toLowerCase();
+                const isCrop = roleLower.includes('crop');
+                const isSeller = !isCrop && (roleLower.includes('restaurant') || roleLower.includes('vendor') || roleLower.includes('seller') || state.activePortal === 'seller');
+                const isFoodBuyer = !isCrop && (roleLower.includes('ngo') || roleLower.includes('shelter') || state.activePortal === 'buyer');
+
                 if (fssaiFieldWrap) fssaiFieldWrap.style.display = isSeller ? 'block' : 'none';
-                if (darpanFieldWrap) darpanFieldWrap.style.display = isSeller ? 'none' : 'block';
+                if (darpanFieldWrap) darpanFieldWrap.style.display = isFoodBuyer ? 'block' : 'none';
 
                 // 2. Contact & Logistics Fields (Pre-fill from cached session)
                 if (bioInput) bioInput.value = profile.bio || '';

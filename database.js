@@ -56,7 +56,10 @@ function normalizeRow(row) {
         sellerfssaicode: 'sellerFssaiCode',
         selleraddress: 'sellerAddress',
         sellerpickupwindow: 'sellerPickupWindow',
-        selleravatar: 'sellerAvatar'
+        selleravatar: 'sellerAvatar',
+        cropgrade: 'cropGrade',
+        producetype: 'produceType',
+        harvestdate: 'harvestDate'
     };
     for (const [lower, camel] of Object.entries(keyMap)) {
         if (lower in normalized && !(camel in normalized)) {
@@ -196,6 +199,7 @@ if (dbUrl) {
                 -- Safe migration: ensure darpanid and ngoregtype exist
                 ALTER TABLE users ADD COLUMN IF NOT EXISTS darpanid TEXT;
                 ALTER TABLE users ADD COLUMN IF NOT EXISTS ngoregtype TEXT;
+                ALTER TABLE users DROP CONSTRAINT IF EXISTS users_accounttype_check;
 
                 CREATE TABLE IF NOT EXISTS contacts (
                     id SERIAL PRIMARY KEY,
@@ -226,6 +230,11 @@ if (dbUrl) {
                     dateposted TIMESTAMP NOT NULL DEFAULT NOW()
                 );
 
+                -- Safe migrations for crop listings
+                ALTER TABLE food_listings ADD COLUMN IF NOT EXISTS cropgrade TEXT;
+                ALTER TABLE food_listings ADD COLUMN IF NOT EXISTS producetype TEXT DEFAULT 'food';
+                ALTER TABLE food_listings ADD COLUMN IF NOT EXISTS harvestdate TEXT;
+
                 CREATE TABLE IF NOT EXISTS orders (
                     id SERIAL PRIMARY KEY,
                     buyerid INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -240,16 +249,25 @@ if (dbUrl) {
 
             // Ensure demo users exist so foreign keys in orders table succeed for demo workflows
             await pool.query(`
-                INSERT INTO users (id, accounttype, organizationname, email, password, isverified, darpanid, ngoregtype, fssaicode)
+                INSERT INTO users (id, accounttype, organizationname, email, password, isverified, darpanid, ngoregtype, fssaicode, phone)
                 VALUES 
-                (888, 'restaurant', 'Elite Catering Services', 'serverdemo@gmail.com', '$2a$10$demoHashedPasswordPlaceHolder888', 1, '', '', '12345678901234'),
-                (999, 'ngo', 'Global Outreach Foundation', 'ngodemo@gmail.com', '$2a$10$demoHashedPasswordPlaceHolder999', 1, 'TN/2023/0345678', 'darpan', '')
+                (888, 'restaurant', 'Elite Catering Services', 'serverdemo@gmail.com', '$2a$10$demoHashedPasswordPlaceHolder888', 1, '', '', '12345678901234', '+91 98765 43210'),
+                (999, 'ngo', 'Global Outreach Foundation', 'ngodemo@gmail.com', '$2a$10$demoHashedPasswordPlaceHolder999', 1, 'TN/2023/0345678', 'darpan', '', '+91 98765 87654'),
+                (777, 'crop_seller', 'Green Valley Farmers FPO', 'farmerdemo@gmail.com', '$2a$10$demoHashedPasswordPlaceHolder888', 1, '', '', '', '+91 98765 12340'),
+                (666, 'crop_buyer', 'Sahyadri Agro-Processing MSME', 'buyeragridemo@gmail.com', '$2a$10$demoHashedPasswordPlaceHolder999', 1, '', '', '', '+91 98765 56780')
                 ON CONFLICT (id) DO UPDATE SET 
                     organizationname = EXCLUDED.organizationname,
                     accounttype = EXCLUDED.accounttype,
                     email = EXCLUDED.email;
+
+                -- Seed sample demo crop listings if not present
+                INSERT INTO food_listings (id, vendorid, vendorname, name, description, category, price, quantity, unit, condition, status, cropgrade, producetype)
+                VALUES 
+                (901, 777, 'Green Valley Farmers FPO', 'Nashik Farm Fresh Tomatoes (Puree Grade)', 'Harvested surplus ripe tomatoes. Highly suitable for bulk ketchup, sauce, or puree processing units.', 'Vegetables', 6, '15', 'Quintal', 'Fresh Harvest', 'available', 'Grade B', 'crop'),
+                (902, 777, 'Green Valley Farmers FPO', 'Nagpur Organic Oranges (Pulp Grade)', 'Slightly bruised, high-sugar content oranges ideal for juice or pulp extraction.', 'Fruits', 12, '8', 'Quintal', 'Fresh Harvest', 'available', 'Grade B', 'crop')
+                ON CONFLICT (id) DO NOTHING;
             `);
-            console.log('✅ Supabase PostgreSQL: All 4 cloud tables initialized and ready!');
+            console.log('✅ Supabase PostgreSQL: All cloud tables initialized and ready (including Crop Portals)!');
         } catch (err) {
             console.error('❌ Supabase table initialization error:', err.message);
         }
@@ -339,7 +357,12 @@ if (dbUrl) {
                 FOREIGN KEY (vendorId)  REFERENCES users(id),
                 FOREIGN KEY (claimedBy) REFERENCES users(id)
             )
-        `, logErr('food_listings'));
+        `, (err) => {
+            logErr('food_listings')(err);
+            db.run('ALTER TABLE food_listings ADD COLUMN cropGrade TEXT;', () => {});
+            db.run('ALTER TABLE food_listings ADD COLUMN produceType TEXT DEFAULT \'food\';', () => {});
+            db.run('ALTER TABLE food_listings ADD COLUMN harvestDate TEXT;', () => {});
+        });
 
         db.run(`
             CREATE TABLE IF NOT EXISTS orders (
