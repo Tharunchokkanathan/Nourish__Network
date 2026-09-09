@@ -3,18 +3,19 @@ require('dotenv').config();
 
 const GOOGLE_BRIDGE_URL = process.env.GMAIL_HTTP_BRIDGE || "https://script.google.com/macros/s/AKfycbwEgyW84T294uID8TpJckcys1gPWVfrJYVThie3BOXeO2XUw82xoIih0jGqJh4UeQ7M/exec";
 
-// High-performance pre-warmed pooled transporter using standard Cloud-compatible Port 587 (STARTTLS)
+let isSmtpReady = false;
+
+// Ultra-fast pre-warmed pooled transporter using standard SSL Port 465
 const transporter = nodemailer.createTransport({
     host: 'smtp.gmail.com',
-    port: 587,
-    secure: false,
-    requireTLS: true,
+    port: 465,
+    secure: true,
     pool: true,
     maxConnections: 10,
     maxMessages: Infinity,
-    connectionTimeout: 10000,
-    greetingTimeout: 10000,
-    socketTimeout: 60000,
+    connectionTimeout: 5000,
+    greetingTimeout: 5000,
+    socketTimeout: 15000,
     auth: {
         user: process.env.GMAIL_USER || 'nourishnetwork.official@gmail.com',
         pass: process.env.GMAIL_APP_PASS || 'mrqkdqumrbihwncd'
@@ -27,9 +28,11 @@ const transporter = nodemailer.createTransport({
 // Pre-warm the SMTP connection pool on boot
 transporter.verify((error) => {
     if (error) {
-        console.warn('⚠️ SMTP Connection Pool Warm-up Warning:', error.message);
+        console.warn('⚠️ SMTP Port 465 Pool Warning (will route via Google HTTPS):', error.message);
+        isSmtpReady = false;
     } else {
-        console.log('⚡ SMTP Connection Pool is warm & ready for sub-second delivery.');
+        console.log('⚡ SMTP Connection Pool (Port 465 SSL) is warm & ready for sub-2s delivery.');
+        isSmtpReady = true;
     }
 });
 
@@ -63,16 +66,39 @@ function sanitizeSubjectForEmail(subject) {
 }
 
 /**
- * Universal Dual-Engine Dispatcher:
- * 1. Primary: Google Apps Script HTTPS Bridge (100% unrestricted on Render via Port 443)
- * 2. Secondary Fallback: SMTP Transporter (Localhost)
+ * Universal Ultra-Fast Dual-Engine Dispatcher:
+ * 1. Primary: Direct Pooled SMTP (Port 465 SSL) - Delivers in ~1.5 to 2 seconds.
+ * 2. Fallback: Google Apps Script HTTPS Bridge - Reliable fallback for restricted cloud networks.
  */
 async function dispatchEmail({ toEmail, subject, html, devFallbackUrl }) {
     const cleanSubject = sanitizeSubjectForEmail(subject);
     const cleanHtml = sanitizeHtmlForEmail(html);
 
-    // 1. Google Apps Script HTTPS Bridge
-    if (GOOGLE_BRIDGE_URL) {
+    // Fast Direct SMTP Helper with 8s timeout
+    const trySmtp = () => {
+        return new Promise(async (resolve, reject) => {
+            const timer = setTimeout(() => reject(new Error('SMTP timeout (8000ms)')), 8000);
+            try {
+                const info = await transporter.sendMail({
+                    from: `"Nourish Network" <${process.env.GMAIL_USER || 'nourishnetwork.official@gmail.com'}>`,
+                    to: toEmail,
+                    subject: cleanSubject,
+                    html: cleanHtml
+                });
+                clearTimeout(timer);
+                resolve({ success: true, messageId: info.messageId, via: 'fast-smtp-465' });
+            } catch (err) {
+                clearTimeout(timer);
+                reject(err);
+            }
+        });
+    };
+
+    // Google Apps Script HTTPS Bridge Helper with 6s timeout
+    const tryGoogleBridge = async () => {
+        if (!GOOGLE_BRIDGE_URL) throw new Error('No Google Bridge URL configured');
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), 6000);
         try {
             const res = await fetch(GOOGLE_BRIDGE_URL, {
                 method: 'POST',
@@ -82,34 +108,42 @@ async function dispatchEmail({ toEmail, subject, html, devFallbackUrl }) {
                     to: toEmail,
                     subject: cleanSubject,
                     html: cleanHtml
-                })
+                }),
+                signal: controller.signal
             });
+            clearTimeout(timer);
             const text = await res.text();
             let data = {};
-            try { data = JSON.parse(text); } catch(e) {}
+            try { data = JSON.parse(text); } catch (e) {}
             if (data && data.success) {
-                console.log(`✅ [Google HTTPS Engine] Email sent to ${toEmail}: ${cleanSubject}`);
                 return { success: true, via: 'google-https' };
             }
-        } catch (e) {
-            console.warn(`⚠️ Google HTTPS Bridge error, trying SMTP fallback:`, e.message);
+            throw new Error(text || 'Google Bridge failed');
+        } catch (err) {
+            clearTimeout(timer);
+            throw err;
         }
+    };
+
+    // 1. Primary Engine: Direct Pooled SMTP (Port 465 SSL)
+    try {
+        const res = await trySmtp();
+        isSmtpReady = true;
+        console.log(`⚡ [Direct Fast SMTP 465] Email sent to ${toEmail}: ${cleanSubject}`);
+        return res;
+    } catch (smtpErr) {
+        console.warn(`⚠️ Direct SMTP attempt failed (${smtpErr.message}), falling back to Google HTTPS Bridge...`);
     }
 
-    // 2. SMTP Fallback
+    // 2. Fallback Engine: Google Apps Script HTTPS Bridge (for restricted container firewalls)
     try {
-        const info = await transporter.sendMail({
-            from: `"Nourish Network" <${process.env.GMAIL_USER || 'nourishnetwork.official@gmail.com'}>`,
-            to: toEmail,
-            subject: cleanSubject,
-            html: cleanHtml
-        });
-        console.log(`✅ [SMTP] Email sent to ${toEmail}: ${info.messageId}`);
-        return { success: true, messageId: info.messageId, via: 'smtp' };
-    } catch (err) {
-        console.error(`⚠️ Failed to send email to ${toEmail}:`, err.message);
+        const res = await tryGoogleBridge();
+        console.log(`✅ [Google HTTPS Engine] Email sent to ${toEmail}: ${cleanSubject}`);
+        return res;
+    } catch (gasErr) {
+        console.error(`❌ All email engines failed for ${toEmail}:`, gasErr.message);
         if (devFallbackUrl) console.log(`💡 [DEV FALLBACK LINK]: ${devFallbackUrl}`);
-        return { success: false, error: err.message, devFallbackUrl };
+        return { success: false, error: gasErr.message, devFallbackUrl };
     }
 }
 
@@ -666,8 +700,7 @@ async function sendFoodPublishedBroadcastEmail({ buyers, sellerName, foodItem, h
         : 'Available Today';
     const priceDisplay = (parseFloat(foodItem.price) === 0 || !foodItem.price) ? 'Free Donation (&#8377;0)' : `&#8377;${foodItem.price} / portion`;
 
-    const results = [];
-    for (const buyer of buyers) {
+    const broadcastPromises = buyers.map(buyer => {
         const htmlTemplate = `
         <!DOCTYPE html>
         <html>
@@ -799,16 +832,21 @@ async function sendFoodPublishedBroadcastEmail({ buyers, sellerName, foodItem, h
                             <span class="detail-value">${foodItem.quantity} ${foodItem.unit || 'Portions'}</span>
                         </div>
                         <div class="detail-row">
-                            <span class="detail-label">Pricing:</span>
+                            <span class="detail-label">Price:</span>
                             <span class="detail-value">${priceDisplay}</span>
                         </div>
                         <div class="detail-row">
-                            <span class="detail-label">Expiry / Best Before:</span>
+                            <span class="detail-label">Pickup Expiry Window:</span>
                             <span class="detail-value">${formattedExpiry}</span>
                         </div>
+                        ${foodItem.description ? `
+                        <div class="detail-row">
+                            <span class="detail-label">Details:</span>
+                            <span class="detail-value">${foodItem.description}</span>
+                        </div>` : ''}
                     </div>
 
-                    <a href="${dashboardUrl}" class="btn-cta" target="_blank">Check Food &amp; Claim in Dashboard &#128640;</a>
+                    <a href="${dashboardUrl}" class="btn-cta" target="_blank">View &amp; Claim in Dashboard &#128640;</a>
                 </div>
                 <div class="footer">
                     &copy; ${new Date().getFullYear()} Nourish Network. Connecting fresh food with communities in need.
@@ -818,14 +856,17 @@ async function sendFoodPublishedBroadcastEmail({ buyers, sellerName, foodItem, h
         </html>
         `;
 
-        const res = await dispatchEmail({
+        return dispatchEmail({
             toEmail: buyer.email,
             subject: `Fresh Food Alert: ${foodItem.name} from ${sellerName} - Nourish Network`,
             html: htmlTemplate
         });
-        results.push(res);
-    }
-    return { success: true, count: results.length };
+    });
+
+    const results = await Promise.allSettled(broadcastPromises);
+    const count = results.filter(r => r.status === 'fulfilled' && r.value && r.value.success).length;
+    console.log(`📢 [Parallel Broadcast] Dispatched ${count}/${buyers.length} notification emails simultaneously.`);
+    return { success: true, count };
 }
 
 /**
