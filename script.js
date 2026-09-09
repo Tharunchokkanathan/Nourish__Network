@@ -629,6 +629,28 @@ document.addEventListener('DOMContentLoaded', () => {
     const portalsRoot = document.getElementById('nn-portals-root');
     const homePortal = document.getElementById('home-portal');
 
+    // Cross-tab real-time inventory synchronization engine
+    const syncChannel = (typeof BroadcastChannel !== 'undefined') ? new BroadcastChannel('nn_realtime_sync') : null;
+    if (syncChannel) {
+        syncChannel.onmessage = (event) => {
+            if (event.data && (event.data.type === 'INVENTORY_CHANGED' || event.data.type === 'ORDER_PLACED')) {
+                if (typeof refreshState === 'function') refreshState(true);
+            }
+        };
+    }
+    window.addEventListener('storage', (e) => {
+        if (e.key === 'nn_sync_ping') {
+            if (typeof refreshState === 'function') refreshState(true);
+        }
+    });
+
+    function broadcastInventoryChange() {
+        if (syncChannel) {
+            try { syncChannel.postMessage({ type: 'INVENTORY_CHANGED', at: Date.now() }); } catch (e) {}
+        }
+        try { localStorage.setItem('nn_sync_ping', Date.now().toString()); } catch (e) {}
+    }
+
     function resolveCustomImageUrl(rawUrl) {
         if (!rawUrl || typeof rawUrl !== 'string') return null;
         let url = rawUrl.trim();
@@ -871,13 +893,22 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         const originalHtml = btn ? btn.innerHTML : 'CONFIRM ORDER';
+
+        const token = sessionStorage.getItem('nourishToken') || localStorage.getItem('nourishToken');
+        if (!token) {
+            if (typeof showToast === 'function') showToast("Please sign in as a verified NGO or recipient to place orders.", "warning");
+            else alert("Please sign in to place an order.");
+            const authModal = document.getElementById('authModal');
+            if (authModal) authModal.classList.add('active');
+            return;
+        }
+
         if (btn) {
             btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Processing...';
             btn.disabled = true;
         }
 
         try {
-            const token = sessionStorage.getItem('nourishToken') || localStorage.getItem('nourishToken');
             const user = JSON.parse(sessionStorage.getItem('nourishUser') || localStorage.getItem('nourishUser') || '{}');
             const notes = document.getElementById('claim-notes')?.value || '';
 
@@ -887,7 +918,36 @@ document.addEventListener('DOMContentLoaded', () => {
                 price: parseFloat(c.item.price) || 0
             }));
 
-            // Step 1: Create rich counterparty order objects for instant real-time history display in both portals
+            // Step 1: Call backend checkout API with strict database validation
+            const res = await fetch(`${API_BASE}/checkout`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({ items: orderItems, notes })
+            });
+
+            const data = await res.json().catch(() => ({}));
+
+            if (!res.ok) {
+                // Checkout rejected (out of stock, insufficient remaining portions, or concurrency conflict)
+                const errMsg = data.error || "Order could not be processed. Please check available quantities.";
+                showToast(errMsg, "error");
+
+                if (btn) {
+                    btn.innerHTML = originalHtml;
+                    btn.disabled = false;
+                }
+
+                // Immediately re-fetch true server inventory so user sees actual remaining stock
+                if (typeof refreshState === 'function') {
+                    await refreshState(false);
+                }
+                return;
+            }
+
+            // Step 2: Create rich counterparty order objects for instant real-time history display in both portals
             const newOrders = state.cart.map(c => {
                 const qty = parseInt(c.qty, 10) || 1;
                 const unitPrice = parseFloat(c.item.price) || 0;
@@ -941,82 +1001,7 @@ document.addEventListener('DOMContentLoaded', () => {
             localOrders.unshift(...newOrders);
             localStorage.setItem('nn_local_orders', JSON.stringify(localOrders));
 
-            // Step 2: Deduct quantities from in-memory state.listings immediately
-            state.cart.forEach(c => {
-                const boughtQty = parseInt(c.qty, 10) || 1;
-                const match = state.listings.find(l => String(l.id) === String(c.item.id));
-                if (match) {
-                    const currentStock = parseInt(match.qty != null ? match.qty : match.quantity, 10) || 0;
-                    const newStock = Math.max(0, currentStock - boughtQty);
-                    match.qty = newStock;
-                    match.quantity = String(newStock);
-                    if (newStock <= 0) {
-                        match.status = 'sold';
-                    }
-                }
-            });
-
-            // Step 3: Persist deductions in localStorage caches
-            let demoListings = JSON.parse(localStorage.getItem('nn_demo_listings') || '[]');
-            let purchasedIds = JSON.parse(localStorage.getItem('nn_demo_purchased_ids') || '[]');
-
-            state.cart.forEach(cartEntry => {
-                const itemId = String(cartEntry.item.id);
-                const boughtQty = parseInt(cartEntry.qty, 10) || 1;
-
-                // Update demo listing if found
-                const idx = demoListings.findIndex(l => String(l.id) === itemId);
-                if (idx !== -1) {
-                    const currentQty = parseInt(demoListings[idx].qty, 10) || 0;
-                    demoListings[idx].qty = Math.max(0, currentQty - boughtQty);
-                    if (demoListings[idx].qty <= 0) {
-                        demoListings[idx].status = 'sold';
-                    }
-                }
-
-                // Track purchased amounts across all listings
-                const existing = purchasedIds.find(p => String(p.id) === itemId);
-                if (existing) {
-                    existing.qtyBought = (existing.qtyBought || 0) + boughtQty;
-                } else {
-                    purchasedIds.push({ id: itemId, qtyBought: boughtQty });
-                }
-            });
-
-            localStorage.setItem('nn_demo_listings', JSON.stringify(demoListings));
-            localStorage.setItem('nn_demo_purchased_ids', JSON.stringify(purchasedIds));
-
-            // Step 4: Call backend checkout API to deduct in PostgreSQL & insert into orders
-            if (token) {
-                try {
-                    const res = await fetch(`${API_BASE}/checkout`, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'Authorization': `Bearer ${token}`
-                        },
-                        body: JSON.stringify({ items: orderItems, notes })
-                    });
-                    if (!res.ok) {
-                        const err = await res.json().catch(() => ({}));
-                        console.warn("Backend API checkout notice:", err);
-                    }
-                } catch (apiErr) {
-                    console.warn("Backend API checkout network notice:", apiErr);
-                }
-            }
-
-            // Step 5: Show success modal and toast
-            const modal = document.getElementById('successModal');
-            if (modal) {
-                modal.style.setProperty('display', 'flex', 'important');
-            } else {
-                alert("Order Placed Successfully!");
-            }
-
-            if (typeof showToast === 'function') showToast("Order Confirmed! 🌱", "success");
-
-            // Step 6: Log purchase for platform live impact stats
+            // Log purchase for platform live impact stats
             const purchases = JSON.parse(localStorage.getItem('nn_purchases') || '[]');
             const totalPortions = state.cart.reduce((sum, item) => sum + (parseInt(item.qty, 10) || 1), 0);
             purchases.push({
@@ -1038,7 +1023,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 }, 100);
             }
 
-            // Step 7: Clear cart and reset badge
+            // Step 3: Clear cart and reset UI
             state.cart = [];
             if (typeof updateCartBadge === 'function') updateCartBadge();
             if (typeof renderCartItems === 'function') renderCartItems();
@@ -1046,13 +1031,24 @@ document.addEventListener('DOMContentLoaded', () => {
             const drawer = document.getElementById('cart-drawer');
             if (drawer) drawer.classList.remove('active');
 
-            // Step 8: Update grids immediately so depleted food disappears without waiting
-            if (typeof renderExchangeGrid === 'function') renderExchangeGrid();
-            if (typeof renderSellerListings === 'function') renderSellerListings();
+            // Step 4: Show success modal and toast
+            const modal = document.getElementById('successModal');
+            if (modal) {
+                modal.style.setProperty('display', 'flex', 'important');
+            } else {
+                alert("Order Placed Successfully!");
+            }
 
-            // Refresh backend state in background
+            if (typeof showToast === 'function') showToast("Order Confirmed! 🌱", "success");
+
+            // Step 5: Broadcast inventory change to all open tabs immediately
+            if (typeof broadcastInventoryChange === 'function') {
+                broadcastInventoryChange();
+            }
+
+            // Step 6: Refresh backend state immediately
             if (typeof refreshState === 'function') {
-                refreshState(true);
+                await refreshState(false);
             }
 
             // Silently refresh history modal if open
@@ -1061,8 +1057,8 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
         } catch (e) {
-            console.error("placeOrderDemo error:", e);
-            if (typeof showToast === 'function') showToast("Order placed! (Offline mode)", "success");
+            console.error("Order processing error:", e);
+            showToast("Network error placing order. Please check your connection.", "error");
         } finally {
             if (btn) {
                 btn.innerHTML = originalHtml;
@@ -1171,17 +1167,22 @@ document.addEventListener('DOMContentLoaded', () => {
     async function refreshState(silent = false) {
         try {
             const user = JSON.parse(sessionStorage.getItem('nourishUser') || '{}');
-            let url = `${API_BASE}/listings`;
+            let url = `${API_BASE}/listings?_t=${Date.now()}`;
 
-            const listRes = await fetch(url);
+            const listRes = await fetch(url, { cache: 'no-store' });
             if (listRes.ok) {
                 const rawListings = await listRes.json();
-                const apiListings = rawListings.map(item => ({
-                    ...item,
-                    qty: item.quantity || item.qty || 0,
-                    expiry: item.expiryTime || item.expiry || null,
-                    img: getSmartFoodImage(item.name, item.category, item.imageUrl || item.img)
-                }));
+                const apiListings = rawListings.map(item => {
+                    const numericQty = parseInt(item.quantity != null ? item.quantity : item.qty, 10) || 0;
+                    return {
+                        ...item,
+                        qty: numericQty,
+                        quantity: String(numericQty),
+                        originalQty: null,
+                        expiry: item.expiryTime || item.expiry || null,
+                        img: getSmartFoodImage(item.name, item.category, item.imageUrl || item.img)
+                    };
+                });
                 // Merge in any demo listings saved to localStorage
                 const demoListings = JSON.parse(localStorage.getItem('nn_demo_listings') || '[]');
                 const apiIds = apiListings.map(l => l.id);
@@ -1203,16 +1204,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 }).filter(l => l.status !== 'sold' && (parseInt(l.qty) || 0) > 0);
 
                 let combinedListings = [...uniqueDemoListings, ...filteredApiListings];
-                // Deduct any portions currently in user's active cart session
-                if (Array.isArray(state.cart) && state.cart.length > 0) {
-                    combinedListings = combinedListings.map(l => {
-                        const inCart = state.cart.find(c => String(c.item.id) === String(l.id));
-                        if (!inCart) return l;
-                        const originalQty = l.originalQty != null ? l.originalQty : (parseInt(l.qty) || 0);
-                        const remaining = Math.max(0, originalQty - (inCart.qty || 0));
-                        return { ...l, originalQty, qty: remaining };
-                    });
-                }
                 state.listings = combinedListings;
             } else {
                 // API failed — still load demo listings (filter sold-out ones)
@@ -3180,6 +3171,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         renderExchangeGrid();
                     }
                     updateLiveStats();
+                    if (typeof broadcastInventoryChange === 'function') broadcastInventoryChange();
                 };
 
                 const isDemoToken = !token || token.startsWith('demo-token') || String(id).startsWith('demo-');
@@ -3307,10 +3299,8 @@ document.addEventListener('DOMContentLoaded', () => {
             if (item.name === 'lp.okijuh' || item.name === 'lp,okijuh' || item.name === 'wesrdtfgybh') return false;
             if (item.status === 'sold' || item.status === 'claimed') return false;
 
-            const inCart = (state.cart || []).find(c => String(c.item.id) === String(item.id));
-            const cartQty = inCart ? (parseInt(inCart.qty, 10) || 0) : 0;
-            const originalStock = item.originalQty != null ? parseInt(item.originalQty, 10) : ((parseInt(item.qty != null ? item.qty : item.quantity, 10) || 0) + cartQty);
-            if (originalStock <= 0) return false;
+            const liveStock = parseInt(item.quantity != null ? item.quantity : item.qty, 10) || 0;
+            if (liveStock <= 0) return false;
 
             if (!item.expiry || !window.isValidExpiry(item.expiry)) return true;
             return !window.isItemExpired(item.expiry);
@@ -3333,8 +3323,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const inCart = (state.cart || []).find(c => String(c.item.id) === String(item.id));
             const cartQty = inCart ? (parseInt(inCart.qty, 10) || 0) : 0;
-            const totalStock = item.originalQty != null ? parseInt(item.originalQty, 10) : ((parseInt(item.qty != null ? item.qty : item.quantity, 10) || 0) + cartQty);
-            const remainingLive = Math.max(0, totalStock - cartQty);
+            const liveStock = parseInt(item.quantity != null ? item.quantity : item.qty, 10) || 0;
+            const remainingLive = Math.max(0, liveStock - cartQty);
             const isAllInBasket = (remainingLive <= 0);
             const isExpired = window.isItemExpired(item.expiry);
 
@@ -3407,8 +3397,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 const inCart = (state.cart || []).find(c => String(c.item.id) === String(id));
                 const inCartQty = inCart ? (parseInt(inCart.qty, 10) || 0) : 0;
-                const totalStock = item.originalQty != null ? parseInt(item.originalQty, 10) : ((parseInt(item.qty != null ? item.qty : item.quantity, 10) || 0) + inCartQty);
-                const maxAvailable = Math.max(0, totalStock - inCartQty);
+                const liveStock = parseInt(item.quantity != null ? item.quantity : item.qty, 10) || 0;
+                const maxAvailable = Math.max(0, liveStock - inCartQty);
 
                 if (btn.classList.contains('plus')) {
                     if (val < maxAvailable) {
@@ -3449,11 +3439,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const inCart = (state.cart || []).find(c => String(c.item.id) === String(item.id));
         const currentInCart = inCart ? (parseInt(inCart.qty) || 0) : 0;
-        const totalStock = item.originalQty != null ? item.originalQty : ((parseInt(item.qty || item.quantity) || 0) + currentInCart);
-        const maxCanAdd = Math.max(0, totalStock - currentInCart);
+        const liveStock = parseInt(item.quantity != null ? item.quantity : item.qty, 10) || 0;
+        const maxCanAdd = Math.max(0, liveStock - currentInCart);
 
         if (maxCanAdd <= 0) {
-            showToast(`All ${totalStock} available portions are already in your basket!`, "info");
+            showToast(`All ${liveStock} available portions are already in your basket!`, "info");
             return;
         }
 
@@ -3462,12 +3452,8 @@ document.addEventListener('DOMContentLoaded', () => {
         if (inCart) {
             inCart.qty += actualQty;
         } else {
-            state.cart.push({ item: { ...item, originalQty: totalStock }, qty: actualQty });
+            state.cart.push({ item: { ...item }, qty: actualQty });
         }
-
-        // Live update remaining quantity on the item
-        item.originalQty = totalStock;
-        item.qty = Math.max(0, totalStock - (currentInCart + actualQty));
 
         updateCartBadge();
         renderExchangeGrid();
@@ -3538,12 +3524,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (!cartItem) return;
                 if (cartItem.qty > 1) {
                     cartItem.qty--;
-                    const originalListing = state.listings.find(l => String(l.id) === String(cartItem.item.id));
-                    if (originalListing) originalListing.qty = (originalListing.qty || 0) + 1;
                 } else {
-                    const removedCartItem = state.cart.splice(idx, 1)[0];
-                    const originalListing = state.listings.find(l => String(l.id) === String(removedCartItem.item.id));
-                    if (originalListing) originalListing.qty = (originalListing.qty || 0) + (removedCartItem.qty || 1);
+                    state.cart.splice(idx, 1);
                 }
                 renderCartItems();
                 updateCartBadge();
@@ -3557,15 +3539,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 const cartItem = state.cart[idx];
                 if (!cartItem) return;
                 const originalListing = state.listings.find(l => String(l.id) === String(cartItem.item.id));
-                const totalStock = (cartItem.item.originalQty != null) 
-                    ? cartItem.item.originalQty 
-                    : (originalListing ? (originalListing.originalQty || ((parseInt(originalListing.qty) || 0) + cartItem.qty)) : cartItem.qty);
+                const totalStock = originalListing 
+                    ? (parseInt(originalListing.quantity != null ? originalListing.quantity : originalListing.qty, 10) || 0)
+                    : (parseInt(cartItem.item.quantity != null ? cartItem.item.quantity : cartItem.item.qty, 10) || cartItem.qty);
 
                 if (cartItem.qty < totalStock) {
                     cartItem.qty++;
-                    if (originalListing && originalListing.qty > 0) {
-                        originalListing.qty--;
-                    }
                     renderCartItems();
                     updateCartBadge();
                     renderExchangeGrid();
@@ -3578,13 +3557,7 @@ document.addEventListener('DOMContentLoaded', () => {
         document.querySelectorAll('.remove-item').forEach(btn => {
             btn.addEventListener('click', () => {
                 const idx = btn.dataset.idx;
-                const removedCartItem = state.cart.splice(idx, 1)[0];
-                if (!removedCartItem) return;
-                const originalListing = state.listings.find(l => String(l.id) === String(removedCartItem.item.id));
-                if (originalListing) {
-                    originalListing.qty = (originalListing.qty || 0) + (removedCartItem.qty || 0);
-                }
-
+                state.cart.splice(idx, 1);
                 renderCartItems();
                 updateCartBadge();
                 renderExchangeGrid();
@@ -3796,6 +3769,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         document.getElementById('submit-btn').innerHTML = '<i class="fa-solid fa-leaf"></i> Publish Listing';
                         if (cancelBtn) cancelBtn.style.display = 'none';
                         resetExpiryInput();
+                        if (typeof broadcastInventoryChange === 'function') broadcastInventoryChange();
                         refreshState(); // Refresh everything
                     } else {
                         showToast(data.error || "Operation failed", "error");

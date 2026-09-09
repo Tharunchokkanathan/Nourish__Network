@@ -265,6 +265,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         body: JSON.stringify({ listingId: id })
                     });
                     if (res.ok) {
+                        try { localStorage.setItem('nn_sync_ping', Date.now().toString()); } catch (e) {}
                         alert("Food claimed successfully! 🤝");
                         renderDashboard();
                     } else {
