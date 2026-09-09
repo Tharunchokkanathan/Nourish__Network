@@ -48,6 +48,7 @@ async function resetDatabase() {
                     website TEXT,
                     fssaicode TEXT,
                     darpanid TEXT,
+                    ngoregtype TEXT,
                     pickupwindow TEXT,
                     pickupinstructions TEXT,
                     isverified INTEGER DEFAULT 0,
@@ -98,8 +99,18 @@ async function resetDatabase() {
                     notes TEXT,
                     createdat TIMESTAMP NOT NULL DEFAULT NOW()
                 );
+
+                -- Re-seed demo users so instant demo logins and foreign keys work cleanly
+                INSERT INTO users (id, accounttype, organizationname, email, password, isverified, darpanid, ngoregtype, fssaicode)
+                VALUES 
+                (888, 'restaurant', 'Elite Catering Services', 'serverdemo@gmail.com', '$2a$10$demoHashedPasswordPlaceHolder888', 1, '', '', '12345678901234'),
+                (999, 'ngo', 'Global Outreach Foundation', 'ngodemo@gmail.com', '$2a$10$demoHashedPasswordPlaceHolder999', 1, 'TN/2023/0345678', 'darpan', '')
+                ON CONFLICT (id) DO UPDATE SET 
+                    organizationname = EXCLUDED.organizationname,
+                    accounttype = EXCLUDED.accounttype,
+                    email = EXCLUDED.email;
             `);
-            console.log('  ✓ PostgreSQL tables recreated successfully!');
+            console.log('  ✓ PostgreSQL tables recreated & demo accounts seeded successfully!');
             await pool.end();
         } catch (err) {
             console.error('❌ Error resetting PostgreSQL database:', err.message);
@@ -139,6 +150,7 @@ async function resetDatabase() {
                     website                 TEXT,
                     fssaiCode               TEXT,
                     darpanId                TEXT,
+                    ngoRegType              TEXT,
                     pickupWindow            TEXT,
                     pickupInstructions     TEXT,
                     isVerified              INTEGER  DEFAULT 0,
@@ -201,14 +213,22 @@ async function resetDatabase() {
                     FOREIGN KEY (buyerId)   REFERENCES users(id),
                     FOREIGN KEY (listingId) REFERENCES food_listings(id)
                 );
+            `);
+
+            sqliteDb.run(`
+                INSERT OR REPLACE INTO users (id, accountType, organizationName, email, password, isVerified, darpanId, ngoRegType, fssaiCode)
+                VALUES 
+                (888, 'restaurant', 'Elite Catering Services', 'serverdemo@gmail.com', '$2a$10$demoHashedPasswordPlaceHolder888', 1, '', '', '12345678901234'),
+                (999, 'ngo', 'Global Outreach Foundation', 'ngodemo@gmail.com', '$2a$10$demoHashedPasswordPlaceHolder999', 1, 'TN/2023/0345678', 'darpan', '');
             `, (err) => {
                 if (err) {
                     console.error('❌ Error resetting SQLite tables:', err.message);
                 } else {
-                    console.log('  ✓ SQLite tables recreated successfully!');
+                    console.log('  ✓ SQLite tables recreated & demo accounts seeded successfully!');
                 }
                 sqliteDb.close();
                 console.log('🎉 Database reset complete!');
+                process.exit(0);
             });
         });
     });
