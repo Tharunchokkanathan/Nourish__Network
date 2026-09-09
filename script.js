@@ -1586,15 +1586,67 @@ document.addEventListener('DOMContentLoaded', () => {
             updateSlides();
         }
 
+        function resetAutoAdvance() {
+            if (sliderInterval) clearInterval(sliderInterval);
+            if (slides.length > 1) {
+                sliderInterval = setInterval(nextSlide, 5000);
+            }
+        }
+
         function goToSlide(idx) {
             currentSlide = idx;
             updateSlides();
+            resetAutoAdvance();
         }
 
         const prevBtn = document.getElementById('prevBtn');
         const nextBtn = document.getElementById('nextBtn');
-        if (prevBtn) prevBtn.onclick = prevSlide;
-        if (nextBtn) nextBtn.onclick = nextSlide;
+        if (prevBtn) {
+            prevBtn.onclick = () => {
+                prevSlide();
+                resetAutoAdvance();
+            };
+        }
+        if (nextBtn) {
+            nextBtn.onclick = () => {
+                nextSlide();
+                resetAutoAdvance();
+            };
+        }
+
+        // Mobile Touch Gesture Support (Fluid Swipe left/right)
+        let touchStartX = 0;
+        let touchStartY = 0;
+        let touchEndX = 0;
+        let touchEndY = 0;
+
+        slider.addEventListener('touchstart', (e) => {
+            if (!e.touches || e.touches.length === 0) return;
+            touchStartX = e.touches[0].clientX;
+            touchStartY = e.touches[0].clientY;
+            touchEndX = touchStartX;
+            touchEndY = touchStartY;
+            if (sliderInterval) clearInterval(sliderInterval);
+        }, { passive: true });
+
+        slider.addEventListener('touchmove', (e) => {
+            if (!e.touches || e.touches.length === 0) return;
+            touchEndX = e.touches[0].clientX;
+            touchEndY = e.touches[0].clientY;
+        }, { passive: true });
+
+        slider.addEventListener('touchend', () => {
+            const deltaX = touchEndX - touchStartX;
+            const deltaY = touchEndY - touchStartY;
+            if (Math.abs(deltaX) > 35 && Math.abs(deltaX) > Math.abs(deltaY)) {
+                if (deltaX < 0) {
+                    nextSlide(); // swipe left -> next slide
+                } else {
+                    prevSlide(); // swipe right -> previous slide
+                }
+            }
+            resetAutoAdvance();
+        }, { passive: true });
 
         if (slides.length > 1) {
             sliderInterval = setInterval(nextSlide, 5000);
