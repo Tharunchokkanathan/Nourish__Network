@@ -1,11 +1,12 @@
 const nodemailer = require('nodemailer');
 require('dotenv').config();
 
+const BREVO_API_KEY = process.env.BREVO_API_KEY;
 const GOOGLE_BRIDGE_URL = process.env.GMAIL_HTTP_BRIDGE || "https://script.google.com/macros/s/AKfycbwEgyW84T294uID8TpJckcys1gPWVfrJYVThie3BOXeO2XUw82xoIih0jGqJh4UeQ7M/exec";
 
 let isSmtpReady = false;
 
-// Ultra-fast pre-warmed pooled transporter using standard SSL Port 465
+// Pooled transporter using standard SSL Port 465
 const transporter = nodemailer.createTransport({
     host: 'smtp.gmail.com',
     port: 465,
@@ -28,10 +29,10 @@ const transporter = nodemailer.createTransport({
 // Pre-warm the SMTP connection pool on boot
 transporter.verify((error) => {
     if (error) {
-        console.warn('⚠️ SMTP Port 465 Pool Warning (will route via Google HTTPS):', error.message);
+        console.warn('⚠️ SMTP Port 465 Pool Warning:', error.message);
         isSmtpReady = false;
     } else {
-        console.log('⚡ SMTP Connection Pool (Port 465 SSL) is warm & ready for sub-2s delivery.');
+        console.log('⚡ SMTP Connection Pool (Port 465 SSL) is warm & ready.');
         isSmtpReady = true;
     }
 });
@@ -66,40 +67,68 @@ function sanitizeSubjectForEmail(subject) {
 }
 
 /**
- * Universal Ultra-Fast Dual-Engine Dispatcher:
- * 1. Primary: Direct Pooled SMTP (Port 465 SSL) - Delivers in ~1.5 to 2 seconds.
- * 2. Fallback: Google Apps Script HTTPS Bridge - Reliable fallback for restricted cloud networks.
+ * Universal Multi-Engine Dispatcher:
+ * 1. Primary: Brevo Enterprise HTTPS API (Port 443) - 300 free emails/day, ~1.0s delivery, works on Render & Local.
+ * 2. Secondary: Direct Gmail SMTP (Port 465 SSL) - Fast sub-2s delivery.
+ * 3. Tertiary: Google Apps Script HTTPS Bridge - Fallback.
  */
 async function dispatchEmail({ toEmail, subject, html, devFallbackUrl }) {
     const cleanSubject = sanitizeSubjectForEmail(subject);
     const cleanHtml = sanitizeHtmlForEmail(html);
 
-    // Fast Direct SMTP Helper with 8s timeout
-    const trySmtp = () => {
-        return new Promise(async (resolve, reject) => {
-            const timer = setTimeout(() => reject(new Error('SMTP timeout (8000ms)')), 8000);
-            try {
-                const info = await transporter.sendMail({
-                    from: `"Nourish Network" <${process.env.GMAIL_USER || 'nourishnetwork.official@gmail.com'}>`,
-                    to: toEmail,
-                    subject: cleanSubject,
-                    html: cleanHtml
-                });
-                clearTimeout(timer);
-                resolve({ success: true, messageId: info.messageId, via: 'fast-smtp-465' });
-            } catch (err) {
-                clearTimeout(timer);
-                reject(err);
-            }
-        });
-    };
-
-    // Google Apps Script HTTPS Bridge Helper with 6s timeout
-    const tryGoogleBridge = async () => {
-        if (!GOOGLE_BRIDGE_URL) throw new Error('No Google Bridge URL configured');
-        const controller = new AbortController();
-        const timer = setTimeout(() => controller.abort(), 6000);
+    // 1. Primary Engine: Brevo Enterprise HTTPS API (Port 443 - Bypasses all Render firewalls & Google quotas)
+    if (BREVO_API_KEY) {
         try {
+            const controller = new AbortController();
+            const timer = setTimeout(() => controller.abort(), 6000);
+            const res = await fetch('https://api.brevo.com/v3/smtp/email', {
+                method: 'POST',
+                headers: {
+                    'api-key': BREVO_API_KEY,
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify({
+                    sender: { name: 'Nourish Network', email: process.env.GMAIL_USER || 'nourishnetwork.official@gmail.com' },
+                    to: [{ email: toEmail }],
+                    subject: cleanSubject,
+                    htmlContent: cleanHtml
+                }),
+                signal: controller.signal
+            });
+            clearTimeout(timer);
+            const data = await res.json();
+            if (res.ok && data && (data.messageId || data.messageIds)) {
+                console.log(`⚡ [Brevo HTTPS Engine] Email sent to ${toEmail}: ${cleanSubject} (ID: ${data.messageId || 'ok'})`);
+                return { success: true, via: 'brevo-https', messageId: data.messageId };
+            } else {
+                console.warn(`⚠️ Brevo API responded with:`, data);
+            }
+        } catch (brevoErr) {
+            console.warn(`⚠️ Brevo HTTPS API attempt failed (${brevoErr.message}), falling back to Direct SMTP...`);
+        }
+    }
+
+    // 2. Secondary Engine: Direct Pooled SMTP (Port 465 SSL)
+    try {
+        const info = await transporter.sendMail({
+            from: `"Nourish Network" <${process.env.GMAIL_USER || 'nourishnetwork.official@gmail.com'}>`,
+            to: toEmail,
+            subject: cleanSubject,
+            html: cleanHtml
+        });
+        isSmtpReady = true;
+        console.log(`⚡ [Direct SMTP 465] Email sent to ${toEmail}: ${cleanSubject}`);
+        return { success: true, messageId: info.messageId, via: 'smtp-465' };
+    } catch (smtpErr) {
+        console.warn(`⚠️ Direct SMTP attempt failed (${smtpErr.message}), falling back to Google HTTPS Bridge...`);
+    }
+
+    // 3. Fallback Engine: Google Apps Script HTTPS Bridge
+    if (GOOGLE_BRIDGE_URL) {
+        try {
+            const controller = new AbortController();
+            const timer = setTimeout(() => controller.abort(), 6000);
             const res = await fetch(GOOGLE_BRIDGE_URL, {
                 method: 'POST',
                 redirect: 'follow',
@@ -116,35 +145,17 @@ async function dispatchEmail({ toEmail, subject, html, devFallbackUrl }) {
             let data = {};
             try { data = JSON.parse(text); } catch (e) {}
             if (data && data.success) {
+                console.log(`✅ [Google HTTPS Engine] Email sent to ${toEmail}: ${cleanSubject}`);
                 return { success: true, via: 'google-https' };
             }
-            throw new Error(text || 'Google Bridge failed');
-        } catch (err) {
-            clearTimeout(timer);
-            throw err;
+        } catch (gasErr) {
+            console.warn(`⚠️ Google HTTPS Bridge error:`, gasErr.message);
         }
-    };
-
-    // 1. Primary Engine: Direct Pooled SMTP (Port 465 SSL)
-    try {
-        const res = await trySmtp();
-        isSmtpReady = true;
-        console.log(`⚡ [Direct Fast SMTP 465] Email sent to ${toEmail}: ${cleanSubject}`);
-        return res;
-    } catch (smtpErr) {
-        console.warn(`⚠️ Direct SMTP attempt failed (${smtpErr.message}), falling back to Google HTTPS Bridge...`);
     }
 
-    // 2. Fallback Engine: Google Apps Script HTTPS Bridge (for restricted container firewalls)
-    try {
-        const res = await tryGoogleBridge();
-        console.log(`✅ [Google HTTPS Engine] Email sent to ${toEmail}: ${cleanSubject}`);
-        return res;
-    } catch (gasErr) {
-        console.error(`❌ All email engines failed for ${toEmail}:`, gasErr.message);
-        if (devFallbackUrl) console.log(`💡 [DEV FALLBACK LINK]: ${devFallbackUrl}`);
-        return { success: false, error: gasErr.message, devFallbackUrl };
-    }
+    console.error(`❌ All email engines failed for ${toEmail}`);
+    if (devFallbackUrl) console.log(`💡 [DEV FALLBACK LINK]: ${devFallbackUrl}`);
+    return { success: false, error: 'All email engines failed', devFallbackUrl };
 }
 
 /**
