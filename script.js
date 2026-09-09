@@ -3691,10 +3691,13 @@ document.addEventListener('DOMContentLoaded', () => {
         });
         const isInitialMount = grid.children.length === 0;
 
-        // Filter out expired items, sold-out items, or garbage demo items for the buyer view
+        // Filter out expired items, sold-out items, crop items, or garbage demo items for the FOOD buyer view
         const validListings = state.listings.filter(item => {
             if (item.name === 'lp.okijuh' || item.name === 'lp,okijuh' || item.name === 'wesrdtfgybh') return false;
             if (item.status === 'sold' || item.status === 'claimed') return false;
+
+            // Exclude crop/agri listings — they belong in the crop_buyer portal only
+            if (item.produceType === 'crop' || item.cropGrade || item.unit === 'Quintal' || item.unit === 'q') return false;
 
             const liveStock = parseInt(item.quantity != null ? item.quantity : item.qty, 10) || 0;
             if (liveStock <= 0) return false;
@@ -4205,7 +4208,12 @@ document.addEventListener('DOMContentLoaded', () => {
         const root = portalsRoot || document.getElementById('nn-portals-root');
         if (!root) return;
         const user = JSON.parse(sessionStorage.getItem('nourishUser') || '{}');
-        const cropListings = state.listings.filter(l => l.vendorId == user.id || l.produceType === 'crop' || l.cropGrade);
+        // Only show THIS seller's own crop listings (not other sellers')
+        const cropListings = state.listings.filter(l => 
+            String(l.vendorId) === String(user.id) &&
+            l.status !== 'sold' &&
+            (parseInt(l.qty || l.quantity) || 0) > 0
+        );
 
         let totalCropKg = 0;
         cropListings.forEach(l => {
@@ -4230,16 +4238,11 @@ document.addEventListener('DOMContentLoaded', () => {
                                 <div>
                                     <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
                                         <h1 class="crop-portal-title" style="font-size: 1.65rem; font-weight: 800; margin: 0; color: var(--crop-text-title);">${user.organizationName || user.name || 'Green Valley Farmers FPO'}</h1>
-                                        ${window.renderCropTrustBadge ? window.renderCropTrustBadge(user) : `
-                                            <span class="crop-trust-badge seller-badge">
-                                                <i class="fa-solid fa-seedling"></i> Verified Crop Producer / Mandi
-                                            </span>
-                                        `}
                                     </div>
                                     <div style="display: flex; align-items: center; gap: 18px; margin-top: 6px; font-size: 0.85rem; color: var(--crop-text-muted); flex-wrap: wrap;">
-                                        <span><i class="fa-solid fa-phone" style="color: #f59e0b;"></i> ${user.phone || '+91 98765 12340'}</span>
-                                        <span><i class="fa-solid fa-envelope" style="color: #f59e0b;"></i> ${user.email || 'farmer@domain.com'}</span>
-                                        <span><i class="fa-solid fa-location-dot" style="color: #f59e0b;"></i> ${user.address || 'APMC Yard / Regional Mandi Hub'}</span>
+                                        ${user.phone ? `<span><i class="fa-solid fa-phone" style="color: #f59e0b;"></i> ${user.phone}</span>` : ''}
+                                        ${user.email ? `<span><i class="fa-solid fa-envelope" style="color: #f59e0b;"></i> ${user.email}</span>` : ''}
+                                        ${user.address ? `<span><i class="fa-solid fa-location-dot" style="color: #f59e0b;"></i> ${user.address}</span>` : ''}
                                     </div>
                                 </div>
                             </div>
@@ -4486,11 +4489,8 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!root) return;
         const user = JSON.parse(sessionStorage.getItem('nourishUser') || '{}');
 
-        // Filter available crops (crops or items with cropGrade or produceType === 'crop')
+        // Strictly filter to ONLY crop/agri listings — never fall back to food listings
         let allCrops = state.listings.filter(l => l.produceType === 'crop' || l.cropGrade || l.unit === 'Quintal' || l.unit === 'q');
-        if (allCrops.length === 0) {
-            allCrops = state.listings; // fallback
-        }
 
         let filteredCrops = allCrops.filter(item => {
             if (item.status === 'sold' || item.status === 'claimed') return false;
@@ -4516,11 +4516,6 @@ document.addEventListener('DOMContentLoaded', () => {
                                 <div>
                                     <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
                                         <h1 class="crop-portal-title" style="font-size: 1.65rem; font-weight: 800; margin: 0; color: var(--crop-text-title);">${user.organizationName || user.name || 'Sahyadri Agro-Processing MSME'}</h1>
-                                        ${window.renderCropTrustBadge ? window.renderCropTrustBadge(user) : `
-                                            <span class="crop-trust-badge buyer-badge">
-                                                <i class="fa-solid fa-industry"></i> Verified Agro-Processing MSME
-                                            </span>
-                                        `}
                                     </div>
                                     <div style="display: flex; align-items: center; gap: 18px; margin-top: 6px; font-size: 0.85rem; color: var(--crop-text-muted); flex-wrap: wrap;">
                                         <span><i class="fa-solid fa-phone" style="color: #10b981;"></i> ${user.phone || '+91 98765 56780'}</span>
