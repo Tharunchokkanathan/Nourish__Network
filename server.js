@@ -1660,8 +1660,7 @@ app.put('/api/listings/:id', authenticateToken, async (req, res) => {
     const {
         name, description, category, price,
         quantity, unit, expiryTime, pickupTime,
-        condition, allergens, imageUrl, status,
-        cropGrade, harvestDate
+        condition, allergens, imageUrl, status
     } = req.body;
 
     // First verify ownership
@@ -1692,9 +1691,7 @@ app.put('/api/listings/:id', authenticateToken, async (req, res) => {
                 condition   = COALESCE(?, condition),
                 allergens   = COALESCE(?, allergens),
                 imageUrl    = COALESCE(?, imageUrl),
-                status      = COALESCE(?, status),
-                cropGrade   = COALESCE(?, cropGrade),
-                harvestDate = COALESCE(?, harvestDate)
+                status      = COALESCE(?, status)
             WHERE id = ?
         `;
         const params = [
@@ -1703,7 +1700,6 @@ app.put('/api/listings/:id', authenticateToken, async (req, res) => {
             quantity || null, unit || null, expiryTime || null,
             pickupTime || null, condition || null,
             allergens || null, finalImageUrl || null, status || null,
-            cropGrade || null, harvestDate || null,
             id
         ];
 

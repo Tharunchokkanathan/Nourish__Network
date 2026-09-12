@@ -148,7 +148,7 @@ async function resetDatabase() {
             sqliteDb.run(`
                 CREATE TABLE IF NOT EXISTS users (
                     id                      INTEGER  PRIMARY KEY AUTOINCREMENT,
-                    accountType             TEXT     NOT NULL CHECK(accountType IN ('restaurant','vendor','ngo','shelter','crop_seller','crop_buyer')),
+                    accountType             TEXT     NOT NULL CHECK(accountType IN ('restaurant','vendor','ngo','shelter')),
                     organizationName        TEXT    NOT NULL,
                     email                   TEXT     NOT NULL UNIQUE,
                     password                TEXT     NOT NULL,
@@ -204,9 +204,6 @@ async function resetDatabase() {
                     status       TEXT    NOT NULL DEFAULT 'available'
                                     CHECK(status IN ('available','claimed','sold','expired')),
                     claimedBy    INTEGER,
-                    cropGrade    TEXT,
-                    produceType  TEXT DEFAULT 'food',
-                    harvestDate  TEXT,
                     datePosted   TEXT    NOT NULL DEFAULT (datetime('now')),
                     FOREIGN KEY (vendorId)  REFERENCES users(id),
                     FOREIGN KEY (claimedBy) REFERENCES users(id)
@@ -230,12 +227,10 @@ async function resetDatabase() {
             `);
 
             sqliteDb.run(`
-                INSERT OR REPLACE INTO users (id, accountType, organizationName, email, password, isVerified, darpanId, ngoRegType, fssaiCode, phone)
+                INSERT OR REPLACE INTO users (id, accountType, organizationName, email, password, isVerified, darpanId, ngoRegType, fssaiCode)
                 VALUES 
-                (888, 'restaurant', 'Elite Catering Services', 'serverdemo@gmail.com', '$2a$10$demoHashedPasswordPlaceHolder888', 1, '', '', '12345678901234', '+91 98765 43210'),
-                (999, 'ngo', 'Global Outreach Foundation', 'ngodemo@gmail.com', '$2a$10$demoHashedPasswordPlaceHolder999', 1, 'TN/2023/0345678', 'darpan', '', '+91 98765 87654'),
-                (777, 'crop_seller', 'Green Valley Farmers FPO', 'farmerdemo@gmail.com', '$2a$10$demoHashedPasswordPlaceHolder888', 1, '', '', '', '+91 98765 12340'),
-                (666, 'crop_buyer', 'Sahyadri Agro-Processing MSME', 'buyeragridemo@gmail.com', '$2a$10$demoHashedPasswordPlaceHolder999', 1, '', '', '', '+91 98765 56780');
+                (888, 'restaurant', 'Elite Catering Services', 'serverdemo@gmail.com', '$2a$10$demoHashedPasswordPlaceHolder888', 1, '', '', '12345678901234'),
+                (999, 'ngo', 'Global Outreach Foundation', 'ngodemo@gmail.com', '$2a$10$demoHashedPasswordPlaceHolder999', 1, 'TN/2023/0345678', 'darpan', '');
             `, (err) => {
                 if (err) {
                     console.error('❌ Error resetting SQLite tables:', err.message);

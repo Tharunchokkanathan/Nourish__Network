@@ -1,22 +1,20 @@
 const nodemailer = require('nodemailer');
 require('dotenv').config();
 
-const BREVO_API_KEY = process.env.BREVO_API_KEY;
 const GOOGLE_BRIDGE_URL = process.env.GMAIL_HTTP_BRIDGE || "https://script.google.com/macros/s/AKfycbwEgyW84T294uID8TpJckcys1gPWVfrJYVThie3BOXeO2XUw82xoIih0jGqJh4UeQ7M/exec";
 
-let isSmtpReady = false;
-
-// Pooled transporter using standard SSL Port 465
+// High-performance pre-warmed pooled transporter using standard Cloud-compatible Port 587 (STARTTLS)
 const transporter = nodemailer.createTransport({
     host: 'smtp.gmail.com',
-    port: 465,
-    secure: true,
+    port: 587,
+    secure: false,
+    requireTLS: true,
     pool: true,
     maxConnections: 10,
     maxMessages: Infinity,
-    connectionTimeout: 5000,
-    greetingTimeout: 5000,
-    socketTimeout: 15000,
+    connectionTimeout: 10000,
+    greetingTimeout: 10000,
+    socketTimeout: 60000,
     auth: {
         user: process.env.GMAIL_USER || 'nourishnetwork.official@gmail.com',
         pass: process.env.GMAIL_APP_PASS || 'mrqkdqumrbihwncd'
@@ -29,11 +27,9 @@ const transporter = nodemailer.createTransport({
 // Pre-warm the SMTP connection pool on boot
 transporter.verify((error) => {
     if (error) {
-        console.warn('⚠️ SMTP Port 465 Pool Warning:', error.message);
-        isSmtpReady = false;
+        console.warn('⚠️ SMTP Connection Pool Warm-up Warning:', error.message);
     } else {
-        console.log('⚡ SMTP Connection Pool (Port 465 SSL) is warm & ready.');
-        isSmtpReady = true;
+        console.log('⚡ SMTP Connection Pool is warm & ready for sub-second delivery.');
     }
 });
 
@@ -67,68 +63,17 @@ function sanitizeSubjectForEmail(subject) {
 }
 
 /**
- * Universal Multi-Engine Dispatcher:
- * 1. Primary: Brevo Enterprise HTTPS API (Port 443) - 300 free emails/day, ~1.0s delivery, works on Render & Local.
- * 2. Secondary: Direct Gmail SMTP (Port 465 SSL) - Fast sub-2s delivery.
- * 3. Tertiary: Google Apps Script HTTPS Bridge - Fallback.
+ * Universal Dual-Engine Dispatcher:
+ * 1. Primary: Google Apps Script HTTPS Bridge (100% unrestricted on Render via Port 443)
+ * 2. Secondary Fallback: SMTP Transporter (Localhost)
  */
 async function dispatchEmail({ toEmail, subject, html, devFallbackUrl }) {
     const cleanSubject = sanitizeSubjectForEmail(subject);
     const cleanHtml = sanitizeHtmlForEmail(html);
 
-    // 1. Primary Engine: Brevo Enterprise HTTPS API (Port 443 - Bypasses all Render firewalls & Google quotas)
-    if (BREVO_API_KEY) {
-        try {
-            const controller = new AbortController();
-            const timer = setTimeout(() => controller.abort(), 6000);
-            const res = await fetch('https://api.brevo.com/v3/smtp/email', {
-                method: 'POST',
-                headers: {
-                    'api-key': BREVO_API_KEY,
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/json'
-                },
-                body: JSON.stringify({
-                    sender: { name: 'Nourish Network', email: process.env.GMAIL_USER || 'nourishnetwork.official@gmail.com' },
-                    to: [{ email: toEmail }],
-                    subject: cleanSubject,
-                    htmlContent: cleanHtml
-                }),
-                signal: controller.signal
-            });
-            clearTimeout(timer);
-            const data = await res.json();
-            if (res.ok && data && (data.messageId || data.messageIds)) {
-                console.log(`⚡ [Brevo HTTPS Engine] Email sent to ${toEmail}: ${cleanSubject} (ID: ${data.messageId || 'ok'})`);
-                return { success: true, via: 'brevo-https', messageId: data.messageId };
-            } else {
-                console.warn(`⚠️ Brevo API responded with:`, data);
-            }
-        } catch (brevoErr) {
-            console.warn(`⚠️ Brevo HTTPS API attempt failed (${brevoErr.message}), falling back to Direct SMTP...`);
-        }
-    }
-
-    // 2. Secondary Engine: Direct Pooled SMTP (Port 465 SSL)
-    try {
-        const info = await transporter.sendMail({
-            from: `"Nourish Network" <${process.env.GMAIL_USER || 'nourishnetwork.official@gmail.com'}>`,
-            to: toEmail,
-            subject: cleanSubject,
-            html: cleanHtml
-        });
-        isSmtpReady = true;
-        console.log(`⚡ [Direct SMTP 465] Email sent to ${toEmail}: ${cleanSubject}`);
-        return { success: true, messageId: info.messageId, via: 'smtp-465' };
-    } catch (smtpErr) {
-        console.warn(`⚠️ Direct SMTP attempt failed (${smtpErr.message}), falling back to Google HTTPS Bridge...`);
-    }
-
-    // 3. Fallback Engine: Google Apps Script HTTPS Bridge
+    // 1. Google Apps Script HTTPS Bridge
     if (GOOGLE_BRIDGE_URL) {
         try {
-            const controller = new AbortController();
-            const timer = setTimeout(() => controller.abort(), 6000);
             const res = await fetch(GOOGLE_BRIDGE_URL, {
                 method: 'POST',
                 redirect: 'follow',
@@ -137,25 +82,35 @@ async function dispatchEmail({ toEmail, subject, html, devFallbackUrl }) {
                     to: toEmail,
                     subject: cleanSubject,
                     html: cleanHtml
-                }),
-                signal: controller.signal
+                })
             });
-            clearTimeout(timer);
             const text = await res.text();
             let data = {};
-            try { data = JSON.parse(text); } catch (e) {}
+            try { data = JSON.parse(text); } catch(e) {}
             if (data && data.success) {
                 console.log(`✅ [Google HTTPS Engine] Email sent to ${toEmail}: ${cleanSubject}`);
                 return { success: true, via: 'google-https' };
             }
-        } catch (gasErr) {
-            console.warn(`⚠️ Google HTTPS Bridge error:`, gasErr.message);
+        } catch (e) {
+            console.warn(`⚠️ Google HTTPS Bridge error, trying SMTP fallback:`, e.message);
         }
     }
 
-    console.error(`❌ All email engines failed for ${toEmail}`);
-    if (devFallbackUrl) console.log(`💡 [DEV FALLBACK LINK]: ${devFallbackUrl}`);
-    return { success: false, error: 'All email engines failed', devFallbackUrl };
+    // 2. SMTP Fallback
+    try {
+        const info = await transporter.sendMail({
+            from: `"Nourish Network" <${process.env.GMAIL_USER || 'nourishnetwork.official@gmail.com'}>`,
+            to: toEmail,
+            subject: cleanSubject,
+            html: cleanHtml
+        });
+        console.log(`✅ [SMTP] Email sent to ${toEmail}: ${info.messageId}`);
+        return { success: true, messageId: info.messageId, via: 'smtp' };
+    } catch (err) {
+        console.error(`⚠️ Failed to send email to ${toEmail}:`, err.message);
+        if (devFallbackUrl) console.log(`💡 [DEV FALLBACK LINK]: ${devFallbackUrl}`);
+        return { success: false, error: err.message, devFallbackUrl };
+    }
 }
 
 /**
@@ -711,7 +666,8 @@ async function sendFoodPublishedBroadcastEmail({ buyers, sellerName, foodItem, h
         : 'Available Today';
     const priceDisplay = (parseFloat(foodItem.price) === 0 || !foodItem.price) ? 'Free Donation (&#8377;0)' : `&#8377;${foodItem.price} / portion`;
 
-    const broadcastPromises = buyers.map(buyer => {
+    const results = [];
+    for (const buyer of buyers) {
         const htmlTemplate = `
         <!DOCTYPE html>
         <html>
@@ -843,21 +799,16 @@ async function sendFoodPublishedBroadcastEmail({ buyers, sellerName, foodItem, h
                             <span class="detail-value">${foodItem.quantity} ${foodItem.unit || 'Portions'}</span>
                         </div>
                         <div class="detail-row">
-                            <span class="detail-label">Price:</span>
+                            <span class="detail-label">Pricing:</span>
                             <span class="detail-value">${priceDisplay}</span>
                         </div>
                         <div class="detail-row">
-                            <span class="detail-label">Pickup Expiry Window:</span>
+                            <span class="detail-label">Expiry / Best Before:</span>
                             <span class="detail-value">${formattedExpiry}</span>
                         </div>
-                        ${foodItem.description ? `
-                        <div class="detail-row">
-                            <span class="detail-label">Details:</span>
-                            <span class="detail-value">${foodItem.description}</span>
-                        </div>` : ''}
                     </div>
 
-                    <a href="${dashboardUrl}" class="btn-cta" target="_blank">View &amp; Claim in Dashboard &#128640;</a>
+                    <a href="${dashboardUrl}" class="btn-cta" target="_blank">Check Food &amp; Claim in Dashboard &#128640;</a>
                 </div>
                 <div class="footer">
                     &copy; ${new Date().getFullYear()} Nourish Network. Connecting fresh food with communities in need.
@@ -867,17 +818,14 @@ async function sendFoodPublishedBroadcastEmail({ buyers, sellerName, foodItem, h
         </html>
         `;
 
-        return dispatchEmail({
+        const res = await dispatchEmail({
             toEmail: buyer.email,
             subject: `Fresh Food Alert: ${foodItem.name} from ${sellerName} - Nourish Network`,
             html: htmlTemplate
         });
-    });
-
-    const results = await Promise.allSettled(broadcastPromises);
-    const count = results.filter(r => r.status === 'fulfilled' && r.value && r.value.success).length;
-    console.log(`📢 [Parallel Broadcast] Dispatched ${count}/${buyers.length} notification emails simultaneously.`);
-    return { success: true, count };
+        results.push(res);
+    }
+    return { success: true, count: results.length };
 }
 
 /**
