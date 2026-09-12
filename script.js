@@ -121,7 +121,7 @@ window.validateFSSAI = function (code) {
     if (!stateName) {
         return {
             valid: false,
-            message: `Invalid state code (${stateCode}). Expected 01â€“37`,
+            message: `Invalid state code (${stateCode}). Expected 01–37`,
             clean
         };
     }
@@ -130,7 +130,7 @@ window.validateFSSAI = function (code) {
     if (isNaN(yearCode) || yearCode < 10 || yearCode > (currentYearShort + 1)) {
         return {
             valid: false,
-            message: `Unlikely issuance year 20${clean.substring(3, 5)}. Expected 2010â€“20${currentYearShort + 1}`,
+            message: `Unlikely issuance year 20${clean.substring(3, 5)}. Expected 2010–20${currentYearShort + 1}`,
             clean
         };
     }
@@ -142,7 +142,7 @@ window.validateFSSAI = function (code) {
         stateName,
         year: `20${clean.substring(3, 5)}`,
         serial: serialNum,
-        message: `âœ“ Valid FSSAI: ${stateName} Â· ${typeStr} Â· Year 20${clean.substring(3, 5)}`
+        message: `✓ Valid FSSAI: ${stateName} · ${typeStr} · Year 20${clean.substring(3, 5)}`
     };
 };
 
@@ -167,7 +167,7 @@ window.validateDARPAN = function (code) {
         stateCode,
         year,
         stateName,
-        message: `âœ“ Valid DARPAN: ${stateName} Â· Year ${year}`
+        message: `✓ Valid DARPAN: ${stateName} · Year ${year}`
     };
 };
 
@@ -212,7 +212,7 @@ window.validateTrustDeed = function (code) {
                 stateName,
                 year,
                 serial: p1[4],
-                message: `âœ“ Valid State Society: ${stateName} Â· Year ${year} (Reg #${p1[4]})`
+                message: `✓ Valid State Society: ${stateName} · Year ${year} (Reg #${p1[4]})`
             };
         }
     }
@@ -229,7 +229,7 @@ window.validateTrustDeed = function (code) {
                 stateName,
                 year,
                 serial: p2[2],
-                message: `âœ“ Valid Registered Deed: ${stateName} Â· Year ${year} (#${p2[2]})`
+                message: `✓ Valid Registered Deed: ${stateName} · Year ${year} (#${p2[2]})`
             };
         }
     }
@@ -243,7 +243,7 @@ window.validateTrustDeed = function (code) {
             clean,
             stateName,
             serial: p3[3],
-            message: `âœ“ Valid Registered Non-Profit: ${stateName} (Deed #${p3[3]})`
+            message: `✓ Valid Registered Non-Profit: ${stateName} (Deed #${p3[3]})`
         };
     }
 
@@ -252,7 +252,7 @@ window.validateTrustDeed = function (code) {
         return {
             valid: true,
             clean,
-            message: `âœ“ Valid Registered Trust Deed Record: ${clean}`
+            message: `✓ Valid Registered Trust Deed Record: ${clean}`
         };
     }
 
@@ -279,14 +279,13 @@ window.renderNgoTrustBadge = function (user) {
     const code = user.darpanId || user.darpanid || '';
     const type = user.ngoRegType || (code.includes('/') ? 'darpan' : 'trust');
     if (!code) {
-        return '<span style="color:#f59e0b; font-size:0.75rem;"><i class="fa-solid fa-triangle-exclamation"></i> Accreditation not set â€” update in Settings</span>';
+        return '<span style="color:#f59e0b; font-size:0.75rem;"><i class="fa-solid fa-triangle-exclamation"></i> Accreditation not set — update in Settings</span>';
     }
     if (type === 'trust') {
         return `<span class="grassroots-trust-badge" style="font-size:0.75rem; padding: 3px 10px; border-radius: 12px; background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.35); display: inline-flex; align-items: center; gap: 5px;" title="Registered State Society / Trust Deed"><i class="fa-solid fa-hand-holding-heart"></i> <strong style="font-family:monospace; letter-spacing:1px;">${code}</strong> <span style="font-weight:700;">TRUST/SOCIETY</span></span>`;
     }
     return `<span class="darpan-trust-badge" style="font-size:0.75rem; padding: 3px 10px; border-radius: 12px; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.35); display: inline-flex; align-items: center; gap: 5px;" title="NITI Aayog DARPAN Verified NGO"><i class="fa-solid fa-building-ngo"></i> <strong style="font-family:monospace; letter-spacing:1px;">${code}</strong> <span style="font-weight:700;">DARPAN</span></span>`;
 };
-
 
 window.toLocalDateTimeLocalString = function (dateInput) {
     if (!dateInput) return '';
@@ -814,7 +813,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (submitBtn) submitBtn.innerHTML = '<i class="fa-solid fa-leaf"></i> Publish Listing';
 
         if (window.__showToast) {
-            window.__showToast(`Preset "${presetName}" applied! ðŸŒ¿`, 'info');
+            window.__showToast(`Preset "${presetName}" applied! 🌿`, 'info');
         }
     };
 
@@ -965,7 +964,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     orderStatus: 'confirmed',
                     notes: notes,
                     createdAt: new Date().toISOString(),
-                    pickupTime: c.item.pickupTime || c.item.pickup || 'Ready for Pickup / Mandi Dispatch',
+                    pickupTime: c.item.pickupTime || c.item.pickup || 'Ready for Pickup',
 
                     // Seller information (viewed in Buyer history)
                     vendorId: c.item.vendorId || c.item.vendorid || 888,
@@ -975,7 +974,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     sellerEmail: c.item.vendorEmail || 'serverdemo@gmail.com',
                     sellerPhone: c.item.vendorPhone || '+91 98400 12345',
                     sellerContactPerson: c.item.contactPerson || 'Verified Seller Lead',
-                    sellerFssaiCode: c.item.fssaiCode || '',
+                    sellerFssaiCode: c.item.fssaiCode || '12345678901234',
                     sellerAddress: c.item.address || '45, Sterling Road, Nungambakkam, Chennai',
                     sellerPickupWindow: c.item.pickupWindow || '9:00 PM - 11:00 PM',
                     sellerAvatar: c.item.vendorAvatar || 'assets/default-avatar.jpg',
@@ -985,10 +984,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     buyerName: user.organizationName || user.name || 'Global Outreach Foundation',
                     buyerType: user.accountType || user.type || 'ngo',
                     buyerEmail: user.email || 'ngodemo@gmail.com',
-                    buyerPhone: user.publicPhone || user.phone || '+91 98765 56780',
+                    buyerPhone: user.publicPhone || user.phone || '+91 98840 56789',
                     buyerContactPerson: user.contactPerson || 'Verified NGO Lead',
-                    buyerDarpanId: user.darpanId || '',
-                    buyerNgoRegType: user.ngoRegType || '',
+                    buyerDarpanId: user.darpanId || 'TN/2023/0345678',
+                    buyerNgoRegType: user.ngoRegType || 'darpan',
                     buyerAddress: user.address || '12, Besant Nagar, Chennai',
                     buyerAvatar: user.avatarUrl || 'assets/default-avatar.jpg'
                 };
@@ -1002,7 +1001,7 @@ document.addEventListener('DOMContentLoaded', () => {
             localOrders.unshift(...newOrders);
             localStorage.setItem('nn_local_orders', JSON.stringify(localOrders));
 
-            // Log purchases for platform live impact stats
+            // Log purchase for platform live impact stats
             const purchases = JSON.parse(localStorage.getItem('nn_purchases') || '[]');
             const totalPortions = state.cart.reduce((sum, item) => sum + (parseInt(item.qty, 10) || 1), 0);
             purchases.push({
@@ -1040,7 +1039,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 alert("Order Placed Successfully!");
             }
 
-            if (typeof showToast === 'function') showToast("Order Confirmed! ðŸŒ±", "success");
+            if (typeof showToast === 'function') showToast("Order Confirmed! 🌱", "success");
 
             // Step 5: Broadcast inventory change to all open tabs immediately
             if (typeof broadcastInventoryChange === 'function') {
@@ -1081,7 +1080,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 console.log("Dock: Login/Logout Clicked");
                 const token = sessionStorage.getItem('nourishToken');
                 if (token) {
-                    logout(); // No confirm() â€” it blocks on GitHub Pages
+                    logout(); // No confirm() — it blocks on GitHub Pages
                 } else {
                     showLoginForm();
                 }
@@ -1150,28 +1149,6 @@ document.addEventListener('DOMContentLoaded', () => {
             };
         }
 
-        const addCropDock = document.getElementById('add-crop-dock');
-        if (addCropDock) {
-            addCropDock.onclick = (e) => {
-                e.preventDefault();
-                console.log("Dock: Add Crop Clicked");
-                if (window.openAddCropModal) window.openAddCropModal();
-            };
-        }
-
-        const cropCartDock = document.getElementById('crop-cart-dock');
-        if (cropCartDock) {
-            cropCartDock.onclick = (e) => {
-                e.preventDefault();
-                console.log("Dock: Crop Cart Clicked");
-                const drawer = document.getElementById('cart-drawer');
-                if (drawer) {
-                    drawer.classList.add('active');
-                    if (typeof renderCartItems === 'function') renderCartItems();
-                }
-            };
-        }
-
         const homeDock = document.querySelector('.bottom-nav .nav-item[href="#home"]');
         if (homeDock) {
             homeDock.onclick = (e) => {
@@ -1229,7 +1206,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 let combinedListings = [...uniqueDemoListings, ...filteredApiListings];
                 state.listings = combinedListings;
             } else {
-                // API failed â€” still load demo listings (filter sold-out ones)
+                // API failed — still load demo listings (filter sold-out ones)
                 const allDemo = JSON.parse(localStorage.getItem('nn_demo_listings') || '[]');
                 state.listings = allDemo.filter(d => d.status !== 'sold' && (parseInt(d.qty) || 0) > 0);
             }
@@ -1281,7 +1258,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const isPortalVisible = root && root.style.display !== 'none' && root.dataset.activePortal === state.activePortal;
 
             if (!isPortalVisible && state.activePortal !== 'home') {
-                // Portal was not rendered yet (e.g. freshly logged in) â€” mount it immediately
+                // Portal was not rendered yet (e.g. freshly logged in) — mount it immediately
                 renderPortal();
                 syncDock();
             } else if (hasChanged || !silent) {
@@ -1316,12 +1293,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    function getPortalForUserType(t) {
-        const role = (t || '').toLowerCase();
-        if (role === 'restaurant' || role === 'vendor' || role === 'seller') return 'seller';
-        return 'buyer';
-    }
-
     // --- SESSION PERSISTENCE ---
     function checkSession() {
         console.log("Checking session...");
@@ -1336,7 +1307,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (userStr && token) {
             const user = JSON.parse(userStr);
             const type = (user.type || user.accountType || user.role || '').toLowerCase();
-            state.activePortal = getPortalForUserType(type);
+            state.activePortal = (type === 'restaurant' || type === 'vendor' || type === 'seller') ? 'seller' : 'buyer';
             console.log("Session found, active portal:", state.activePortal);
             sessionStorage.setItem('nourishUser', JSON.stringify(user));
             sessionStorage.setItem('nourishToken', token);
@@ -1414,7 +1385,6 @@ document.addEventListener('DOMContentLoaded', () => {
         const fulfilledEl = document.querySelector('[data-target-stat="fulfilled"]');
         const vendorsEl = document.querySelector('[data-target-stat="vendors"]');
         const ngosEl = document.querySelector('[data-target-stat="ngos"]');
-
 
         if (listedEl) listedEl.setAttribute('data-target', meals);
         if (fulfilledEl) fulfilledEl.setAttribute('data-target', kg);
@@ -1752,12 +1722,6 @@ document.addEventListener('DOMContentLoaded', () => {
     // Toggle Forms
     function showLoginForm() {
         authModal.classList.add('active');
-        const loginEmailInput = document.getElementById('loginEmail');
-        const loginPasswordInput = document.getElementById('loginPassword');
-        if (loginEmailInput && loginEmailInput.value && loginEmailInput.value.includes('demo')) {
-            loginEmailInput.value = '';
-            if (loginPasswordInput) loginPasswordInput.value = '';
-        }
         sessionStorage.removeItem('nourishUser');
         sessionStorage.removeItem('nourishToken');
         localStorage.removeItem('nourishUser');
@@ -1855,32 +1819,9 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // Check if coming from email verification link (?verified=true or ?authToken=...)
+    // Check if coming from email verification link (?verified=true)
     const urlParams = new URLSearchParams(window.location.search);
-    const incomingAuthToken = urlParams.get('authToken');
-    if (incomingAuthToken) {
-        fetch(`${API_BASE}/user/me`, {
-            headers: { 'Authorization': `Bearer ${incomingAuthToken}` }
-        })
-        .then(r => r.ok ? r.json() : null)
-        .then(liveUser => {
-            if (liveUser && liveUser.id) {
-                sessionStorage.setItem('nourishUser', JSON.stringify(liveUser));
-                sessionStorage.setItem('nourishToken', incomingAuthToken);
-                localStorage.setItem('nourishUser', JSON.stringify(liveUser));
-                localStorage.setItem('nourishToken', incomingAuthToken);
-                document.documentElement.classList.add('user-logged-in');
-
-                const t = (liveUser.type || liveUser.accountType || '').toLowerCase();
-                state.activePortal = getPortalForUserType(t);
-                showToast(`âœ¨ Account verified! Welcome, ${liveUser.organizationName || liveUser.name || 'Partner'}! ðŸŽ‰`, 'success');
-                window.history.replaceState({}, document.title, window.location.pathname);
-                renderPortal();
-                syncDock();
-                refreshState();
-            }
-        }).catch(() => {});
-    } else if (urlParams.get('verified') === 'true') {
+    if (urlParams.get('verified') === 'true') {
         const storedUser = sessionStorage.getItem('nourishUser') || localStorage.getItem('nourishUser');
         const storedToken = sessionStorage.getItem('nourishToken') || localStorage.getItem('nourishToken');
         if (storedUser && storedToken) {
@@ -1890,8 +1831,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const parsedUser = JSON.parse(storedUser);
             const t = (parsedUser.type || parsedUser.accountType || '').toLowerCase();
-            state.activePortal = getPortalForUserType(t);
-            showToast(`Email verified successfully! Welcome, ${parsedUser.name || 'Partner'} ðŸŽ‰`, 'success');
+            state.activePortal = (t === 'restaurant' || t === 'vendor' || t === 'seller') ? 'seller' : 'buyer';
+            showToast(`Email verified successfully! Welcome, ${parsedUser.name || 'Partner'} 🎉`, 'success');
             window.history.replaceState({}, document.title, window.location.pathname);
         }
     }
@@ -1970,7 +1911,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     document.documentElement.classList.add('user-logged-in');
                     state.activePortal = 'seller';
                     authModal.classList.remove('active');
-                    showToast("Welcome back, Elite Catering! ðŸ½ï¸");
+                    showToast("Welcome back, Elite Catering! 🍽️");
                     renderPortal();
                     syncDock();
                     refreshState();
@@ -1981,7 +1922,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 showToast("Network error. Please try again.", "error");
             } finally {
                 btnDemoSeller.disabled = false;
-                btnDemoSeller.innerHTML = 'ðŸ½ï¸ Demo: Food Vendor';
+                btnDemoSeller.innerHTML = '🍽️ Demo: Food Vendor';
             }
         });
     }
@@ -2017,7 +1958,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     document.documentElement.classList.add('user-logged-in');
                     state.activePortal = 'buyer';
                     authModal.classList.remove('active');
-                    showToast("Welcome back, Global Outreach! ðŸ¤");
+                    showToast("Welcome back, Global Outreach! 🤝");
                     renderPortal();
                     syncDock();
                     refreshState();
@@ -2028,7 +1969,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 showToast("Network error. Please try again.", "error");
             } finally {
                 btnDemoBuyer.disabled = false;
-                btnDemoBuyer.innerHTML = 'ðŸ¤ Demo: NGO / Shelter';
+                btnDemoBuyer.innerHTML = '🤝 Demo: NGO / Shelter';
             }
         });
     }
@@ -2148,7 +2089,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     authModal.classList.remove('active');
                     if (data.user) {
                         const t = (data.user.type || data.user.accountType || data.user.role || '').toLowerCase();
-                        state.activePortal = getPortalForUserType(t);
+                        state.activePortal = (t === 'restaurant' || t === 'vendor' || t === 'seller') ? 'seller' : 'buyer';
                     }
                     renderPortal();
                     syncDock();
@@ -2161,11 +2102,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (sentEmailEl) sentEmailEl.innerText = data.email || email;
                 const emailModal = document.getElementById('emailVerifyModal');
                 if (emailModal) emailModal.classList.add('active');
-                const otpInput = document.getElementById('verifyOtpInput');
-                if (otpInput) {
-                    otpInput.value = '';
-                    setTimeout(() => otpInput.focus(), 300);
-                }
                 startVerificationPolling(data.email || email);
             } else {
                 showToast(data.error || "Login failed", "error");
@@ -2218,16 +2154,14 @@ document.addEventListener('DOMContentLoaded', () => {
                     localStorage.setItem('last_login_email', email);
                     sessionStorage.setItem('nourishUser', JSON.stringify(data.user));
                     sessionStorage.setItem('nourishToken', data.token);
-                    localStorage.setItem('nourishUser', JSON.stringify(data.user));
-                    localStorage.setItem('nourishToken', data.token);
                     document.documentElement.classList.add('user-logged-in');
 
                     if (data.user) {
                         const t = (data.user.type || data.user.accountType || data.user.role || '').toLowerCase();
-                        state.activePortal = getPortalForUserType(t);
+                        state.activePortal = (t === 'restaurant' || t === 'vendor' || t === 'seller') ? 'seller' : 'buyer';
                     }
 
-                    showToast(`âœ¨ Account verified! Welcome, ${data.user.name || email}! ðŸŽ‰`, "success");
+                    showToast(`✨ Account verified via mobile! Welcome, ${data.user.name || email}! 🎉`, "success");
                     renderPortal();
                     syncDock();
                     refreshState();
@@ -2257,42 +2191,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Resend Verification Email Button
-    const resendVerificationBtn = document.getElementById('resendVerificationBtn');
-    if (resendVerificationBtn) {
-        resendVerificationBtn.addEventListener('click', async () => {
-            const email = (document.getElementById('verifySentEmail')?.innerText || '').trim();
-            if (!email) return;
-            const origText = resendVerificationBtn.innerHTML;
-            resendVerificationBtn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Resending...';
-            resendVerificationBtn.disabled = true;
-            try {
-                const res = await fetch(`${API_BASE}/resend-verification`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ email })
-                });
-                const data = await res.json();
-                if (res.ok) {
-                    showToast("Verification code & link resent! Check your inbox. âœ‰ï¸", "success");
-                    const otpInput = document.getElementById('verifyOtpInput');
-                    if (otpInput) {
-                        otpInput.value = '';
-                        otpInput.focus();
-                    }
-                } else {
-                    showToast(data.error || "Failed to resend verification.", "error");
-                }
-            } catch (err) {
-                showToast("Network error resending verification.", "error");
-            } finally {
-                resendVerificationBtn.innerHTML = origText;
-                resendVerificationBtn.disabled = false;
-            }
-        });
-    }
-
-    // 1c. Direct 6-Digit OTP Code Submission (secondary option)
+    // Direct 6-Digit OTP Code Submission
     const verifyOtpForm = document.getElementById('verifyOtpForm');
     const verifyOtpInput = document.getElementById('verifyOtpInput');
     const verifyOtpSubmitBtn = document.getElementById('verifyOtpSubmitBtn');
@@ -2331,25 +2230,22 @@ document.addEventListener('DOMContentLoaded', () => {
                     localStorage.setItem('last_login_email', email);
                     sessionStorage.setItem('nourishUser', JSON.stringify(data.user));
                     sessionStorage.setItem('nourishToken', data.token);
-                    localStorage.setItem('nourishUser', JSON.stringify(data.user));
-                    localStorage.setItem('nourishToken', data.token);
                     document.documentElement.classList.add('user-logged-in');
 
                     if (data.user) {
                         const t = (data.user.type || data.user.accountType || data.user.role || '').toLowerCase();
                         state.activePortal = getPortalForUserType(t);
                     }
-
-                    showToast(`Email verified! Welcome, ${data.user?.name || email}!`, "success");
-                    renderPortal();
                     syncDock();
+                    renderPortal();
+                    showToast("Account verified successfully! Welcome to Nourish Network.", "success");
                     refreshState();
                 } else {
                     showToast(data.error || "Invalid code. Please check your email and try again.", "error");
                     if (verifyOtpInput) { verifyOtpInput.select(); verifyOtpInput.focus(); }
                 }
             } catch (err) {
-                showToast("Network error. Please check your connection.", "error");
+                showToast("Network error. Please try again.", "error");
             } finally {
                 if (verifyOtpSubmitBtn) {
                     verifyOtpSubmitBtn.innerHTML = origText;
@@ -2359,49 +2255,58 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Dynamic Role-Based Compliance Fields (FSSAI vs DARPAN vs APMC/FPO vs Udyam/MSME)
+    const resendVerificationBtn = document.getElementById('resendVerificationBtn');
+    if (resendVerificationBtn) {
+        resendVerificationBtn.addEventListener('click', async () => {
+            const email = (document.getElementById('verifySentEmail')?.innerText || '').trim();
+            if (!email) return;
+
+            resendVerificationBtn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Sending...';
+            resendVerificationBtn.disabled = true;
+
+            try {
+                const res = await fetch(`${API_BASE}/resend-verification`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email })
+                });
+                const data = await res.json();
+                if (res.ok) {
+                    showToast("Verification code resent! Please check your inbox.", "success");
+                    const otpInput = document.getElementById('verifyOtpInput');
+                    if (otpInput) { otpInput.value = ''; otpInput.focus(); }
+                } else {
+                    showToast(data.error || "Could not resend email.", "error");
+                }
+            } catch (err) {
+                showToast("Network error trying to resend email.", "error");
+            } finally {
+                resendVerificationBtn.innerHTML = '<i class="fa-solid fa-rotate-right"></i> Resend Email';
+                resendVerificationBtn.disabled = false;
+            }
+        });
+    }
+
+    // Dynamic Role-Based Compliance Fields (FSSAI vs DARPAN / Multi-tier NGO)
     const regAccountTypeRadios = document.querySelectorAll('input[name="accountType"]');
     const regFssaiWrap = document.getElementById('regFssaiWrap');
     const regDarpanWrap = document.getElementById('regDarpanWrap');
-    const regCropSellerWrap = document.getElementById('regCropSellerWrap');
-    const regCropBuyerWrap = document.getElementById('regCropBuyerWrap');
-
     const regFssai = document.getElementById('regFssai');
     const regDarpan = document.getElementById('regDarpan');
     const regNgoType = document.getElementById('regNgoType');
-    const regCropSellerType = document.getElementById('regCropSellerType');
-    const regCropSellerCode = document.getElementById('regCropSellerCode');
-    const regCropBuyerType = document.getElementById('regCropBuyerType');
-    const regCropBuyerCode = document.getElementById('regCropBuyerCode');
-
     const regFssaiFeedback = document.getElementById('regFssaiFeedback');
     const regDarpanFeedback = document.getElementById('regDarpanFeedback');
-    const regCropSellerFeedback = document.getElementById('regCropSellerFeedback');
-    const regCropBuyerFeedback = document.getElementById('regCropBuyerFeedback');
 
     const NGO_PLACEHOLDERS = {
         darpan: 'NITI Aayog DARPAN ID (e.g. TN/2026/0123456)',
         trust: 'State Society / Trust Deed No. (e.g. SOC/TN/2022/04812)'
     };
 
-
     function updateRegComplianceVisibility() {
         const selected = document.querySelector('input[name="accountType"]:checked');
-        const role = selected ? selected.value : 'restaurant';
-        const regPhoneWrap = document.getElementById('regPhoneWrap');
-        const regName = document.getElementById('regName');
-
-        if (role === 'restaurant' || role === 'vendor') {
-            if (regFssaiWrap) regFssaiWrap.style.display = 'block';
-            if (regDarpanWrap) regDarpanWrap.style.display = 'none';
-            if (regPhoneWrap) regPhoneWrap.style.display = 'none';
-            if (regName) regName.placeholder = 'Restaurant / Food Business Name';
-        } else {
-            if (regFssaiWrap) regFssaiWrap.style.display = 'none';
-            if (regDarpanWrap) regDarpanWrap.style.display = 'block';
-            if (regPhoneWrap) regPhoneWrap.style.display = 'none';
-            if (regName) regName.placeholder = 'Organization Name';
-        }
+        const isVendor = selected ? (selected.value === 'restaurant' || selected.value === 'vendor') : true;
+        if (regFssaiWrap) regFssaiWrap.style.display = isVendor ? 'block' : 'none';
+        if (regDarpanWrap) regDarpanWrap.style.display = isVendor ? 'none' : 'block';
     }
 
     regAccountTypeRadios.forEach(r => r.addEventListener('change', updateRegComplianceVisibility));
@@ -2429,13 +2334,11 @@ document.addEventListener('DOMContentLoaded', () => {
             const res = window.validateFSSAI(clean);
             regFssaiFeedback.style.display = 'block';
             if (res.valid) {
-                regFssaiFeedback.className = 'fssai-feedback-valid';
                 regFssaiFeedback.style.color = '#34d399';
                 regFssaiFeedback.style.background = 'rgba(16, 185, 129, 0.12)';
                 regFssaiFeedback.style.border = '1px solid rgba(16, 185, 129, 0.3)';
-                regFssaiFeedback.innerHTML = `<i class="fa-solid fa-circle-check"></i> <strong>Valid FSSAI</strong>: ${res.stateName} Â· ${res.typeStr} (${res.year})`;
+                regFssaiFeedback.innerHTML = `<i class="fa-solid fa-circle-check"></i> <strong>Valid FSSAI</strong>: ${res.stateName} · ${res.typeStr} (${res.year})`;
             } else {
-                regFssaiFeedback.className = 'fssai-feedback-invalid';
                 regFssaiFeedback.style.color = '#f87171';
                 regFssaiFeedback.style.background = 'rgba(239, 68, 68, 0.12)';
                 regFssaiFeedback.style.border = '1px solid rgba(239, 68, 68, 0.3)';
@@ -2458,13 +2361,11 @@ document.addEventListener('DOMContentLoaded', () => {
             const res = window.validateNGOCompliance(currentType, val);
             regDarpanFeedback.style.display = 'block';
             if (res.valid) {
-                regDarpanFeedback.className = 'darpan-feedback-valid';
                 regDarpanFeedback.style.color = '#34d399';
                 regDarpanFeedback.style.background = 'rgba(16, 185, 129, 0.12)';
                 regDarpanFeedback.style.border = '1px solid rgba(16, 185, 129, 0.3)';
                 regDarpanFeedback.innerHTML = `<i class="fa-solid fa-circle-check"></i> ${res.message}`;
             } else {
-                regDarpanFeedback.className = 'darpan-feedback-invalid';
                 regDarpanFeedback.style.color = '#f87171';
                 regDarpanFeedback.style.background = 'rgba(239, 68, 68, 0.12)';
                 regDarpanFeedback.style.border = '1px solid rgba(239, 68, 68, 0.3)';
@@ -2481,7 +2382,6 @@ document.addEventListener('DOMContentLoaded', () => {
         const organizationName = document.getElementById('regName').value.trim();
         const email = document.getElementById('regEmail').value.trim();
         const password = document.getElementById('regPassword').value.trim();
-        const phone = document.getElementById('regPhone') ? document.getElementById('regPhone').value.trim() : '';
         const fssaiCode = regFssai ? regFssai.value.trim() : '';
         const darpanId = regDarpan ? regDarpan.value.trim().toUpperCase() : '';
         const ngoRegType = regNgoType ? regNgoType.value : 'darpan';
@@ -2491,7 +2391,7 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        // FSSAI is mandatory ONLY for Food Vendor / Restaurant accounts
+        // FSSAI is mandatory for Vendor / Restaurant accounts
         if (accountType === 'restaurant' || accountType === 'vendor') {
             if (!fssaiCode) {
                 showToast("FSSAI License Code is required to register as a food vendor.", "error");
@@ -2506,7 +2406,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
 
-        // DARPAN / Trust Deed is mandatory ONLY for Food NGO / Shelter accounts
+        // DARPAN / Trust Deed is mandatory for NGO / Shelter accounts
         if (accountType === 'ngo' || accountType === 'shelter') {
             if (!darpanId) {
                 const label = ngoRegType === 'trust' ? 'State Society / Trust Deed number' : 'NITI Aayog DARPAN ID';
@@ -2522,28 +2422,16 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
 
-
         const submitBtn = registerForm.querySelector('button[type="submit"]');
         const originalText = submitBtn.innerHTML;
 
         setLoading(submitBtn, true, originalText);
 
-        const regPayload = {
-            accountType,
-            organizationName,
-            email,
-            password,
-            phone,
-            fssaiCode: (accountType === 'restaurant' || accountType === 'vendor') ? fssaiCode : '',
-            darpanId: (accountType === 'ngo' || accountType === 'shelter') ? darpanId : '',
-            ngoRegType: (accountType === 'ngo' || accountType === 'shelter') ? ngoRegType : ''
-        };
-
         try {
             const response = await fetch(`${API_BASE}/register`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(regPayload)
+                body: JSON.stringify({ accountType, organizationName, email, password, fssaiCode, darpanId, ngoRegType })
             });
 
             const data = await response.json();
@@ -2557,13 +2445,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 const emailModal = document.getElementById('emailVerifyModal');
                 if (emailModal) emailModal.classList.add('active');
-                const otpInput = document.getElementById('verifyOtpInput');
-                if (otpInput) {
-                    otpInput.value = '';
-                    setTimeout(() => otpInput.focus(), 300);
-                }
 
-                // Start cross-device verification polling
+                // Start cross-device verification polling: when user taps verify on phone,
+                // this browser will automatically log in!
                 startVerificationPolling(email);
 
                 showToast("Account created! Please check your email to activate.", "success");
@@ -2654,7 +2538,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         const t = (data.user.type || data.user.accountType || '').toLowerCase();
                         state.activePortal = (t === 'restaurant' || t === 'vendor' || t === 'seller') ? 'seller' : 'buyer';
                     }
-                    showToast("Password updated successfully! Welcome back ðŸŽ‰", "success");
+                    showToast("Password updated successfully! Welcome back 🎉", "success");
                     renderPortal();
                     syncDock();
                     refreshState();
@@ -2761,11 +2645,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // Visual feedback
             showToast(`Switched to ${newTheme.charAt(0).toUpperCase() + newTheme.slice(1)} Mode`, 'info');
-
-            // Re-render active portal so theme changes apply instantly to dynamic views
-            if (typeof renderPortal === 'function' && state.activePortal && state.activePortal !== 'home') {
-                renderPortal();
-            }
         });
     }
 
@@ -3010,19 +2889,19 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         // --- Show/hide dock items based on portal ---
+        // IDs from index.html: cart-toggle-dock (buyer), add-listing-dock (seller)
         const cartDockItem = document.getElementById('cart-toggle-dock');
         const addDockItem = document.getElementById('add-listing-dock');
         const historyDockItem = document.getElementById('history-toggle-dock');
         const loginDockItem = document.getElementById('login-toggle-dock');
         const settingsDockItem = document.getElementById('settings-toggle-dock');
+        const settingsNavItem = document.getElementById('settings-toggle-nav');
         const landingItems = document.querySelectorAll('.landing-only');
 
         if (state.activePortal === 'buyer') {
             landingItems.forEach(el => el.style.setProperty('display', 'none', 'important'));
             if (cartDockItem) cartDockItem.style.setProperty('display', 'flex', 'important');
             if (addDockItem) addDockItem.style.setProperty('display', 'none', 'important');
-            if (addCropDockItem) addCropDockItem.style.setProperty('display', 'none', 'important');
-            if (cropCartDockItem) cropCartDockItem.style.setProperty('display', 'none', 'important');
             if (historyDockItem) historyDockItem.style.setProperty('display', 'flex', 'important');
             if (settingsDockItem) settingsDockItem.style.setProperty('display', 'flex', 'important');
             if (loginDockItem) loginDockItem.style.setProperty('display', 'flex', 'important');
@@ -3052,31 +2931,14 @@ document.addEventListener('DOMContentLoaded', () => {
         sessionStorage.removeItem('nourishToken');
         localStorage.removeItem('nourishUser');
         localStorage.removeItem('nourishToken');
-
-        // Remove logged-in class so CSS anti-flash rules show home & hide portals
         document.documentElement.classList.remove('user-logged-in');
-        document.documentElement.classList.remove('portal-pre-active');
-
-        // Reset state
         state.activePortal = 'home';
         state.cart = [];
-
-        // Explicitly show/hide the right sections
-        const homePortal = document.getElementById('home-portal');
-        const portalsRootEl = document.getElementById('nn-portals-root');
-        if (homePortal) homePortal.style.removeProperty('display');
-        if (portalsRootEl) portalsRootEl.style.setProperty('display', 'none', 'important');
-
-        // Clear the portals root content so stale portal HTML is gone
-        const root = portalsRoot || portalsRootEl;
-        if (root) root.innerHTML = '';
-
-        syncDock();
+        renderPortal();
         updateLiquidIndicator();
-        window.scrollTo({ top: 0, behavior: 'smooth' });
+        syncDock();
         showToast("Logged out successfully.", "info");
     }
-
 
 
     function renderSellerPortal() {
@@ -3116,7 +2978,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                 </div>
                                 ${user.bio ? `<p style="color:var(--text-muted); font-size:0.9rem; margin: 0 0 8px;">${user.bio}</p>` : ''}
                                 <div style="display: flex; flex-wrap: wrap; gap: 10px 20px; font-size: 0.82rem; color: var(--text-muted); margin-top: 6px;">
-                                    ${fssai ? `<span class="fssai-trust-badge" style="font-size:0.75rem; padding: 3px 10px; border-radius: 12px;" title="FSSAI Food Safety Verified"><i class="fa-solid fa-shield-halved"></i> <strong style="font-family:monospace; letter-spacing:1px;">${fssai}</strong> <span style="font-weight:700;">FSSAI</span></span>` : '<span style="color:#f59e0b;"><i class="fa-solid fa-triangle-exclamation"></i> FSSAI not set â€” update in Settings</span>'}
+                                    ${fssai ? `<span class="fssai-trust-badge" style="font-size:0.75rem; padding: 3px 10px; border-radius: 12px;" title="FSSAI Food Safety Verified"><i class="fa-solid fa-shield-halved"></i> <strong style="font-family:monospace; letter-spacing:1px;">${fssai}</strong> <span style="font-weight:700;">FSSAI</span></span>` : '<span style="color:#f59e0b;"><i class="fa-solid fa-triangle-exclamation"></i> FSSAI not set — update in Settings</span>'}
                                     ${user.address ? `<span><i class="fa-solid fa-location-dot" style="color:var(--accent-primary);"></i> ${user.address}</span>` : ''}
                                     ${user.publicPhone ? `<span><i class="fa-solid fa-phone" style="color:var(--accent-primary);"></i> ${user.publicPhone}</span>` : ''}
                                     ${user.contactPerson ? `<span><i class="fa-solid fa-user-tie" style="color:var(--accent-primary);"></i> ${user.contactPerson}</span>` : ''}
@@ -3158,16 +3020,16 @@ document.addEventListener('DOMContentLoaded', () => {
                             <form id="add-food-form" class="add-food-grid">
                                 <input type="hidden" id="p-id" value="">
                                 <div class="form-group full-width" style="margin-bottom: 0.5rem;">
-                                    <label style="font-size: 0.82rem; color: var(--accent-primary); font-weight: 700;">âš¡ Quick Presets (Click to autofill dish & image):</label>
+                                    <label style="font-size: 0.82rem; color: var(--accent-primary); font-weight: 700;">⚡ Quick Presets (Click to autofill dish & image):</label>
                                     <div style="display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px;">
-                                        <button type="button" class="preset-chip-btn" onclick="window.applyFoodPreset('Idli & Sambar', 'Cooked')">ðŸ² Idli & Sambar</button>
-                                        <button type="button" class="preset-chip-btn" onclick="window.applyFoodPreset('Pasta & Maggie', 'Cooked')">ðŸ Pasta & Maggie</button>
-                                        <button type="button" class="preset-chip-btn" onclick="window.applyFoodPreset('Hyderabadi Biryani', 'Cooked')">ðŸ› Hyderabadi Biryani</button>
-                                        <button type="button" class="preset-chip-btn" onclick="window.applyFoodPreset('Paneer Butter Masala', 'Cooked')">ðŸ¥˜ Paneer Masala</button>
-                                        <button type="button" class="preset-chip-btn" onclick="window.applyFoodPreset('Classic Pizza', 'Cooked')">ðŸ• Pizza</button>
-                                        <button type="button" class="preset-chip-btn" onclick="window.applyFoodPreset('Fresh Garden Salad', 'Produce')">ðŸ¥— Fresh Salad</button>
-                                        <button type="button" class="preset-chip-btn" onclick="window.applyFoodPreset('Artisan Pastries & Cake', 'Bakery')">ðŸ° Bakery Treats</button>
-                                        <button type="button" class="preset-chip-btn" onclick="window.applyFoodPreset('Fresh Fruit Box', 'Produce')">ðŸŽ Fruits</button>
+                                        <button type="button" class="preset-chip-btn" onclick="window.applyFoodPreset('Idli & Sambar', 'Cooked')">🍲 Idli & Sambar</button>
+                                        <button type="button" class="preset-chip-btn" onclick="window.applyFoodPreset('Pasta & Maggie', 'Cooked')">🍝 Pasta & Maggie</button>
+                                        <button type="button" class="preset-chip-btn" onclick="window.applyFoodPreset('Hyderabadi Biryani', 'Cooked')">🍛 Hyderabadi Biryani</button>
+                                        <button type="button" class="preset-chip-btn" onclick="window.applyFoodPreset('Paneer Butter Masala', 'Cooked')">🥘 Paneer Masala</button>
+                                        <button type="button" class="preset-chip-btn" onclick="window.applyFoodPreset('Classic Pizza', 'Cooked')">🍕 Pizza</button>
+                                        <button type="button" class="preset-chip-btn" onclick="window.applyFoodPreset('Fresh Garden Salad', 'Produce')">🥗 Fresh Salad</button>
+                                        <button type="button" class="preset-chip-btn" onclick="window.applyFoodPreset('Artisan Pastries & Cake', 'Bakery')">🍰 Bakery Treats</button>
+                                        <button type="button" class="preset-chip-btn" onclick="window.applyFoodPreset('Fresh Fruit Box', 'Produce')">🍎 Fruits</button>
                                     </div>
                                 </div>
                                 <div class="form-group">
@@ -3186,7 +3048,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                     <input type="number" id="p-qty" class="form-control" value="10" min="1" required>
                                 </div>
                                 <div class="form-group">
-                                    <label>Price per Portion (â‚¹)</label>
+                                    <label>Price per Portion (₹)</label>
                                     <input type="number" id="p-price" class="form-control" value="20" min="0" required>
                                 </div>
                                 <div class="form-group" style="position: relative;">
@@ -3338,7 +3200,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     <h3 class="nn-card-title">${item.name}</h3>
                     <p class="nn-card-desc">${item.description || 'No description provided.'}</p>
                     <div class="nn-card-meta">
-                        <div class="nn-card-price">â‚¹${item.price}<span>/portion</span></div>
+                        <div class="nn-card-price">₹${item.price}<span>/portion</span></div>
                         <div class="nn-card-expiry"><i class="fa-regular fa-clock"></i> ${window.formatExpiryDisplay(item.expiry)}</div>
                     </div>
                 </div>
@@ -3375,7 +3237,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             }
                         } catch (e) { }
                     }
-                    document.getElementById('submit-btn').innerHTML = 'ðŸ’¾ Save Changes';
+                    document.getElementById('submit-btn').innerHTML = '💾 Save Changes';
                     document.getElementById('cancel-edit-btn').style.display = 'block';
                     const addFormSection = document.getElementById('add-listing-section') || document.getElementById('add-food-form');
                     if (addFormSection) {
@@ -3398,7 +3260,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     demoListings = demoListings.filter(l => String(l.id) !== String(id));
                     localStorage.setItem('nn_demo_listings', JSON.stringify(demoListings));
                     state.listings = state.listings.filter(l => String(l.id) !== String(id));
-                    showToast("Listing deleted successfully. ðŸ—‘ï¸", "success");
+                    showToast("Listing deleted successfully. 🗑️", "success");
                     if (state.activePortal === 'seller') {
                         renderSellerListings();
                     } else if (state.activePortal === 'buyer' && typeof renderExchangeGrid === 'function') {
@@ -3581,7 +3443,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             <div style="display: flex; align-items: center; gap: 5px;">
                                 <strong style="font-size: 0.85rem; color: white;">${item.vendorName}</strong>
                             </div>
-                            ${item.fssaiCode ? `<div class="fssai-trust-badge" title="FSSAI Food Safety Certified â€” License verified"><i class="fa-solid fa-shield-halved"></i> FSSAI Certified</div>` : bioText}
+                            ${item.fssaiCode ? `<div class="fssai-trust-badge" title="FSSAI Food Safety Certified — License verified"><i class="fa-solid fa-shield-halved"></i> FSSAI Certified</div>` : bioText}
                         </div>
                     </div>
                 </div>
@@ -3593,7 +3455,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     <h3 class="nn-card-title">${item.name}</h3>
                     <p class="nn-card-desc">${item.description || ''}</p>
                     <div class="nn-card-meta">
-                        <div class="nn-card-price">â‚¹${item.price}<span>/portion</span></div>
+                        <div class="nn-card-price">₹${item.price}<span>/portion</span></div>
                         <div class="nn-card-expiry"><i class="fa-regular fa-clock"></i> ${window.formatExpiryDisplay(item.expiry)}</div>
                     </div>
                 </div>
@@ -3718,14 +3580,9 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function updateCartBadge() {
-        const counts = document.querySelectorAll('.cart-count, .crop-cart-count');
-        const totalItems = state.cart.reduce((sum, c) => sum + (parseInt(c.qty, 10) || 1), 0);
-        counts.forEach(c => {
-            c.innerText = totalItems;
-            if (c.classList.contains('crop-cart-count')) {
-                c.style.display = totalItems > 0 ? 'inline-block' : 'none';
-            }
-        });
+        const counts = document.querySelectorAll('.cart-count');
+        const totalItems = state.cart.reduce((sum, c) => sum + c.qty, 0);
+        counts.forEach(c => c.innerText = totalItems);
     }
 
     function renderCartItems() {
@@ -3733,7 +3590,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!list) return;
 
         if (state.cart.length === 0) {
-            list.innerHTML = '<div class="empty-cart-msg">Your basket is empty. ðŸŒ±</div>';
+            list.innerHTML = '<div class="empty-cart-msg">Your basket is empty. 🌱</div>';
             updateCartTotals();
             return;
         }
@@ -3742,16 +3599,15 @@ document.addEventListener('DOMContentLoaded', () => {
             <div class="cart-item-row" style="display:flex; justify-content:space-between; margin-bottom: 1.5rem; padding-bottom: 1rem; border-bottom: 1px solid var(--border-glow);">
                 <div>
                     <strong>${cartItem.item.name}</strong><br>
-                    <small style="color: var(--text-muted);">${cartItem.item.vendorName || cartItem.item.vendorname || 'Verified Partner'}</small><br>
-                    ${cartItem.item.unit ? `<small style="color: #10b981; font-weight: 600;">Rate: â‚¹${cartItem.item.price}/${cartItem.item.unit}</small><br>` : ''}
+                    <small>${cartItem.item.vendorName}</small><br>
                     <div class="stepper-wrap" style="display:flex; align-items:center; gap: 10px; margin-top: 5px;">
                         <button class="cart-minus btn-outline btn-sm" data-idx="${idx}" style="padding: 2px 8px; color: var(--text-color); border-color: var(--border-glow);"><i class="fa-solid fa-minus"></i></button>
-                        <span style="font-weight: bold;">${cartItem.qty} ${cartItem.item.unit || ''}</span>
+                        <span style="font-weight: bold;">${cartItem.qty}</span>
                         <button class="cart-plus btn-outline btn-sm" data-idx="${idx}" style="padding: 2px 8px; color: var(--text-color); border-color: var(--border-glow);"><i class="fa-solid fa-plus"></i></button>
                     </div>
                 </div>
                 <div style="text-align: right; display: flex; flex-direction: column; justify-content: space-between;">
-                    <strong>â‚¹${cartItem.item.price * cartItem.qty}</strong>
+                    <strong>₹${cartItem.item.price * cartItem.qty}</strong>
                     <button class="remove-item" data-idx="${idx}" style="background:none; border:none; color:#e74c3c; cursor:pointer; margin-top: 5px;"><i class="fa-solid fa-trash"></i> Remove</button>
                 </div>
             </div>
@@ -3809,8 +3665,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function updateCartTotals() {
         const subtotal = state.cart.reduce((sum, c) => sum + (c.item.price * c.qty), 0);
-        document.getElementById('cart-subtotal').innerText = `â‚¹${subtotal}`;
-        document.getElementById('cart-total').innerText = `â‚¹${subtotal}`;
+        document.getElementById('cart-subtotal').innerText = `₹${subtotal}`;
+        document.getElementById('cart-total').innerText = `₹${subtotal}`;
     }
 
     // 6. Form Handling (Seller)
@@ -3847,7 +3703,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             const data = await res.json();
                             if (data.resolvedUrl && data.resolvedUrl !== val) {
                                 pImgInput.value = data.resolvedUrl;
-                                showToast("Google image link resolved! ðŸ–¼ï¸", "success");
+                                showToast("Google image link resolved! 🖼️", "success");
                             }
                         }
                     } catch (err) { }
@@ -3927,7 +3783,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                 expiry: expiry ? new Date(expiry).toISOString() : null
                             };
                         }
-                        showToast("Listing updated! ðŸŒ±", "success");
+                        showToast("Listing updated! 🌱", "success");
                     } else {
                         // CREATE new
                         const newItem = {
@@ -3951,7 +3807,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         const saved = JSON.parse(localStorage.getItem('nn_demo_listings') || '[]');
                         saved.unshift(newItem);
                         localStorage.setItem('nn_demo_listings', JSON.stringify(saved));
-                        showToast("Published successfully! ðŸŒ±", "success");
+                        showToast("Published successfully! 🌱", "success");
                         // Live stat update
                         updateLiveStats();
                         setTimeout(() => { animateStatBump('listed'); animateStatBump('fulfilled'); animateStatBump('vendors'); }, 100);
@@ -4003,7 +3859,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
                     const data = await response.json();
                     if (response.ok) {
-                        showToast(pId ? "Listing updated! ðŸŒ±" : "Published successfully! ðŸŒ±", "success");
+                        showToast(pId ? "Listing updated! 🌱" : "Published successfully! 🌱", "success");
                         form.reset();
                         document.getElementById('p-id').value = '';
                         document.getElementById('submit-btn').innerHTML = '<i class="fa-solid fa-leaf"></i> Publish Listing';
@@ -4021,6 +3877,59 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+
+
+
+    // 7. Initialize Everything
+
+
+    const openCart = () => cartDrawer.classList.add('active');
+
+    if (cartToggle) {
+        cartToggle.addEventListener('click', openCart);
+    }
+    // Dock Portal-Specific Listeners
+    const cartToggleDock = document.getElementById('cart-toggle-dock');
+    if (cartToggleDock) {
+        cartToggleDock.addEventListener('click', (e) => {
+            e.preventDefault();
+            openCart();
+        });
+    }
+
+    const addListingDock = document.getElementById('add-listing-dock');
+    if (addListingDock) {
+        addListingDock.addEventListener('click', (e) => {
+            e.preventDefault();
+            const section = document.getElementById('add-listing-section');
+            if (section) {
+                section.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            } else {
+                state.activePortal = 'seller';
+                renderPortal();
+                setTimeout(() => {
+                    document.getElementById('add-listing-section')?.scrollIntoView({ behavior: 'smooth' });
+                }, 500);
+            }
+        });
+    }
+
+    const historyToggleDock = document.getElementById('history-toggle-dock');
+    if (historyToggleDock) {
+        historyToggleDock.addEventListener('click', (e) => {
+            if (e) {
+                e.preventDefault();
+                e.stopPropagation();
+            }
+            console.log("Dock: History Clicked (from portal-specific listener)");
+            if (typeof openHistoryModal === 'function') openHistoryModal();
+            else if (typeof window.openHistoryModal === 'function') window.openHistoryModal();
+        });
+    }
+
+
+
+
     // Community Hub / Comments Logic
     function renderCommunityWall() {
         const wall = document.getElementById('comment-list');
@@ -4034,7 +3943,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     <i class="fa-solid fa-trash-can"></i>
                 </button>
                 <strong style="color: ${(c.org || '').includes('Seller') || (c.org || '').includes('Hotel') ? 'var(--accent-secondary)' : 'var(--accent-primary)'}; padding-right: 2rem; display:block;">
-                    ${c.name} <span style="font-weight: 400; opacity: 0.6; font-size: 0.8rem;">â€¢ ${c.org}</span>
+                    ${c.name} <span style="font-weight: 400; opacity: 0.6; font-size: 0.8rem;">• ${c.org}</span>
                 </strong>
                 <p>"${c.text}"</p>
             </div>
@@ -4132,7 +4041,7 @@ document.addEventListener('DOMContentLoaded', () => {
             renderPortalCommentList();
 
             input.value = '';
-            showToast("Your voice is now live in 'Voices of Impact'! ðŸŒ±", "success");
+            showToast("Your voice is now live in 'Voices of Impact'! 🌱", "success");
         });
 
         // Initial render of existing comments
@@ -4155,7 +4064,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     <i class="fa-solid fa-trash-can"></i>
                 </button>
                 <strong style="color: var(--accent-primary); display:block; padding-right: 2.5rem;">${c.name} 
-                    <span style="font-weight:400; opacity:0.6; font-size:0.8rem;">â€¢ ${c.org}</span>
+                    <span style="font-weight:400; opacity:0.6; font-size:0.8rem;">• ${c.org}</span>
                 </strong>
                 <p style="margin-top:0.5rem; color: var(--text-secondary); font-size: 0.95rem;">"${c.text}"</p>
             </div>
@@ -4184,15 +4093,6 @@ document.addEventListener('DOMContentLoaded', () => {
         modal.style.setProperty('visibility', 'visible', 'important');
         modal.style.setProperty('pointer-events', 'auto', 'important');
         modal.style.setProperty('z-index', '999999', 'important');
-
-        const titleEl = modal.querySelector('h2');
-        if (titleEl) {
-            if (state.activePortal === 'seller') {
-                titleEl.textContent = 'Food Distribution History';
-            } else {
-                titleEl.textContent = 'Claim & Order History';
-            }
-        }
 
         loadPortalHistory();
     }
@@ -4274,12 +4174,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
                 if (res.ok) {
-                    const rawApi = await res.json();
-                    apiOrders = (Array.isArray(rawApi) ? rawApi : []).map(a => ({...a}));
-
-                    if (state.activePortal === 'seller' || state.activePortal === 'buyer') {
-                        apiOrders = apiOrders.filter(a => !a.cropGrade && a.produceType !== 'crop' && a.unit !== 'Quintal');
-                    }
+                    apiOrders = await res.json();
                 }
             } catch (netErr) {
                 console.warn("Orders fetch network fallback to local:", netErr);
@@ -4294,22 +4189,21 @@ document.addEventListener('DOMContentLoaded', () => {
             const user = JSON.parse(sessionStorage.getItem('nourishUser') || localStorage.getItem('nourishUser') || '{}');
             const isSellerPortal = state.activePortal === 'seller';
 
+            // Filter local orders relevant to the current user and portal
             const relevantLocalOrders = localOrders.filter(o => {
-                if (state.activePortal === 'seller') {
-                    const matchUser = String(o.vendorId) === String(user.id) ||
+                if (isSellerPortal) {
+                    return String(o.vendorId) === String(user.id) ||
                            String(o.sellerId) === String(user.id) ||
                            o.sellerName === user.organizationName ||
                            o.sellerEmail === user.email ||
                            String(user.id) === '888' ||
                            !o.vendorId;
-                    return matchUser;
                 } else {
-                    const matchUser = String(o.buyerId) === String(user.id) ||
+                    return String(o.buyerId) === String(user.id) ||
                            o.buyerName === user.organizationName ||
                            o.buyerEmail === user.email ||
                            String(user.id) === '999' ||
                            !o.buyerId;
-                    return matchUser;
                 }
             });
 
@@ -4366,32 +4260,31 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             // Render Cards based on Portal
-            if (isSellerPortal) {
+            if (state.activePortal === 'seller') {
                 container.innerHTML = orders.map(o => {
                     const dateStr = o.createdAt ? new Date(o.createdAt).toLocaleString('en-IN', {
                         day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit'
                     }) : 'Just now';
                     const isCompleted = o.orderStatus === 'completed';
-                    const defaultImg = 'assets/default-food.jpg';
-                    const foodImg = o.imageUrl || (window.getSmartFoodImage ? window.getSmartFoodImage(o.foodName, o.category, null) : defaultImg);
                     const ngoBadge = window.renderNgoTrustBadge ? window.renderNgoTrustBadge({
                         darpanId: o.buyerDarpanId,
                         ngoRegType: o.buyerNgoRegType
                     }) : '';
+                    const foodImg = o.imageUrl || (window.getSmartFoodImage ? window.getSmartFoodImage(o.foodName, o.category, null) : 'assets/default-food.jpg');
 
                     return `
                         <div class="history-card" id="order-card-${o.orderId}">
                             <div class="history-top-row">
                                 <div class="history-item-info">
-                                    <img src="${foodImg}" alt="${o.foodName || 'Food'}" class="history-food-thumb" onerror="this.onerror=null; this.src='${defaultImg}';">
+                                    <img src="${foodImg}" alt="${o.foodName || 'Food'}" class="history-food-thumb" onerror="this.onerror=null; this.src='assets/default-food.jpg';">
                                     <div>
                                         <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
                                             <h4 style="font-size: 1.1rem; font-weight: 700; color: var(--text-primary); margin: 0;">${o.foodName || 'Surplus Meal'}</h4>
                                             <span class="badge" style="background: rgba(255, 255, 255, 0.06); color: #d1d5db; border: 1px solid rgba(255, 255, 255, 0.1); font-size: 0.72rem; padding: 2px 8px; border-radius: 6px;">${o.category || 'Cooked'}</span>
                                         </div>
                                         <div style="font-size: 0.85rem; color: var(--text-muted); margin-top: 4px;">
-                                            <span style="font-weight: 700; color: var(--text-primary);">${o.quantity} ${o.unit || 'portions'}</span> Â· 
-                                            <span>${o.totalPrice > 0 ? 'â‚¹' + o.totalPrice : '<strong style="color:#e5e5e5;">Free Surplus Donation</strong>'}</span> Â· 
+                                            <span style="font-weight: 700; color: var(--text-primary);">${o.quantity} ${o.unit || 'portions'}</span> · 
+                                            <span>${o.totalPrice > 0 ? '₹' + o.totalPrice : '<strong style="color:#e5e5e5;">Free Surplus Donation</strong>'}</span> · 
                                             <span><i class="fa-regular fa-clock"></i> ${dateStr}</span>
                                         </div>
                                     </div>
@@ -4404,7 +4297,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                 </div>
                             </div>
 
-                            <!-- Buyer Counterparty Details Box -->
+                            <!-- Buyer NGO Details Box -->
                             <div class="history-party-box">
                                 <div style="display: flex; align-items: center; gap: 12px; flex: 1; min-width: 240px;">
                                     <img src="${o.buyerAvatar || 'assets/default-avatar.jpg'}" style="width: 44px; height: 44px; border-radius: 50%; object-fit: cover; border: 1.5px solid rgba(255, 255, 255, 0.15);">
@@ -4414,7 +4307,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                             ${ngoBadge}
                                         </div>
                                         <div style="font-size: 0.82rem; color: var(--text-muted); margin-top: 3px;">
-                                            ${o.buyerContactPerson ? `<span><i class="fa-solid fa-user-tie" style="color:#9ca3af;"></i> ${o.buyerContactPerson}</span> Â· ` : ''}
+                                            ${o.buyerContactPerson ? `<span><i class="fa-solid fa-user-tie" style="color:#9ca3af;"></i> ${o.buyerContactPerson}</span> · ` : ''}
                                             ${o.buyerPhone ? `<a href="tel:${o.buyerPhone}" style="color:#d1d5db; text-decoration: none;"><i class="fa-solid fa-phone"></i> ${o.buyerPhone}</a>` : ''}
                                         </div>
                                         ${o.buyerAddress ? `<div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;"><i class="fa-solid fa-location-dot" style="color:#9ca3af;"></i> ${o.buyerAddress}</div>` : ''}
@@ -4422,7 +4315,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                 </div>
 
                                 <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
-                                    <div class="pickup-code-pill" title="Procurement / Order PIN Code">
+                                    <div class="pickup-code-pill" title="NGO Pickup Verification Code">
                                         <i class="fa-solid fa-ticket"></i> PIN: <strong>NN-${String(o.orderId).padStart(4, '0')}</strong>
                                     </div>
                                     ${!isCompleted ? `
@@ -4446,22 +4339,21 @@ document.addEventListener('DOMContentLoaded', () => {
                         day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit'
                     }) : 'Just now';
                     const isCompleted = o.orderStatus === 'completed';
-                    const defaultImg = 'assets/default-food.jpg';
-                    const foodImg = o.imageUrl || (window.getSmartFoodImage ? window.getSmartFoodImage(o.foodName, o.category, null) : defaultImg);
+                    const foodImg = o.imageUrl || (window.getSmartFoodImage ? window.getSmartFoodImage(o.foodName, o.category, null) : 'assets/default-food.jpg');
 
                     return `
                         <div class="history-card" id="order-card-${o.orderId}">
                             <div class="history-top-row">
                                 <div class="history-item-info">
-                                    <img src="${foodImg}" alt="${o.foodName || 'Food'}" class="history-food-thumb" onerror="this.onerror=null; this.src='${defaultImg}';">
+                                    <img src="${foodImg}" alt="${o.foodName || 'Food'}" class="history-food-thumb" onerror="this.onerror=null; this.src='assets/default-food.jpg';">
                                     <div>
                                         <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
                                             <h4 style="font-size: 1.1rem; font-weight: 700; color: var(--text-primary); margin: 0;">${o.foodName || 'Rescued Food'}</h4>
                                             <span class="badge" style="background: rgba(255, 255, 255, 0.06); color: #d1d5db; border: 1px solid rgba(255, 255, 255, 0.1); font-size: 0.72rem; padding: 2px 8px; border-radius: 6px;">${o.category || 'Cooked'}</span>
                                         </div>
                                         <div style="font-size: 0.85rem; color: var(--text-muted); margin-top: 4px;">
-                                            <span style="font-weight: 700; color: var(--text-primary);">${o.quantity} ${o.unit || 'portions'}</span> Â· 
-                                            <span>${o.totalPrice > 0 ? 'â‚¹' + o.totalPrice : '<strong style="color:#e5e5e5;">Free Surplus Donation</strong>'}</span> Â· 
+                                            <span style="font-weight: 700; color: var(--text-primary);">${o.quantity} portions</span> · 
+                                            <span>${o.totalPrice > 0 ? '₹' + o.totalPrice : '<strong style="color:#e5e5e5;">Free Surplus Donation</strong>'}</span> · 
                                             <span><i class="fa-regular fa-clock"></i> ${dateStr}</span>
                                         </div>
                                     </div>
@@ -4474,7 +4366,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                 </div>
                             </div>
 
-                            <!-- Donating / Producing Seller Details Box -->
+                            <!-- Donating Restaurant Details Box -->
                             <div class="history-party-box">
                                 <div style="display: flex; align-items: center; gap: 12px; flex: 1; min-width: 240px;">
                                     <img src="${o.sellerAvatar || 'assets/default-avatar.jpg'}" style="width: 44px; height: 44px; border-radius: 50%; object-fit: cover; border: 1.5px solid rgba(255, 255, 255, 0.15);">
@@ -4484,16 +4376,16 @@ document.addEventListener('DOMContentLoaded', () => {
                                             ${o.sellerFssaiCode ? `<span class="fssai-trust-badge" title="FSSAI Verified Food Establishment"><i class="fa-solid fa-shield-halved"></i> FSSAI Certified</span>` : ''}
                                         </div>
                                         <div style="font-size: 0.82rem; color: var(--text-muted); margin-top: 3px;">
-                                            ${o.sellerContactPerson ? `<span><i class="fa-solid fa-user-tie" style="color:#9ca3af;"></i> ${o.sellerContactPerson}</span> Â· ` : ''}
+                                            ${o.sellerContactPerson ? `<span><i class="fa-solid fa-user-tie" style="color:#9ca3af;"></i> ${o.sellerContactPerson}</span> · ` : ''}
                                             ${o.sellerPhone ? `<a href="tel:${o.sellerPhone}" style="color:#d1d5db; text-decoration: none;"><i class="fa-solid fa-phone"></i> ${o.sellerPhone}</a>` : ''}
                                         </div>
                                         ${o.sellerAddress ? `<div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;"><i class="fa-solid fa-location-dot" style="color:#9ca3af;"></i> Pickup: ${o.sellerAddress}</div>` : ''}
-                                        ${o.sellerPickupWindow ? `<div style="font-size: 0.8rem; color: #9ca3af; margin-top: 2px;"><i class="fa-regular fa-clock"></i> Window: ${o.sellerPickupWindow}</div>` : ''}
+                                        ${o.sellerPickupWindow ? `<div style="font-size: 0.8rem; color: #9ca3af; margin-top: 2px;"><i class="fa-regular fa-clock"></i> Pickup Window: ${o.sellerPickupWindow}</div>` : ''}
                                     </div>
                                 </div>
 
                                 <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
-                                    <div class="pickup-code-pill" title="Show this code upon collection or truck arrival">
+                                    <div class="pickup-code-pill" title="Show this code at the restaurant counter for pickup">
                                         <i class="fa-solid fa-ticket"></i> PIN: <strong>NN-${String(o.orderId).padStart(4, '0')}</strong>
                                     </div>
                                 </div>
@@ -4516,7 +4408,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         let localOrders = JSON.parse(localStorage.getItem('nn_local_orders') || '[]');
                         localOrders = localOrders.map(o => String(o.orderId) === String(orderId) ? { ...o, orderStatus: newStatus } : o);
                         localStorage.setItem('nn_local_orders', JSON.stringify(localOrders));
-                        showToast("Handover marked as completed! ðŸ¤", "success");
+                        showToast("Handover marked as completed! 🤝", "success");
                         loadPortalHistory();
                         return;
                     }
@@ -4531,7 +4423,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             body: JSON.stringify({ status: newStatus })
                         });
                         if (patchRes.ok) {
-                            showToast("Handover marked as completed! ðŸ¤", "success");
+                            showToast("Handover marked as completed! 🤝", "success");
                             loadPortalHistory();
                         } else {
                             const err = await patchRes.json().catch(() => ({}));
@@ -4636,7 +4528,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             commentText.value = '';
-            showToast("Your voice is now live in 'Voices of Impact'! ðŸŒ±", "success");
+            showToast("Your voice is now live in 'Voices of Impact'! 🌱", "success");
         });
     }
 
@@ -4751,15 +4643,11 @@ document.addEventListener('DOMContentLoaded', () => {
             const user = JSON.parse(sessionStorage.getItem('nourishUser') || '{}');
             const role = (user.accountType || user.type || user.role || (state.activePortal === 'seller' ? 'vendor' : 'ngo')).toLowerCase();
             const isSeller = role.includes('restaurant') || role.includes('vendor') || role.includes('seller') || state.activePortal === 'seller';
-            const isFoodBuyer = role.includes('ngo') || role.includes('shelter') || state.activePortal === 'buyer';
-
             if (fssaiWrap) fssaiWrap.style.display = isSeller ? 'block' : 'none';
-            if (darpanWrap) darpanWrap.style.display = isFoodBuyer ? 'block' : 'none';
-            if (subtitle) {
-                subtitle.textContent = isSeller
-                    ? "Manage your restaurant's profile, compliance & pickup details"
-                    : "Manage your NGO's profile, compliance & pickup details";
-            }
+            if (darpanWrap) darpanWrap.style.display = isSeller ? 'none' : 'block';
+            if (subtitle) subtitle.textContent = isSeller
+                ? "Manage your restaurant's profile, compliance & pickup details"
+                : "Manage your NGO's profile, compliance & pickup details";
             document.dispatchEvent(new CustomEvent('load-profile-data'));
         }
     };
@@ -4812,10 +4700,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (res.valid) {
                 fssaiFeedback.className = 'fssai-feedback-valid';
-                fssaiFeedback.innerHTML = `<i class="fa-solid fa-circle-check"></i> <strong>Valid FSSAI</strong>: ${res.stateName} Â· ${res.typeStr} (${res.year})`;
+                fssaiFeedback.innerHTML = `<i class="fa-solid fa-circle-check"></i> <strong>Valid FSSAI</strong>: ${res.stateName} · ${res.typeStr} (${res.year})`;
                 if (fssaiStateTag) {
                     fssaiStateTag.style.display = 'inline-block';
-                    fssaiStateTag.textContent = `${res.stateName} â€¢ ${res.year}`;
+                    fssaiStateTag.textContent = `${res.stateName} • ${res.year}`;
                 }
             } else if (clean.length < 14) {
                 fssaiFeedback.className = 'fssai-feedback-warning';
@@ -4858,7 +4746,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 darpanFeedback.innerHTML = `<i class="fa-solid fa-circle-check"></i> ${res.message}`;
                 if (darpanStateTag) {
                     darpanStateTag.style.display = 'inline-block';
-                    darpanStateTag.textContent = res.stateName ? `${res.stateName} â€¢ ${res.year || 'Verified'}` : 'Verified';
+                    darpanStateTag.textContent = res.stateName ? `${res.stateName} • ${res.year || 'Verified'}` : 'Verified';
                 }
             } else {
                 darpanFeedback.className = 'darpan-feedback-invalid';
@@ -4894,12 +4782,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
 
                 // Show FSSAI field for food vendors, DARPAN for NGOs
-                const roleLower = (profile.accountType || profile.role || profile.type || state.activePortal || '').toLowerCase();
-                const isSeller = roleLower.includes('restaurant') || roleLower.includes('vendor') || roleLower.includes('seller') || state.activePortal === 'seller';
-                const isFoodBuyer = roleLower.includes('ngo') || roleLower.includes('shelter') || state.activePortal === 'buyer';
-
+                const isSeller = (profile.accountType || profile.role || profile.type || '').toLowerCase().includes('restaurant') ||
+                                 (profile.accountType || profile.role || profile.type || '').toLowerCase().includes('vendor') ||
+                                 (profile.accountType || profile.role || profile.type || '').toLowerCase().includes('seller') ||
+                                 state.activePortal === 'seller';
                 if (fssaiFieldWrap) fssaiFieldWrap.style.display = isSeller ? 'block' : 'none';
-                if (darpanFieldWrap) darpanFieldWrap.style.display = isFoodBuyer ? 'block' : 'none';
+                if (darpanFieldWrap) darpanFieldWrap.style.display = isSeller ? 'none' : 'block';
 
                 // 2. Contact & Logistics Fields (Pre-fill from cached session)
                 if (bioInput) bioInput.value = profile.bio || '';
@@ -5130,7 +5018,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         sessionStorage.setItem('nourishUser', JSON.stringify(updatedUser));
                         localStorage.setItem('nourishUser', JSON.stringify(updatedUser));
 
-                        showToast("Profile updated successfully! âœ¨", "success");
+                        showToast("Profile updated successfully! ✨", "success");
                         settingsModal.style.display = 'none';
 
                         // Update navbar avatar immediately
@@ -5192,4 +5080,3 @@ document.addEventListener('DOMContentLoaded', () => {
     attachSettingsListeners();
 
 });
-
