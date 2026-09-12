@@ -1,98 +1,3 @@
-// ---- GPS LIVE LOCATION ENGINE ----
-// Requests browser geolocation after login/signup, reverse-geocodes to readable address,
-// stores in session and syncs to server profile for delivery coordination.
-window.__nnGpsRequested = false;
-window.requestGPSLocation = function () {
-    if (window.__nnGpsRequested) return; // Only request once per page session
-    if (!navigator.geolocation) {
-        console.warn('Geolocation not supported by this browser.');
-        return;
-    }
-
-    window.__nnGpsRequested = true;
-
-    navigator.geolocation.getCurrentPosition(
-        async (position) => {
-            const lat = position.coords.latitude;
-            const lng = position.coords.longitude;
-            const accuracy = Math.round(position.coords.accuracy);
-
-            // Store raw coords in session
-            const user = JSON.parse(sessionStorage.getItem('nourishUser') || '{}');
-            user.gpsLat = lat;
-            user.gpsLng = lng;
-            user.gpsAccuracy = accuracy;
-
-            // Reverse geocode using OpenStreetMap Nominatim (free, no API key)
-            let readableAddress = `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
-            try {
-                const geoRes = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=16&addressdetails=1`, {
-                    headers: { 'Accept-Language': 'en' }
-                });
-                if (geoRes.ok) {
-                    const geoData = await geoRes.json();
-                    if (geoData && geoData.address) {
-                        const a = geoData.address;
-                        // Build a concise address: suburb/neighbourhood, city/town, state
-                        const parts = [
-                            a.neighbourhood || a.suburb || a.village || a.hamlet || '',
-                            a.city || a.town || a.county || a.state_district || '',
-                            a.state || ''
-                        ].filter(Boolean);
-                        if (parts.length > 0) readableAddress = parts.join(', ');
-                    }
-                }
-            } catch (e) {
-                console.warn('Reverse geocode failed, using coordinates:', e);
-            }
-
-            user.gpsAddress = readableAddress;
-            // Only update user.address if they haven't manually set one
-            if (!user.address) {
-                user.address = readableAddress;
-            }
-
-            sessionStorage.setItem('nourishUser', JSON.stringify(user));
-            localStorage.setItem('nourishUser', JSON.stringify(user));
-
-            // Show subtle toast
-            if (typeof window.showToast === 'function' || (typeof showToast === 'function')) {
-                const toastFn = window.showToast || showToast;
-                toastFn(`📍 Location detected: ${readableAddress}`, 'success');
-            }
-
-            // Re-render portal to show updated location
-            if (window.__appState && typeof window.__renderPortalFn === 'function') {
-                window.__renderPortalFn();
-            }
-
-            // Sync GPS address to server profile (background, non-blocking)
-            const token = sessionStorage.getItem('nourishToken');
-            if (token && !token.startsWith('demo-token')) {
-                try {
-                    const API = window.__nnApiBase || '/api';
-                    await fetch(`${API}/user/me`, {
-                        method: 'PUT',
-                        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                        body: JSON.stringify({ address: user.address })
-                    });
-                } catch (e) {
-                    console.warn('GPS address sync to server failed:', e);
-                }
-            }
-        },
-        (error) => {
-            console.warn('GPS location denied or unavailable:', error.message);
-            window.__nnGpsRequested = false; // Allow retry on next login
-        },
-        {
-            enableHighAccuracy: true,
-            timeout: 10000,
-            maximumAge: 60000 // Cache for 1 minute
-        }
-    );
-};
-
 // ---- GLOBAL DELETE COMMENT (must be outside DOMContentLoaded so onclick can find it) ----
 window.deleteComment = function (commentId, btnEl) {
     const bubble = btnEl ? btnEl.closest('.comment-bubble') : null;
@@ -1046,10 +951,8 @@ document.addEventListener('DOMContentLoaded', () => {
     });
     localStorage.setItem('nn_comments', JSON.stringify(state.communityComments));
 
-    // Expose to global scope for window.deleteComment and GPS engine (defined outside DOMContentLoaded)
+    // Expose to global scope for window.deleteComment (defined outside DOMContentLoaded)
     window.__appState = state;
-    window.__nnApiBase = API_BASE;
-    window.__renderPortalFn = renderPortal;
 
 
 
@@ -1401,12 +1304,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
                 // Merge in any demo listings saved to localStorage
                 const demoListings = JSON.parse(localStorage.getItem('nn_demo_listings') || '[]');
-                const deletedIds = JSON.parse(localStorage.getItem('nn_deleted_listings') || '[]');
                 const apiIds = apiListings.map(l => l.id);
-                // Only include demo listings that aren't sold out or deleted
+                // Only include demo listings that aren't sold out
                 const uniqueDemoListings = demoListings.filter(d =>
                     !apiIds.includes(d.id) &&
-                    !deletedIds.includes(String(d.id)) &&
                     d.status !== 'sold' &&
                     (parseInt(d.qty) || 0) > 0
                 );
@@ -1419,15 +1320,14 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (!purchase) return l;
                     const remainingQty = Math.max(0, (parseInt(l.qty) || 0) - (purchase.qtyBought || 0));
                     return { ...l, qty: remainingQty, status: remainingQty <= 0 ? 'sold' : l.status };
-                }).filter(l => !deletedIds.includes(String(l.id)) && l.status !== 'sold' && (parseInt(l.qty) || 0) > 0);
+                }).filter(l => l.status !== 'sold' && (parseInt(l.qty) || 0) > 0);
 
                 let combinedListings = [...uniqueDemoListings, ...filteredApiListings];
                 state.listings = combinedListings;
             } else {
-                // API failed — still load demo listings (filter sold-out and deleted ones)
+                // API failed — still load demo listings (filter sold-out ones)
                 const allDemo = JSON.parse(localStorage.getItem('nn_demo_listings') || '[]');
-                const deletedIds = JSON.parse(localStorage.getItem('nn_deleted_listings') || '[]');
-                state.listings = allDemo.filter(d => !deletedIds.includes(String(d.id)) && d.status !== 'sold' && (parseInt(d.qty) || 0) > 0);
+                state.listings = allDemo.filter(d => d.status !== 'sold' && (parseInt(d.qty) || 0) > 0);
             }
 
             const statsRes = await fetch(`${API_BASE}/stats`);
@@ -1486,10 +1386,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (typeof renderSellerListings === 'function') renderSellerListings();
                 } else if (state.activePortal === 'buyer') {
                     if (typeof renderExchangeGrid === 'function') renderExchangeGrid();
-                } else if (state.activePortal === 'crop_seller') {
-                    if (typeof renderCropSellerPortal === 'function') renderCropSellerPortal();
-                } else if (state.activePortal === 'crop_buyer') {
-                    if (typeof renderCropBuyerPortal === 'function') renderCropBuyerPortal();
                 }
             }
 
@@ -1506,18 +1402,12 @@ document.addEventListener('DOMContentLoaded', () => {
             console.error("Backend Sync Failed:", err);
             // Even if network fails, use cached or demo listings
             if (!state.listings || state.listings.length === 0) {
-                const deletedIds = JSON.parse(localStorage.getItem('nn_deleted_listings') || '[]');
-                const baseListings = JSON.parse(localStorage.getItem('nn_cached_listings') || localStorage.getItem('nn_demo_listings') || '[]');
-                state.listings = baseListings.filter(l => !deletedIds.includes(String(l.id)));
+                state.listings = JSON.parse(localStorage.getItem('nn_cached_listings') || localStorage.getItem('nn_demo_listings') || '[]');
             }
             if (state.activePortal === 'seller' && typeof renderSellerListings === 'function') {
                 renderSellerListings();
             } else if (state.activePortal === 'buyer' && typeof renderExchangeGrid === 'function') {
                 renderExchangeGrid();
-            } else if (state.activePortal === 'crop_seller' && typeof renderCropSellerPortal === 'function') {
-                renderCropSellerPortal();
-            } else if (state.activePortal === 'crop_buyer' && typeof renderCropBuyerPortal === 'function') {
-                renderCropBuyerPortal();
             }
         }
     }
@@ -1553,9 +1443,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // Render instantly on frame 1 using cached session + cached listings (zero wait, zero flash)
             renderPortal();
-
-            // Request GPS location for delivery coordination
-            window.requestGPSLocation();
 
             // Background sync (silent mode - no screen flicker!)
             refreshState(true);
@@ -2377,9 +2264,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     renderPortal();
                     syncDock();
                     refreshState();
-
-                    // Request GPS location after login
-                    window.requestGPSLocation();
                 }, 1000);
             } else if (response.status === 403 && data.unverified) {
                 showToast(data.error || "Please verify your email address first.", "warning");
@@ -2571,9 +2455,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     renderPortal();
                     syncDock();
                     refreshState();
-
-                    // Request GPS location after signup verification
-                    window.requestGPSLocation();
                 } else {
                     showToast(data.error || "Invalid code. Please check your email and try again.", "error");
                     if (verifyOtpInput) { verifyOtpInput.select(); verifyOtpInput.focus(); }
@@ -3810,13 +3691,10 @@ document.addEventListener('DOMContentLoaded', () => {
         });
         const isInitialMount = grid.children.length === 0;
 
-        // Filter out expired items, sold-out items, crop items, or garbage demo items for the FOOD buyer view
+        // Filter out expired items, sold-out items, or garbage demo items for the buyer view
         const validListings = state.listings.filter(item => {
             if (item.name === 'lp.okijuh' || item.name === 'lp,okijuh' || item.name === 'wesrdtfgybh') return false;
             if (item.status === 'sold' || item.status === 'claimed') return false;
-
-            // Exclude crop/agri listings — they belong in the crop_buyer portal only
-            if (item.produceType === 'crop' || item.cropGrade || item.unit === 'Quintal' || item.unit === 'q') return false;
 
             const liveStock = parseInt(item.quantity != null ? item.quantity : item.qty, 10) || 0;
             if (liveStock <= 0) return false;
@@ -4023,18 +3901,7 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        list.innerHTML = state.cart.map((cartItem, idx) => {
-            const u = (cartItem.item.unit || '').toLowerCase().trim();
-            let metricSubtext = '';
-            if (u === 'quintal' || u === 'quintals' || u === 'q') {
-                metricSubtext = ` ≈ ${(cartItem.qty * 100).toLocaleString()} kg`;
-            } else if (u === 'ton' || u === 'tonne' || u === 'tons' || u.includes('metric')) {
-                metricSubtext = ` ≈ ${(cartItem.qty * 1000).toLocaleString()} kg`;
-            } else if (u === 'crate' || u === 'crates') {
-                metricSubtext = ` ≈ ${(cartItem.qty * 25).toLocaleString()} kg`;
-            }
-
-            return `
+        list.innerHTML = state.cart.map((cartItem, idx) => `
             <div class="cart-item-row" style="display:flex; justify-content:space-between; margin-bottom: 1.5rem; padding-bottom: 1rem; border-bottom: 1px solid var(--border-glow);">
                 <div>
                     <strong>${cartItem.item.name}</strong><br>
@@ -4042,7 +3909,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     ${cartItem.item.unit ? `<small style="color: #10b981; font-weight: 600;">Rate: ₹${cartItem.item.price}/${cartItem.item.unit}</small><br>` : ''}
                     <div class="stepper-wrap" style="display:flex; align-items:center; gap: 10px; margin-top: 5px;">
                         <button class="cart-minus btn-outline btn-sm" data-idx="${idx}" style="padding: 2px 8px; color: var(--text-color); border-color: var(--border-glow);"><i class="fa-solid fa-minus"></i></button>
-                        <span style="font-weight: bold;">${cartItem.qty} ${cartItem.item.unit || ''} ${metricSubtext ? `<span style="font-size:0.75rem; color:#10b981; font-weight:600;">(${metricSubtext})</span>` : ''}</span>
+                        <span style="font-weight: bold;">${cartItem.qty} ${cartItem.item.unit || ''}</span>
                         <button class="cart-plus btn-outline btn-sm" data-idx="${idx}" style="padding: 2px 8px; color: var(--text-color); border-color: var(--border-glow);"><i class="fa-solid fa-plus"></i></button>
                     </div>
                 </div>
@@ -4051,16 +3918,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     <button class="remove-item" data-idx="${idx}" style="background:none; border:none; color:#e74c3c; cursor:pointer; margin-top: 5px;"><i class="fa-solid fa-trash"></i> Remove</button>
                 </div>
             </div>
-            `;
-        }).join('');
-
-        const syncPortalOnCartChange = () => {
-            if (state.activePortal === 'crop_buyer' && typeof renderCropBuyerPortal === 'function') {
-                renderCropBuyerPortal();
-            } else if (typeof renderExchangeGrid === 'function') {
-                renderExchangeGrid();
-            }
-        };
+        `).join('');
 
         document.querySelectorAll('.cart-minus').forEach(btn => {
             btn.addEventListener('click', () => {
@@ -4074,7 +3932,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
                 renderCartItems();
                 updateCartBadge();
-                syncPortalOnCartChange();
+                renderExchangeGrid();
             });
         });
 
@@ -4092,7 +3950,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     cartItem.qty++;
                     renderCartItems();
                     updateCartBadge();
-                    syncPortalOnCartChange();
+                    renderExchangeGrid();
                 } else {
                     showToast(`Maximum available portions (${totalStock}) reached!`, "error");
                 }
@@ -4105,7 +3963,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 state.cart.splice(idx, 1);
                 renderCartItems();
                 updateCartBadge();
-                syncPortalOnCartChange();
+                renderExchangeGrid();
             });
         });
 
@@ -4347,12 +4205,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const root = portalsRoot || document.getElementById('nn-portals-root');
         if (!root) return;
         const user = JSON.parse(sessionStorage.getItem('nourishUser') || '{}');
-        // Only show THIS seller's own crop listings (not other sellers')
-        const cropListings = state.listings.filter(l => 
-            String(l.vendorId) === String(user.id) &&
-            l.status !== 'sold' &&
-            (parseInt(l.qty || l.quantity) || 0) > 0
-        );
+        const cropListings = state.listings.filter(l => l.vendorId == user.id || l.produceType === 'crop' || l.cropGrade);
 
         let totalCropKg = 0;
         cropListings.forEach(l => {
@@ -4377,11 +4230,16 @@ document.addEventListener('DOMContentLoaded', () => {
                                 <div>
                                     <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
                                         <h1 class="crop-portal-title" style="font-size: 1.65rem; font-weight: 800; margin: 0; color: var(--crop-text-title);">${user.organizationName || user.name || 'Green Valley Farmers FPO'}</h1>
+                                        ${window.renderCropTrustBadge ? window.renderCropTrustBadge(user) : `
+                                            <span class="crop-trust-badge seller-badge">
+                                                <i class="fa-solid fa-seedling"></i> Verified Crop Producer / Mandi
+                                            </span>
+                                        `}
                                     </div>
                                     <div style="display: flex; align-items: center; gap: 18px; margin-top: 6px; font-size: 0.85rem; color: var(--crop-text-muted); flex-wrap: wrap;">
-                                        ${user.phone ? `<span><i class="fa-solid fa-phone" style="color: #f59e0b;"></i> ${user.phone}</span>` : ''}
-                                        ${user.email ? `<span><i class="fa-solid fa-envelope" style="color: #f59e0b;"></i> ${user.email}</span>` : ''}
-                                        ${user.address ? `<span><i class="fa-solid fa-location-dot" style="color: #f59e0b;"></i> ${user.address}</span>` : ''}
+                                        <span><i class="fa-solid fa-phone" style="color: #f59e0b;"></i> ${user.phone || '+91 98765 12340'}</span>
+                                        <span><i class="fa-solid fa-envelope" style="color: #f59e0b;"></i> ${user.email || 'farmer@domain.com'}</span>
+                                        <span><i class="fa-solid fa-location-dot" style="color: #f59e0b;"></i> ${user.address || 'APMC Yard / Regional Mandi Hub'}</span>
                                     </div>
                                 </div>
                             </div>
@@ -4448,10 +4306,10 @@ document.addEventListener('DOMContentLoaded', () => {
                                     <div style="display: flex; align-items: center; justify-content: space-between; font-size: 0.78rem; color: var(--crop-text-muted); border-top: 1px solid var(--crop-divider); padding-top: 10px; gap: 8px;">
                                         <span><i class="fa-regular fa-calendar-check" style="color: #f59e0b;"></i> ${formatHarvestLabel(crop.harvestDate)}</span>
                                         <div style="display: flex; gap: 6px;">
-                                            <button onclick="window.openEditCropModal('${crop.id}')" style="background: none; border: 1px solid rgba(245,158,11,0.4); color: #fbbf24; border-radius: 8px; padding: 4px 10px; font-size: 0.75rem; cursor: pointer; display: flex; align-items: center; gap: 5px;">
+                                            <button onclick="window.openEditCropModal(${crop.id})" style="background: none; border: 1px solid rgba(245,158,11,0.4); color: #fbbf24; border-radius: 8px; padding: 4px 10px; font-size: 0.75rem; cursor: pointer; display: flex; align-items: center; gap: 5px;">
                                                 <i class="fa-solid fa-pen-to-square"></i> Edit
                                             </button>
-                                            <button onclick="window.deleteCropListing('${crop.id}')" style="background: none; border: 1px solid rgba(239, 68, 68, 0.3); color: #f87171; border-radius: 8px; padding: 4px 10px; font-size: 0.75rem; cursor: pointer; display: flex; align-items: center; gap: 5px;">
+                                            <button onclick="window.deleteCropListing(${crop.id})" style="background: none; border: 1px solid rgba(239, 68, 68, 0.3); color: #f87171; border-radius: 8px; padding: 4px 10px; font-size: 0.75rem; cursor: pointer; display: flex; align-items: center; gap: 5px;">
                                                 <i class="fa-solid fa-trash-can"></i> Remove
                                             </button>
                                         </div>
@@ -4595,40 +4453,12 @@ document.addEventListener('DOMContentLoaded', () => {
         // Close modal immediately
         document.getElementById('editCropModal')?.remove();
 
-        const numericQty = parseInt(updates.quantity, 10) || 1;
-        const normalizedUpdates = {
-            ...updates,
-            qty: numericQty,
-            quantity: String(numericQty)
-        };
-
         // Update state.listings instantly → re-render without refresh
         const idx = state.listings.findIndex(l => String(l.id) === String(cropId));
         if (idx !== -1) {
-            state.listings[idx] = { ...state.listings[idx], ...normalizedUpdates };
+            state.listings[idx] = { ...state.listings[idx], ...updates };
         }
-
-        // Also update local caches
-        try {
-            let demo = JSON.parse(localStorage.getItem('nn_demo_listings') || '[]');
-            const dIdx = demo.findIndex(l => String(l.id) === String(cropId));
-            if (dIdx !== -1) {
-                demo[dIdx] = { ...demo[dIdx], ...normalizedUpdates };
-                localStorage.setItem('nn_demo_listings', JSON.stringify(demo));
-            }
-
-            let cached = JSON.parse(localStorage.getItem('nn_cached_listings') || '[]');
-            const cIdx = cached.findIndex(l => String(l.id) === String(cropId));
-            if (cIdx !== -1) {
-                cached[cIdx] = { ...cached[cIdx], ...normalizedUpdates };
-                localStorage.setItem('nn_cached_listings', JSON.stringify(cached));
-            }
-        } catch (e) { }
-
         renderCropSellerPortal();
-        if (state.activePortal === 'crop_buyer' && typeof renderCropBuyerPortal === 'function') {
-            renderCropBuyerPortal();
-        }
         showToast('Crop listing updated! 🌾', 'success');
 
         // Sync with server in background
@@ -4636,7 +4466,7 @@ document.addEventListener('DOMContentLoaded', () => {
             await fetch(`${API_BASE}/listings/${cropId}`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                body: JSON.stringify(normalizedUpdates)
+                body: JSON.stringify(updates)
             });
         } catch (err) {
             console.warn('Edit sync error (changes kept locally):', err);
@@ -4656,8 +4486,11 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!root) return;
         const user = JSON.parse(sessionStorage.getItem('nourishUser') || '{}');
 
-        // Strictly filter to ONLY crop/agri listings — never fall back to food listings
+        // Filter available crops (crops or items with cropGrade or produceType === 'crop')
         let allCrops = state.listings.filter(l => l.produceType === 'crop' || l.cropGrade || l.unit === 'Quintal' || l.unit === 'q');
+        if (allCrops.length === 0) {
+            allCrops = state.listings; // fallback
+        }
 
         let filteredCrops = allCrops.filter(item => {
             if (item.status === 'sold' || item.status === 'claimed') return false;
@@ -4683,6 +4516,11 @@ document.addEventListener('DOMContentLoaded', () => {
                                 <div>
                                     <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
                                         <h1 class="crop-portal-title" style="font-size: 1.65rem; font-weight: 800; margin: 0; color: var(--crop-text-title);">${user.organizationName || user.name || 'Sahyadri Agro-Processing MSME'}</h1>
+                                        ${window.renderCropTrustBadge ? window.renderCropTrustBadge(user) : `
+                                            <span class="crop-trust-badge buyer-badge">
+                                                <i class="fa-solid fa-industry"></i> Verified Agro-Processing MSME
+                                            </span>
+                                        `}
                                     </div>
                                     <div style="display: flex; align-items: center; gap: 18px; margin-top: 6px; font-size: 0.85rem; color: var(--crop-text-muted); flex-wrap: wrap;">
                                         <span><i class="fa-solid fa-phone" style="color: #10b981;"></i> ${user.phone || '+91 98765 56780'}</span>
@@ -5233,42 +5071,17 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     window.deleteCropListing = async function(cropId) {
-        if (!confirm('Are you sure you want to remove this crop harvest listing?')) return;
         const token = sessionStorage.getItem('nourishToken');
-
-        // Instantly remove from in-memory state
-        state.listings = state.listings.filter(l => String(l.id) !== String(cropId));
-
-        // Immediately update localStorage so it stays removed across refreshes
-        try {
-            let demo = JSON.parse(localStorage.getItem('nn_demo_listings') || '[]');
-            demo = demo.filter(l => String(l.id) !== String(cropId));
-            localStorage.setItem('nn_demo_listings', JSON.stringify(demo));
-
-            let cached = JSON.parse(localStorage.getItem('nn_cached_listings') || '[]');
-            cached = cached.filter(l => String(l.id) !== String(cropId));
-            localStorage.setItem('nn_cached_listings', JSON.stringify(cached));
-
-            let deleted = JSON.parse(localStorage.getItem('nn_deleted_listings') || '[]');
-            if (!deleted.includes(String(cropId))) deleted.push(String(cropId));
-            localStorage.setItem('nn_deleted_listings', JSON.stringify(deleted));
-        } catch (e) { }
-
-        // Immediately re-render the crop seller portal DOM
-        renderCropSellerPortal();
-        if (state.activePortal === 'crop_buyer' && typeof renderCropBuyerPortal === 'function') {
-            renderCropBuyerPortal();
-        }
-        showToast("Crop batch removed successfully. 🌾", "info");
-
-        // Sync with backend API in background
         try {
             await fetch(`${API_BASE}/listings/${cropId}`, {
                 method: 'DELETE',
                 headers: { 'Authorization': `Bearer ${token}` }
             });
+            showToast("Crop batch listing removed.", "info");
+            refreshState();
         } catch (err) {
-            console.warn('Server delete error (already removed locally):', err);
+            state.listings = state.listings.filter(l => l.id != cropId);
+            renderCropSellerPortal();
         }
     };
 
