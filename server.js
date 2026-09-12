@@ -136,6 +136,7 @@ app.post('/api/register', async (req, res) => {
                             toEmail: email,
                             name: organizationName,
                             token: verificationToken,
+                            otp: verificationOtp,
                             accountType,
                             hostUrl
                         }).catch(e => console.error("Async Email Error:", e));
@@ -193,6 +194,7 @@ app.post('/api/register', async (req, res) => {
                         toEmail: email,
                         name: organizationName,
                         token: verificationToken,
+                        otp: verificationOtp,
                         accountType,
                         hostUrl
                     }).catch(e => console.error("Async Email Error:", e));
@@ -1115,6 +1117,7 @@ app.post('/api/resend-verification', (req, res) => {
                     toEmail: email,
                     name: user.organizationName,
                     token: verificationToken,
+                    otp: verificationOtp,
                     otpCode: verificationOtp,
                     hostUrl
                 }).catch(e => console.error("Async Resend Email Error:", e));
