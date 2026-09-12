@@ -122,7 +122,8 @@ async function dispatchEmail({ toEmail, subject, html, devFallbackUrl }) {
  * @param {string} params.accountType - User account type (restaurant/vendor/ngo/shelter)
  * @param {string} params.hostUrl - Base server URL (e.g. http://localhost:3000)
  */
-async function sendVerificationEmail({ toEmail, name, token, accountType, hostUrl, otp }) {
+async function sendVerificationEmail({ toEmail, name, token, accountType, hostUrl, otp, otpCode }) {
+    const finalOtp = otp || otpCode;
     const baseUrl = hostUrl || 'http://localhost:3000';
     const verifyUrl = `${baseUrl}/api/verify-email?token=${token}`;
 
@@ -241,10 +242,10 @@ async function sendVerificationEmail({ toEmail, name, token, accountType, hostUr
 
                 <a href="${verifyUrl}" class="btn-verify" target="_blank">Verify Email Address & Activate</a>
 
-                ${otp ? `
+                ${finalOtp ? `
                 <div class="otp-box">
                     <div style="font-size: 13px; color: #94a3b8; text-transform: uppercase; letter-spacing: 1.5px; font-weight: 600;">Or Enter 6-Digit Code On Screen</div>
-                    <div class="otp-code">${otp}</div>
+                    <div class="otp-code">${finalOtp}</div>
                     <div style="font-size: 12px; color: #64748b;">This verification code is valid for 24 hours</div>
                 </div>
                 ` : ''}
