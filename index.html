@@ -41,7 +41,7 @@
                     document.documentElement.classList.add('user-logged-in');
                     const user = JSON.parse(userStr);
                     const type = (user.type || user.accountType || user.role || '').toLowerCase();
-                    if (type === 'restaurant' || type === 'vendor' || type === 'seller' || type === 'ngo' || type === 'buyer' || type === 'crop_seller' || type === 'crop_buyer') {
+                    if (type === 'restaurant' || type === 'vendor' || type === 'seller' || type === 'ngo' || type === 'buyer') {
                         document.documentElement.classList.add('portal-pre-active');
                     }
                 }
@@ -220,12 +220,7 @@
                         <div class="stat-number" data-target="0" data-target-stat="ngos">0</div>
                         <div class="stat-label">NGOs Helped</div>
                     </div>
-                    <div class="stat-box animate-on-scroll zoom-in delay-500">
-                        <div class="stat-icon"><i class="fa-solid fa-wheat-awn" style="color: #f59e0b;"></i></div>
-                        <div class="stat-number" data-target="0" data-target-stat="cropsSaved">0</div>
-                        <div class="stat-suffix">kg</div>
-                        <div class="stat-label">Agri Crops Rescued / Sold</div>
-                    </div>
+
                 </div>
             </div>
         </section>
@@ -479,14 +474,7 @@
                             <input type="radio" name="accountType" value="ngo">
                             <span class="mrc-content"><i class="fa-solid fa-hands-holding-child"></i> Food Buyer</span>
                         </label>
-                        <label class="minimal-radio-card">
-                            <input type="radio" name="accountType" value="crop_seller">
-                            <span class="mrc-content"><i class="fa-solid fa-wheat-awn" style="color: #f59e0b;"></i> Crop Seller</span>
-                        </label>
-                        <label class="minimal-radio-card">
-                            <input type="radio" name="accountType" value="crop_buyer">
-                            <span class="mrc-content"><i class="fa-solid fa-industry" style="color: #10b981;"></i> Crop Buyer</span>
-                        </label>
+
                     </div>
 
                     <div class="minimal-input-wrap">
@@ -908,18 +896,7 @@
                     <span>Add</span>
                 </a>
 
-                <!-- Crop Seller specific items -->
-                <a href="#" class="nav-item crop-seller-only" id="add-crop-dock" style="display: none;">
-                    <i class="fa-solid fa-wheat-awn" style="color: #f59e0b;"></i>
-                    <span>Add Crop</span>
-                </a>
 
-                <!-- Crop Buyer specific items -->
-                <a href="javascript:void(0)" class="nav-item crop-buyer-only" id="crop-cart-dock" style="display: none;" onclick="const d = document.getElementById('cart-drawer'); if (d) d.classList.add('active'); if (typeof renderCartItems === 'function') renderCartItems(); return false;">
-                    <i class="fa-solid fa-basket-shopping" style="color: #10b981;"></i>
-                    <span>Cart</span>
-                    <span class="cart-count crop-cart-count">0</span>
-                </a>
 
                 <!-- Landing page specific items -->
                 <a href="#about" class="nav-item landing-only">
