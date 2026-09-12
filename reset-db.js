@@ -35,7 +35,7 @@ async function resetDatabase() {
             await pool.query(`
                 CREATE TABLE IF NOT EXISTS users (
                     id SERIAL PRIMARY KEY,
-                    accounttype TEXT NOT NULL CHECK(accounttype IN ('restaurant','vendor','ngo','shelter','crop_seller','crop_buyer')),
+                    accounttype TEXT NOT NULL CHECK(accounttype IN ('restaurant','vendor','ngo','shelter')),
                     organizationname TEXT NOT NULL,
                     email TEXT NOT NULL UNIQUE,
                     password TEXT NOT NULL,
@@ -86,9 +86,6 @@ async function resetDatabase() {
                     imageurl TEXT,
                     status TEXT NOT NULL DEFAULT 'available' CHECK(status IN ('available','claimed','sold','expired')),
                     claimedby INTEGER REFERENCES users(id) ON DELETE SET NULL,
-                    cropgrade TEXT,
-                    producetype TEXT DEFAULT 'food',
-                    harvestdate TEXT,
                     dateposted TIMESTAMP NOT NULL DEFAULT NOW()
                 );
 
@@ -104,21 +101,20 @@ async function resetDatabase() {
                 );
 
                 -- Re-seed demo users so instant demo logins and foreign keys work cleanly
-                INSERT INTO users (id, accounttype, organizationname, email, password, isverified, darpanid, ngoregtype, fssaicode, phone)
+                INSERT INTO users (id, accounttype, organizationname, email, password, isverified, darpanid, ngoregtype, fssaicode)
                 VALUES 
-                (888, 'restaurant', 'Elite Catering Services', 'serverdemo@gmail.com', '$2a$10$demoHashedPasswordPlaceHolder888', 1, '', '', '12345678901234', '+91 98765 43210'),
-                (999, 'ngo', 'Global Outreach Foundation', 'ngodemo@gmail.com', '$2a$10$demoHashedPasswordPlaceHolder999', 1, 'TN/2023/0345678', 'darpan', '', '+91 98765 87654'),
-                (777, 'crop_seller', 'Green Valley Farmers FPO', 'farmerdemo@gmail.com', '$2a$10$demoHashedPasswordPlaceHolder888', 1, '', '', '', '+91 98765 12340'),
-                (666, 'crop_buyer', 'Sahyadri Agro-Processing MSME', 'buyeragridemo@gmail.com', '$2a$10$demoHashedPasswordPlaceHolder999', 1, '', '', '', '+91 98765 56780')
+                (888, 'restaurant', 'Elite Catering Services', 'serverdemo@gmail.com', '$2a$10$demoHashedPasswordPlaceHolder888', 1, '', '', '12345678901234'),
+                (999, 'ngo', 'Global Outreach Foundation', 'ngodemo@gmail.com', '$2a$10$demoHashedPasswordPlaceHolder999', 1, 'TN/2023/0345678', 'darpan', '')
                 ON CONFLICT (id) DO UPDATE SET 
                     organizationname = EXCLUDED.organizationname,
                     accounttype = EXCLUDED.accounttype,
                     email = EXCLUDED.email;
 
-                INSERT INTO food_listings (id, vendorid, vendorname, name, description, category, price, quantity, unit, condition, status, cropgrade, producetype)
+                -- Seed sample demo surplus food listings
+                INSERT INTO food_listings (id, vendorid, vendorname, name, description, category, price, quantity, unit, condition, status, imageurl)
                 VALUES 
-                (901, 777, 'Green Valley Farmers FPO', 'Nashik Farm Fresh Tomatoes (Puree Grade)', 'Harvested surplus ripe tomatoes. Highly suitable for bulk ketchup, sauce, or puree processing units.', 'Vegetables', 6, '15', 'Quintal', 'Fresh Harvest', 'available', 'Grade B', 'crop'),
-                (902, 777, 'Green Valley Farmers FPO', 'Nagpur Organic Oranges (Pulp Grade)', 'Slightly bruised, high-sugar content oranges ideal for juice or pulp extraction.', 'Fruits', 12, '8', 'Quintal', 'Fresh Harvest', 'available', 'Grade B', 'crop')
+                (101, 888, 'Elite Catering Services', 'Fresh Steamed Basmati Rice & Dal Makhani', 'Freshly prepared banquet surplus. Packed hot in food-grade insulated containers ready for pickup.', 'Cooked', 0, '30', 'Plates', 'Fresh', 'available', 'https://images.unsplash.com/photo-1546833999-b9f581a1996d?w=600&q=80'),
+                (102, 888, 'Elite Catering Services', 'Assorted Roti & Mixed Vegetable Curry', 'Hygienically packed surplus dinner meals from our commercial kitchen.', 'Cooked', 0, '25', 'Plates', 'Fresh', 'available', 'https://images.unsplash.com/photo-1585937421612-70a008356fbe?w=600&q=80')
                 ON CONFLICT (id) DO NOTHING;
             `);
             console.log('  ✓ PostgreSQL tables recreated & demo accounts seeded successfully!');
@@ -231,6 +227,13 @@ async function resetDatabase() {
                 VALUES 
                 (888, 'restaurant', 'Elite Catering Services', 'serverdemo@gmail.com', '$2a$10$demoHashedPasswordPlaceHolder888', 1, '', '', '12345678901234'),
                 (999, 'ngo', 'Global Outreach Foundation', 'ngodemo@gmail.com', '$2a$10$demoHashedPasswordPlaceHolder999', 1, 'TN/2023/0345678', 'darpan', '');
+            `);
+
+            sqliteDb.run(`
+                INSERT OR REPLACE INTO food_listings (id, vendorId, vendorName, name, description, category, price, quantity, unit, condition, status, imageUrl)
+                VALUES 
+                (101, 888, 'Elite Catering Services', 'Fresh Steamed Basmati Rice & Dal Makhani', 'Freshly prepared banquet surplus. Packed hot in food-grade insulated containers ready for pickup.', 'Cooked', 0, '30', 'Plates', 'Fresh', 'available', 'https://images.unsplash.com/photo-1546833999-b9f581a1996d?w=600&q=80'),
+                (102, 888, 'Elite Catering Services', 'Assorted Roti & Mixed Vegetable Curry', 'Hygienically packed surplus dinner meals from our commercial kitchen.', 'Cooked', 0, '25', 'Plates', 'Fresh', 'available', 'https://images.unsplash.com/photo-1585937421612-70a008356fbe?w=600&q=80');
             `, (err) => {
                 if (err) {
                     console.error('❌ Error resetting SQLite tables:', err.message);
