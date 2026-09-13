@@ -1214,6 +1214,16 @@ document.addEventListener('DOMContentLoaded', () => {
             const statsRes = await fetch(`${API_BASE}/stats`);
             if (statsRes.ok) {
                 state.stats = await statsRes.json();
+                // If database is completely empty/erased, purge stale client-side demo orders & listings
+                if (Number(state.stats.totalMealsSaved || 0) === 0 && Number(state.stats.totalVendors || 0) === 0 && Number(state.stats.totalNGOs || 0) === 0) {
+                    try {
+                        localStorage.removeItem('nn_purchases');
+                        localStorage.removeItem('nn_demo_purchased_ids');
+                        localStorage.removeItem('nn_local_orders');
+                        localStorage.removeItem('nn_demo_listings');
+                        localStorage.removeItem('nn_cached_listings');
+                    } catch (e) {}
+                }
                 updateLiveStats();
             }
 
@@ -1354,7 +1364,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const demoListings = JSON.parse(localStorage.getItem('nn_demo_listings') || '[]');
 
         // Meals Saved = total qty across all listings + purchased qty
-        const listingMeals = state.listings.reduce((sum, l) => sum + (parseInt(l.qty) || parseInt(l.quantity) || 0), 0);
+        const listingMeals = (state.listings || []).reduce((sum, l) => sum + (parseInt(l.qty) || parseInt(l.quantity) || 0), 0);
         const purchasedMeals = purchases.reduce((sum, p) => sum + (p.qty || 0), 0);
         const totalMeals = listingMeals + purchasedMeals;
 
@@ -1362,24 +1372,26 @@ document.addEventListener('DOMContentLoaded', () => {
         const totalKg = Math.round(totalMeals * 0.35);
 
         // Partner Restaurants = unique vendor IDs in listings
-        const vendorIds = new Set(state.listings.map(l => l.vendorId).filter(Boolean));
-        const totalVendors = Math.max(vendorIds.size, demoListings.length > 0 ? 1 : 0, state.listings.length > 0 ? 1 : 0);
+        const vendorIds = new Set((state.listings || []).map(l => l.vendorId).filter(Boolean));
+        const totalVendors = Math.max(vendorIds.size, demoListings.length > 0 ? 1 : 0, (state.listings || []).length > 0 ? 1 : 0);
 
-        // NGOs Helped = unique buyer orgs from purchases, min 1 if any purchase
+        // NGOs Helped = unique buyer orgs from purchases
         const buyerOrgs = new Set(purchases.map(p => p.buyerOrg).filter(Boolean));
-        const totalNGOs = buyerOrgs.size + (purchases.length > 0 ? 1 : 0);
+        const totalNGOs = buyerOrgs.size;
 
         return { totalMeals, totalKg, totalVendors, totalNGOs };
     }
 
     function updateLiveStats() {
+        const hasApiStats = state.stats && typeof state.stats.totalMealsSaved !== 'undefined';
         const localStats = computeLocalStats();
 
-        // Merge with API stats (take whichever is higher)
-        const meals = Math.max(localStats.totalMeals, state.stats.totalMealsSaved || 0);
-        const kg = Math.max(localStats.totalKg, state.stats.totalKgShared || 0);
-        const vendors = Math.max(localStats.totalVendors, state.stats.totalVendors || 0);
-        const ngos = Math.max(localStats.totalNGOs, state.stats.totalNGOs || 0);
+        // When backend API stats are available, reflect the true database numbers (even if 0).
+        // Fallback to locally computed stats only if the API is offline/unreachable.
+        const meals = hasApiStats ? Number(state.stats.totalMealsSaved || 0) : localStats.totalMeals;
+        const kg = hasApiStats ? Math.round(Number(state.stats.totalKgShared || 0)) : localStats.totalKg;
+        const vendors = hasApiStats ? Number(state.stats.totalVendors || 0) : localStats.totalVendors;
+        const ngos = hasApiStats ? Number(state.stats.totalNGOs || 0) : localStats.totalNGOs;
 
         const listedEl = document.querySelector('[data-target-stat="listed"]');
         const fulfilledEl = document.querySelector('[data-target-stat="fulfilled"]');
@@ -1454,7 +1466,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function startCounters() {
         counters.forEach(counter => {
-            const target = +counter.getAttribute('data-target');
+            const target = +counter.getAttribute('data-target') || 0;
+            if (target === 0) {
+                counter.innerText = '0';
+                return;
+            }
             const duration = 2000; // ms
             const stepTime = Math.abs(Math.floor(duration / target));
 
@@ -1473,7 +1489,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (progress < duration) {
                     requestAnimationFrame(updateCounter);
                 } else {
-                    counter.innerText = target.toLocaleString() + (counter.getAttribute('data-target') > 1000 ? '+' : '');
+                    counter.innerText = target.toLocaleString() + (target > 1000 ? '+' : '');
                 }
             }
             requestAnimationFrame(updateCounter);
