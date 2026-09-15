@@ -64,38 +64,6 @@ function sanitizeSubjectForEmail(subject) {
         .trim();
 }
 
-const BREVO_API_KEY = process.env.BREVO_API_KEY;
-
-/**
- * Cloud HTTPS REST Engine (Port 443 - 300 free emails/day)
- * Bypasses all cloud firewall/port blocks on Render/Vercel/AWS.
- */
-async function sendViaBrevoApi({ toEmail, subject, html }) {
-    if (!BREVO_API_KEY) return null;
-    const senderEmail = process.env.GMAIL_USER || 'nourishnetwork.official@gmail.com';
-    const senderName = process.env.SENDER_NAME || 'Nourish Network';
-
-    const response = await fetch('https://api.brevo.com/v3/smtp/email', {
-        method: 'POST',
-        headers: {
-            'api-key': BREVO_API_KEY,
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-            sender: { name: senderName, email: senderEmail },
-            to: [{ email: toEmail }],
-            subject: subject,
-            htmlContent: html
-        })
-    });
-
-    const data = await response.json();
-    if (response.ok && data.messageId) {
-        return { success: true, messageId: data.messageId, via: 'brevo-https-443' };
-    }
-    throw new Error(data.message || (data.errors ? JSON.stringify(data.errors) : `Brevo HTTP ${response.status}`));
-}
-
 /**
  * High-Speed Direct Python SMTP Engine (500 emails/day capacity)
  * Runs send_email.py via smtplib.SMTP_SSL (Port 465) with Port 587 STARTTLS fallback.
@@ -138,28 +106,16 @@ function sendViaPython({ toEmail, subject, html }) {
 }
 
 /**
- * Universal Multi-Tier Dispatcher:
- * 1. Primary Cloud Engine: Brevo HTTPS REST API (Port 443, 300 emails/day, 100% unrestricted on Render/Cloud)
- * 2. Primary Local/VPS Engine: Direct Python SMTP (Port 465 SSL, 500 emails/day)
- * 3. Fallback: Node.js SMTP Transporter (Nodemailer)
- * 4. Emergency Fallback: Google Apps Script HTTP Bridge
+ * Universal Multi-Tier Native Dispatcher:
+ * 1. Primary Engine: Direct Python SMTP (Port 465 SSL, 500 emails/day native)
+ * 2. Secondary Engine: Node.js SMTP Transporter (Nodemailer, 500 emails/day native)
+ * 3. Fallback: Google Apps Script HTTP Bridge
  */
 async function dispatchEmail({ toEmail, subject, html, devFallbackUrl }) {
     const cleanSubject = sanitizeSubjectForEmail(subject);
     const cleanHtml = sanitizeHtmlForEmail(html);
 
-    // 1. Cloud REST Engine (Port 443 - 300 free emails/day)
-    try {
-        const res = await sendViaBrevoApi({ toEmail, subject: cleanSubject, html: cleanHtml });
-        if (res && res.success) {
-            console.log(`⚡ [Cloud REST Engine] Email delivered to ${toEmail}: ${res.messageId}`);
-            return { success: true, via: res.via, messageId: res.messageId };
-        }
-    } catch (brevoErr) {
-        console.warn(`⚠️ [Cloud REST Engine] Notice: ${brevoErr.message}. Attempting Python SMTP engine...`);
-    }
-
-    // 2. Direct Python SMTP Engine (Port 465 SSL, 500 emails/day)
+    // 1. Direct Python SMTP Engine (Port 465 SSL, 500 emails/day native)
     try {
         const res = await sendViaPython({ toEmail, subject: cleanSubject, html: cleanHtml });
         if (res && res.success) {
@@ -170,7 +126,7 @@ async function dispatchEmail({ toEmail, subject, html, devFallbackUrl }) {
         console.warn(`⚠️ [Python SMTP Engine] Notice: ${pyErr.message}. Attempting Nodemailer fallback...`);
     }
 
-    // 3. Fallback: Node.js Nodemailer Transporter
+    // 2. Direct Nodemailer SMTP Transporter (500 emails/day native)
     try {
         const info = await transporter.sendMail({
             from: `"Nourish Network" <${process.env.GMAIL_USER || 'nourishnetwork.official@gmail.com'}>`,
@@ -184,7 +140,7 @@ async function dispatchEmail({ toEmail, subject, html, devFallbackUrl }) {
         console.warn(`⚠️ [Nodemailer SMTP] Notice: ${smtpErr.message}.`);
     }
 
-    // 4. Emergency Fallback: Google Apps Script Bridge
+    // 3. Fallback: Google Apps Script Bridge
     if (GOOGLE_BRIDGE_URL) {
         try {
             const res = await fetch(GOOGLE_BRIDGE_URL, {
