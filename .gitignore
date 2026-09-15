@@ -5,3 +5,5 @@ database.sqlite-shm
 .env
 .env.local
 uploads/
+__pycache__/
+*.pyc
