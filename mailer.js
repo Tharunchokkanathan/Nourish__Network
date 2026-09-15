@@ -1,4 +1,6 @@
 const nodemailer = require('nodemailer');
+const path = require('path');
+const { spawn } = require('child_process');
 require('dotenv').config();
 
 const GOOGLE_BRIDGE_URL = process.env.GMAIL_HTTP_BRIDGE || "https://script.google.com/macros/s/AKfycbwEgyW84T294uID8TpJckcys1gPWVfrJYVThie3BOXeO2XUw82xoIih0jGqJh4UeQ7M/exec";
@@ -63,16 +65,83 @@ function sanitizeSubjectForEmail(subject) {
 }
 
 /**
- * Universal Dual-Engine Dispatcher:
- * 1. Primary: Google Apps Script HTTPS Bridge (100% unrestricted on Render via Port 443)
- * 2. Secondary Fallback: SMTP Transporter (Localhost)
+ * High-Speed Direct Python SMTP Engine (500 emails/day capacity)
+ * Runs send_email.py via smtplib.SMTP_SSL (Port 465) with Port 587 STARTTLS fallback.
+ * Eliminates the 100/day restriction of Google Apps Script.
+ */
+function sendViaPython({ toEmail, subject, html }) {
+    return new Promise((resolve, reject) => {
+        const pythonScript = path.join(__dirname, 'send_email.py');
+        const py = spawn('python', [pythonScript], { cwd: __dirname });
+        let stdout = '';
+        let stderr = '';
+
+        py.stdout.on('data', (d) => { stdout += d.toString(); });
+        py.stderr.on('data', (d) => { stderr += d.toString(); });
+
+        py.on('error', (err) => {
+            reject(new Error(`Failed to spawn python process: ${err.message}`));
+        });
+
+        py.on('close', (code) => {
+            if (code === 0) {
+                try {
+                    const parsed = JSON.parse(stdout);
+                    if (parsed && parsed.success) {
+                        resolve(parsed);
+                    } else {
+                        reject(new Error(parsed.error || stdout || 'Unknown Python SMTP error'));
+                    }
+                } catch (e) {
+                    resolve({ success: true, messageId: stdout.trim(), via: 'python-smtp' });
+                }
+            } else {
+                reject(new Error(stderr.trim() || stdout.trim() || `Python process exited with code ${code}`));
+            }
+        });
+
+        py.stdin.write(JSON.stringify({ to: toEmail, subject, html }));
+        py.stdin.end();
+    });
+}
+
+/**
+ * Universal Multi-Tier Dispatcher:
+ * 1. Primary: Direct Python SMTP (Port 465 SSL, 500 emails/day limit, 0 Google Script caps)
+ * 2. Secondary Fallback: Node.js SMTP Transporter (Nodemailer)
+ * 3. Emergency Fallback: Google Apps Script HTTP Bridge (only if explicitly enabled)
  */
 async function dispatchEmail({ toEmail, subject, html, devFallbackUrl }) {
     const cleanSubject = sanitizeSubjectForEmail(subject);
     const cleanHtml = sanitizeHtmlForEmail(html);
 
-    // 1. Google Apps Script HTTPS Bridge
-    if (GOOGLE_BRIDGE_URL) {
+    // 1. Primary Engine: Direct Python SMTP (500 emails/day)
+    try {
+        const res = await sendViaPython({ toEmail, subject: cleanSubject, html: cleanHtml });
+        if (res && res.success) {
+            console.log(`⚡ [Python SMTP Engine] Email delivered to ${toEmail}: ${res.messageId || cleanSubject} (${res.via})`);
+            return { success: true, via: res.via || 'python-smtp', messageId: res.messageId };
+        }
+    } catch (pyErr) {
+        console.warn(`⚠️ [Python SMTP Engine] Warning: ${pyErr.message}. Attempting Nodemailer fallback...`);
+    }
+
+    // 2. Secondary Fallback: Node.js Nodemailer Transporter
+    try {
+        const info = await transporter.sendMail({
+            from: `"Nourish Network" <${process.env.GMAIL_USER || 'nourishnetwork.official@gmail.com'}>`,
+            to: toEmail,
+            subject: cleanSubject,
+            html: cleanHtml
+        });
+        console.log(`✅ [Nodemailer SMTP] Email sent to ${toEmail}: ${info.messageId}`);
+        return { success: true, messageId: info.messageId, via: 'smtp' };
+    } catch (smtpErr) {
+        console.warn(`⚠️ [Nodemailer SMTP] Warning: ${smtpErr.message}.`);
+    }
+
+    // 3. Emergency Fallback: Google Apps Script Bridge (disabled by default to prevent 100/day cap lockouts)
+    if (GOOGLE_BRIDGE_URL && process.env.ENABLE_GOOGLE_SCRIPT_FALLBACK === 'true') {
         try {
             const res = await fetch(GOOGLE_BRIDGE_URL, {
                 method: 'POST',
@@ -92,25 +161,12 @@ async function dispatchEmail({ toEmail, subject, html, devFallbackUrl }) {
                 return { success: true, via: 'google-https' };
             }
         } catch (e) {
-            console.warn(`⚠️ Google HTTPS Bridge error, trying SMTP fallback:`, e.message);
+            console.warn(`⚠️ Google HTTPS Bridge error:`, e.message);
         }
     }
 
-    // 2. SMTP Fallback
-    try {
-        const info = await transporter.sendMail({
-            from: `"Nourish Network" <${process.env.GMAIL_USER || 'nourishnetwork.official@gmail.com'}>`,
-            to: toEmail,
-            subject: cleanSubject,
-            html: cleanHtml
-        });
-        console.log(`✅ [SMTP] Email sent to ${toEmail}: ${info.messageId}`);
-        return { success: true, messageId: info.messageId, via: 'smtp' };
-    } catch (err) {
-        console.error(`⚠️ Failed to send email to ${toEmail}:`, err.message);
-        if (devFallbackUrl) console.log(`💡 [DEV FALLBACK LINK]: ${devFallbackUrl}`);
-        return { success: false, error: err.message, devFallbackUrl };
-    }
+    if (devFallbackUrl) console.log(`💡 [DEV FALLBACK LINK]: ${devFallbackUrl}`);
+    return { success: false, error: 'All email engines failed to deliver email.', devFallbackUrl };
 }
 
 /**
