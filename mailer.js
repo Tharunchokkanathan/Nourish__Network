@@ -64,6 +64,96 @@ function sanitizeSubjectForEmail(subject) {
         .trim();
 }
 
+// OAuth2 Token Cache for Gmail REST API
+let cachedGmailToken = null;
+let cachedGmailTokenExpiry = 0;
+
+/**
+ * Fetch / refresh Google OAuth2 Access Token for Gmail REST API
+ */
+async function getGmailAccessToken() {
+    const clientId = process.env.GMAIL_CLIENT_ID;
+    const clientSecret = process.env.GMAIL_CLIENT_SECRET;
+    const refreshToken = process.env.GMAIL_REFRESH_TOKEN;
+
+    if (!clientId || !clientSecret || !refreshToken) {
+        return null;
+    }
+
+    const now = Date.now();
+    // Use cached token if valid for at least 3 more minutes
+    if (cachedGmailToken && cachedGmailTokenExpiry > now + 180000) {
+        return cachedGmailToken;
+    }
+
+    const params = new URLSearchParams({
+        client_id: clientId,
+        client_secret: clientSecret,
+        refresh_token: refreshToken,
+        grant_type: 'refresh_token'
+    });
+
+    const res = await fetch('https://oauth2.googleapis.com/token', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: params.toString()
+    });
+
+    const data = await res.json();
+    if (res.ok && data.access_token) {
+        cachedGmailToken = data.access_token;
+        cachedGmailTokenExpiry = now + (data.expires_in || 3600) * 1000;
+        return cachedGmailToken;
+    }
+
+    throw new Error(`Google OAuth token refresh failed: ${data.error_description || data.error || JSON.stringify(data)}`);
+}
+
+/**
+ * Native Google Gmail REST API Engine (Port 443 HTTPS, 500 emails/day capacity)
+ * Official Google REST API - Zero 3rd party services, 100% unrestricted on Render & Cloud
+ */
+async function sendViaGmailApi({ toEmail, subject, html }) {
+    const accessToken = await getGmailAccessToken();
+    if (!accessToken) return null;
+
+    const senderEmail = process.env.GMAIL_USER || 'nourishnetwork.official@gmail.com';
+    const utf8Subject = `=?utf-8?B?${Buffer.from(subject).toString('base64')}?=`;
+
+    const mimeMessage = [
+        `From: "Nourish Network" <${senderEmail}>`,
+        `To: ${toEmail}`,
+        `Subject: ${utf8Subject}`,
+        'MIME-Version: 1.0',
+        'Content-Type: text/html; charset=utf-8',
+        'Content-Transfer-Encoding: base64',
+        '',
+        Buffer.from(html).toString('base64')
+    ].join('\r\n');
+
+    const base64UrlRaw = Buffer.from(mimeMessage)
+        .toString('base64')
+        .replace(/\+/g, '-')
+        .replace(/\//g, '_')
+        .replace(/=+$/, '');
+
+    const res = await fetch('https://gmail.googleapis.com/gmail/v1/users/me/messages/send', {
+        method: 'POST',
+        headers: {
+            'Authorization': `Bearer ${accessToken}`,
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ raw: base64UrlRaw })
+    });
+
+    const data = await res.json();
+    if (res.ok && data.id) {
+        return { success: true, messageId: data.id, via: 'google-gmail-api-443' };
+    }
+
+    throw new Error(data.error ? data.error.message : `Gmail API returned HTTP ${res.status}`);
+}
+
 /**
  * High-Speed Direct Python SMTP Engine (500 emails/day capacity)
  * Runs send_email.py via smtplib.SMTP_SSL (Port 465) with Port 587 STARTTLS fallback.
@@ -107,15 +197,27 @@ function sendViaPython({ toEmail, subject, html }) {
 
 /**
  * Universal Multi-Tier Native Dispatcher:
- * 1. Primary Engine: Direct Python SMTP (Port 465 SSL, 500 emails/day native)
- * 2. Secondary Engine: Node.js SMTP Transporter (Nodemailer, 500 emails/day native)
- * 3. Fallback: Google Apps Script HTTP Bridge
+ * 1. Primary Engine: Official Google Gmail REST API (Port 443 HTTPS, 500 emails/day native)
+ * 2. Secondary Engine: Direct Python SMTP (Port 465 SSL, 500 emails/day native)
+ * 3. Fallback: Node.js SMTP Transporter (Nodemailer, 500 emails/day native)
+ * 4. Emergency Fallback: Google Apps Script HTTP Bridge
  */
 async function dispatchEmail({ toEmail, subject, html, devFallbackUrl }) {
     const cleanSubject = sanitizeSubjectForEmail(subject);
     const cleanHtml = sanitizeHtmlForEmail(html);
 
-    // 1. Direct Python SMTP Engine (Port 465 SSL, 500 emails/day native)
+    // 1. Primary Engine: Official Google Gmail REST API (Port 443 HTTPS, 500 emails/day)
+    try {
+        const res = await sendViaGmailApi({ toEmail, subject: cleanSubject, html: cleanHtml });
+        if (res && res.success) {
+            console.log(`⚡ [Google Gmail API Engine] Email delivered to ${toEmail}: ${res.messageId}`);
+            return { success: true, via: res.via, messageId: res.messageId };
+        }
+    } catch (apiErr) {
+        console.warn(`⚠️ [Google Gmail API Engine] Notice: ${apiErr.message}. Attempting Python SMTP engine...`);
+    }
+
+    // 2. Secondary Engine: Direct Python SMTP Engine (Port 465 SSL, 500 emails/day native)
     try {
         const res = await sendViaPython({ toEmail, subject: cleanSubject, html: cleanHtml });
         if (res && res.success) {
@@ -126,7 +228,7 @@ async function dispatchEmail({ toEmail, subject, html, devFallbackUrl }) {
         console.warn(`⚠️ [Python SMTP Engine] Notice: ${pyErr.message}. Attempting Nodemailer fallback...`);
     }
 
-    // 2. Direct Nodemailer SMTP Transporter (500 emails/day native)
+    // 3. Fallback: Direct Nodemailer SMTP Transporter (500 emails/day native)
     try {
         const info = await transporter.sendMail({
             from: `"Nourish Network" <${process.env.GMAIL_USER || 'nourishnetwork.official@gmail.com'}>`,
@@ -140,7 +242,7 @@ async function dispatchEmail({ toEmail, subject, html, devFallbackUrl }) {
         console.warn(`⚠️ [Nodemailer SMTP] Notice: ${smtpErr.message}.`);
     }
 
-    // 3. Fallback: Google Apps Script Bridge
+    // 4. Emergency Fallback: Google Apps Script Bridge
     if (GOOGLE_BRIDGE_URL) {
         try {
             const res = await fetch(GOOGLE_BRIDGE_URL, {
