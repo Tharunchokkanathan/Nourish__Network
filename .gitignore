@@ -7,3 +7,4 @@ database.sqlite-shm
 uploads/
 __pycache__/
 *.pyc
+scratch/
