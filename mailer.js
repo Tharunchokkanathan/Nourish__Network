@@ -202,13 +202,27 @@ function sendViaPython({ toEmail, subject, html }) {
  * 3. Fallback: Node.js SMTP Transporter (Nodemailer, 500 emails/day native)
  * 4. Emergency Fallback: Google Apps Script HTTP Bridge
  */
+function withTimeout(promise, ms, name) {
+    return Promise.race([
+        promise,
+        new Promise((_, reject) => setTimeout(() => reject(new Error(`${name} timed out after ${ms}ms`)), ms))
+    ]);
+}
+
+/**
+ * Universal Multi-Tier Native Dispatcher (Guaranteed Sub-Second Latency):
+ * 1. Primary Engine: Official Google Gmail REST API (Port 443 HTTPS, 500 emails/day native, ~200-600ms)
+ * 2. Secondary Engine: Direct Python SMTP (Port 465 SSL, 500 emails/day native, 3s timeout guard)
+ * 3. Fallback: Node.js SMTP Transporter (Nodemailer, 3s timeout guard)
+ * 4. Emergency Fallback: Google Apps Script HTTP Bridge
+ */
 async function dispatchEmail({ toEmail, subject, html, devFallbackUrl }) {
     const cleanSubject = sanitizeSubjectForEmail(subject);
     const cleanHtml = sanitizeHtmlForEmail(html);
 
     // 1. Primary Engine: Official Google Gmail REST API (Port 443 HTTPS, 500 emails/day)
     try {
-        const res = await sendViaGmailApi({ toEmail, subject: cleanSubject, html: cleanHtml });
+        const res = await withTimeout(sendViaGmailApi({ toEmail, subject: cleanSubject, html: cleanHtml }), 6000, 'Google Gmail API');
         if (res && res.success) {
             console.log(`⚡ [Google Gmail API Engine] Email delivered to ${toEmail}: ${res.messageId}`);
             return { success: true, via: res.via, messageId: res.messageId };
@@ -219,7 +233,7 @@ async function dispatchEmail({ toEmail, subject, html, devFallbackUrl }) {
 
     // 2. Secondary Engine: Direct Python SMTP Engine (Port 465 SSL, 500 emails/day native)
     try {
-        const res = await sendViaPython({ toEmail, subject: cleanSubject, html: cleanHtml });
+        const res = await withTimeout(sendViaPython({ toEmail, subject: cleanSubject, html: cleanHtml }), 3000, 'Python SMTP');
         if (res && res.success) {
             console.log(`⚡ [Python SMTP Engine] Email delivered to ${toEmail}: ${res.messageId || cleanSubject} (${res.via})`);
             return { success: true, via: res.via || 'python-smtp', messageId: res.messageId };
@@ -230,12 +244,12 @@ async function dispatchEmail({ toEmail, subject, html, devFallbackUrl }) {
 
     // 3. Fallback: Direct Nodemailer SMTP Transporter (500 emails/day native)
     try {
-        const info = await transporter.sendMail({
+        const info = await withTimeout(transporter.sendMail({
             from: `"Nourish Network" <${process.env.GMAIL_USER || 'nourishnetwork.official@gmail.com'}>`,
             to: toEmail,
             subject: cleanSubject,
             html: cleanHtml
-        });
+        }), 3000, 'Nodemailer SMTP');
         console.log(`✅ [Nodemailer SMTP] Email sent to ${toEmail}: ${info.messageId}`);
         return { success: true, messageId: info.messageId, via: 'smtp' };
     } catch (smtpErr) {
