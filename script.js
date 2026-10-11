@@ -4812,148 +4812,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // ─── INSTANT REAL-TIME (SSE) CLIENT & AUDIO NOTIFICATION ENGINE ─────────
-    function playAlertChime() {
-        try {
-            const AudioCtx = window.AudioContext || window.webkitAudioContext;
-            if (!AudioCtx) return;
-            const ctx = new AudioCtx();
-            if (ctx.state === 'suspended') {
-                ctx.resume().catch(() => {});
-            }
-            const now = ctx.currentTime;
-
-            // Tone 1: D5 (587.33 Hz)
-            const osc1 = ctx.createOscillator();
-            const gain1 = ctx.createGain();
-            osc1.type = 'sine';
-            osc1.frequency.setValueAtTime(587.33, now);
-            gain1.gain.setValueAtTime(0.12, now);
-            gain1.gain.exponentialRampToValueAtTime(0.0001, now + 0.35);
-            osc1.connect(gain1);
-            gain1.connect(ctx.destination);
-            osc1.start(now);
-            osc1.stop(now + 0.35);
-
-            // Tone 2: A5 (880 Hz - bright harmonious ring)
-            const osc2 = ctx.createOscillator();
-            const gain2 = ctx.createGain();
-            osc2.type = 'sine';
-            osc2.frequency.setValueAtTime(880, now + 0.12);
-            gain2.gain.setValueAtTime(0.14, now + 0.12);
-            gain2.gain.exponentialRampToValueAtTime(0.0001, now + 0.55);
-            osc2.connect(gain2);
-            gain2.connect(ctx.destination);
-            osc2.start(now + 0.12);
-            osc2.stop(now + 0.55);
-        } catch (e) {
-            // AudioContext autoplay restriction prior to user gesture
-        }
-    }
-    window.playAlertChime = playAlertChime;
-
-    let realtimeEventSource = null;
-    function initRealtimeStream() {
-        if (!window.EventSource) {
-            console.warn("SSE not supported in this browser.");
-            return;
-        }
-
-        if (realtimeEventSource) {
-            try { realtimeEventSource.close(); } catch (e) {}
-        }
-
-        const indicator = document.getElementById('realtimeLiveIndicator');
-        const streamUrl = `${API_BASE}/realtime/stream`;
-
-        try {
-            realtimeEventSource = new EventSource(streamUrl);
-
-            realtimeEventSource.addEventListener('connected', () => {
-                if (indicator) {
-                    indicator.classList.remove('disconnected');
-                    indicator.title = "Real-Time Network Active: Instant alerts connected";
-                }
-            });
-
-            realtimeEventSource.addEventListener('NEW_LISTING', (e) => {
-                try {
-                    const data = JSON.parse(e.data);
-                    playAlertChime();
-                    showToast(`🚨 Instant Surplus Alert: ${data.vendorName || 'A food partner'} freshly posted ${data.quantity} ${data.unit || 'portions'} of "${data.name}"!`, "success", 6000);
-                    if (typeof refreshState === 'function') {
-                        refreshState(false);
-                    }
-                    if (typeof updateLiveStats === 'function') {
-                        updateLiveStats();
-                    }
-                    if (typeof animateStatBump === 'function') {
-                        animateStatBump('listed');
-                    }
-                } catch (err) {
-                    console.error("Error handling NEW_LISTING event:", err);
-                }
-            });
-
-            realtimeEventSource.addEventListener('LISTING_CLAIMED', (e) => {
-                try {
-                    const data = JSON.parse(e.data);
-                    if (typeof refreshState === 'function') refreshState(true);
-                    if (typeof loadPortalHistory === 'function') loadPortalHistory(true);
-                    if (typeof updateLiveStats === 'function') updateLiveStats();
-                    if (typeof animateStatBump === 'function') animateStatBump('claimed');
-                } catch (err) {
-                    console.error("Error handling LISTING_CLAIMED event:", err);
-                }
-            });
-
-            realtimeEventSource.addEventListener('ORDER_CREATED', () => {
-                if (typeof refreshState === 'function') refreshState(true);
-                if (typeof loadPortalHistory === 'function') loadPortalHistory(true);
-                if (typeof updateLiveStats === 'function') updateLiveStats();
-            });
-
-            realtimeEventSource.addEventListener('HANDOVER_VERIFIED', (e) => {
-                try {
-                    const data = JSON.parse(e.data);
-                    playAlertChime();
-                    showToast(`🤝 Handover Physically Verified! Order #${data.orderId} (${data.foodName}) was collected.`, "success");
-                    if (typeof loadPortalHistory === 'function') loadPortalHistory(true);
-                    if (typeof updateLiveStats === 'function') updateLiveStats();
-                    if (typeof animateStatBump === 'function') animateStatBump('fulfilled');
-                } catch (err) {
-                    console.error("Error handling HANDOVER_VERIFIED event:", err);
-                }
-            });
-
-            realtimeEventSource.addEventListener('LISTING_UPDATED', () => {
-                if (typeof refreshState === 'function') refreshState(true);
-            });
-
-            realtimeEventSource.addEventListener('LISTING_DELETED', () => {
-                if (typeof refreshState === 'function') refreshState(true);
-            });
-
-            realtimeEventSource.onerror = () => {
-                if (indicator) {
-                    indicator.classList.add('disconnected');
-                    indicator.title = "Reconnecting to real-time event pipeline...";
-                }
-            };
-
-            realtimeEventSource.onopen = () => {
-                if (indicator) {
-                    indicator.classList.remove('disconnected');
-                    indicator.title = "Real-Time Network Active: Instant alerts connected";
-                }
-            };
-        } catch (err) {
-            console.warn("Failed to initialize SSE stream:", err);
-            if (indicator) indicator.classList.add('disconnected');
-        }
-    }
-    window.initRealtimeStream = initRealtimeStream;
-
     // --- BOOTSTRAP APP ---
     initSwitcher();
     renderReviewsSlider();
@@ -4961,10 +4819,10 @@ document.addEventListener('DOMContentLoaded', () => {
     updateCartBadge();
     wireDockButtons();
     checkSession();
-    initRealtimeStream();
 
-    // Fallback background polling (30s) in case of offline reconnects
-    setInterval(() => refreshState(true), 30000);
+
+    // Real-time silent polling every 5 seconds
+    setInterval(() => refreshState(true), 5000);
 
     // --- IMPACT MAP ENGINE ---
     let impactMap = null;
