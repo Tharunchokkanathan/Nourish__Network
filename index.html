@@ -65,7 +65,13 @@
 
 
 
-            <div class="nav-buttons">
+            <div class="nav-buttons" style="display: flex; align-items: center; gap: 14px;">
+                <!-- Real-Time SSE Status Indicator -->
+                <div id="realtimeLiveIndicator" class="realtime-live-badge" title="Instant Real-Time Stream: Connected to live network events">
+                    <span class="realtime-pulse-dot"></span>
+                    <span class="realtime-live-text">LIVE</span>
+                </div>
+
                 <!-- Profile Avatar (shown when logged in) -->
                 <button id="nav-profile-btn" onclick="window.openSettings && window.openSettings()"
                     title="Profile Settings"
