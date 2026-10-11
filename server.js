@@ -1515,54 +1515,6 @@ app.get('/api/resolve-image', async (req, res) => {
     }
 });
 
-// ─── REAL-TIME SERVER-SENT EVENTS (SSE) HUB ─────────────────────────────────
-const sseClients = new Set();
-
-function broadcastRealtimeEvent(eventType, payload) {
-    if (!sseClients || sseClients.size === 0) return;
-    const msg = `event: ${eventType}\ndata: ${JSON.stringify(payload)}\n\n`;
-    for (const client of sseClients) {
-        try {
-            client.res.write(msg);
-        } catch (e) {
-            sseClients.delete(client);
-        }
-    }
-}
-
-// GET /api/realtime/stream
-app.get('/api/realtime/stream', (req, res) => {
-    res.setHeader('Content-Type', 'text/event-stream');
-    res.setHeader('Cache-Control', 'no-cache, no-transform');
-    res.setHeader('Connection', 'keep-alive');
-    res.setHeader('X-Accel-Buffering', 'no');
-
-    if (typeof res.flushHeaders === 'function') {
-        res.flushHeaders();
-    }
-
-    const client = { id: Date.now() + '-' + Math.floor(Math.random() * 10000), res };
-    sseClients.add(client);
-
-    // Initial greeting
-    res.write(`event: connected\ndata: ${JSON.stringify({ status: 'connected', clients: sseClients.size })}\n\n`);
-
-    req.on('close', () => {
-        sseClients.delete(client);
-    });
-});
-
-// Periodic keep-alive ping every 20 seconds to prevent proxy / Render connection dropouts
-setInterval(() => {
-    for (const client of sseClients) {
-        try {
-            client.res.write(':keepalive\n\n');
-        } catch (e) {
-            sseClients.delete(client);
-        }
-    }
-}, 20000);
-
 // 8. CREATE FOOD LISTING
 // POST /api/listings
 // Body: { name, description?, category, price, quantity, unit, expiryTime?, pickupTime?, condition, allergens?, imageUrl? }
@@ -1637,24 +1589,6 @@ app.post('/api/listings', authenticateToken, async (req, res) => {
             );
         });
 
-        // Instant Real-Time Push to all connected browsers
-        broadcastRealtimeEvent('NEW_LISTING', {
-            id: listingId,
-            vendorId: req.user.id,
-            vendorName: req.user.name || 'Local Food Partner',
-            name,
-            description: description || '',
-            category: category || 'Cooked',
-            price: parseFloat(price) || 0,
-            quantity,
-            unit: unit || 'Plate',
-            expiryTime: expiryTime || null,
-            pickupTime: pickupTime || null,
-            condition: condition || 'Fresh',
-            imageUrl: finalImageUrl,
-            datePosted: new Date().toISOString()
-        });
-
         res.status(201).json({
             message: 'Food listing published successfully! 🌱',
             id: listingId
@@ -1714,15 +1648,6 @@ app.put('/api/listings/:id', authenticateToken, async (req, res) => {
 
         db.run(sql, params, function (err) {
             if (err) return res.status(500).json({ error: err.message });
-            broadcastRealtimeEvent('LISTING_UPDATED', {
-                id: Number(id),
-                name,
-                category,
-                price,
-                quantity,
-                unit,
-                status
-            });
             res.status(200).json({ message: 'Listing updated successfully!' });
         });
     });
@@ -1742,7 +1667,6 @@ app.delete('/api/listings/:id', authenticateToken, (req, res) => {
 
         db.run(`DELETE FROM food_listings WHERE id = ?`, [id], function (err) {
             if (err) return res.status(500).json({ error: err.message });
-            broadcastRealtimeEvent('LISTING_DELETED', { id: Number(id) });
             res.status(200).json({ message: 'Listing deleted successfully.' });
         });
     });
@@ -1811,14 +1735,6 @@ app.post('/api/listings/claim', authenticateToken, (req, res) => {
             );
         });
 
-        // Broadcast instant real-time event to update all active browser feeds
-        broadcastRealtimeEvent('LISTING_CLAIMED', {
-            listingId: Number(listingId),
-            claimedBy: ngoId,
-            buyerName: req.user.name || 'NGO Partner',
-            status: 'claimed'
-        });
-
         res.status(200).json({ message: 'Food successfully claimed! 🤝' });
     });
 });
@@ -1868,17 +1784,6 @@ app.post('/api/checkout', authenticateToken, (req, res) => {
                             }
                         }
                     );
-                });
-            });
-
-            // Broadcast real-time order creation event to all active clients
-            placedOrders.forEach(order => {
-                broadcastRealtimeEvent('ORDER_CREATED', {
-                    listingId: order.listingId,
-                    orderId: order.orderId,
-                    quantity: order.quantity,
-                    totalPrice: order.totalPrice,
-                    buyerName: req.user.name || 'Community Partner'
                 });
             });
 
@@ -2176,12 +2081,6 @@ app.post('/api/orders/:id/verify-handover', authenticateToken, (req, res) => {
             function (uErr) {
                 if (uErr) return res.status(500).json({ error: uErr.message });
                 console.log(`🤝 Handover physically verified for Order #${orderId} (${order.foodName} to ${order.buyerName})`);
-                broadcastRealtimeEvent('HANDOVER_VERIFIED', {
-                    orderId: Number(orderId),
-                    foodName: order.foodName,
-                    buyerName: order.buyerName,
-                    handoverAt: now
-                });
                 res.status(200).json({
                     success: true,
                     message: `Physical handover verified! Food successfully received by ${order.buyerName}.`,
