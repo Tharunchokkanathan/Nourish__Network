@@ -33,6 +33,36 @@ window.deleteComment = function (commentId, btnEl) {
     }, 250);
 };
 
+// ---- GLOBAL PHYSICAL HANDOVER VERIFICATION & QR PASS HELPERS ----
+window.closeHandoverVerifyModal = function () {
+    const modal = document.getElementById('handoverVerifyModal');
+    if (modal) modal.style.display = 'none';
+};
+
+window.closeHandoverQrModal = function () {
+    const modal = document.getElementById('handoverQrModal');
+    if (modal) modal.style.display = 'none';
+};
+
+window.stopCameraScanner = function () {
+    const modal = document.getElementById('qrCameraScannerModal');
+    if (modal) modal.style.display = 'none';
+    if (window._stopCameraScannerInternal) window._stopCameraScannerInternal();
+};
+
+window.submitHandoverVerification = function () {
+    if (typeof window._submitHandoverVerificationInternal === 'function') {
+        return window._submitHandoverVerificationInternal();
+    }
+    const modal = document.getElementById('handoverVerifyModal');
+    if (modal && typeof window.initHandoverVerificationModalEvents === 'function') {
+        window.initHandoverVerificationModalEvents();
+        if (typeof window._submitHandoverVerificationInternal === 'function') {
+            return window._submitHandoverVerificationInternal();
+        }
+    }
+};
+
 // ---- SAFE EXPIRY HELPERS ----
 window.isValidExpiry = function (dateStr) {
     if (!dateStr || dateStr === 'null' || dateStr === 'undefined') return false;
@@ -4501,10 +4531,26 @@ document.addEventListener('DOMContentLoaded', () => {
     window.loadPortalHistory = loadPortalHistory;
 
     // ─── PHYSICAL HANDOVER VERIFICATION & QR PASS CONTROLLERS ────────────────
-    function openHandoverVerifyModal(orderId, foodName, buyerName, qty) {
+    function closeHandoverVerifyModal() {
+        const modal = document.getElementById('handoverVerifyModal');
+        if (modal) modal.style.display = 'none';
+    }
+    window.closeHandoverVerifyModal = closeHandoverVerifyModal;
+
+    function closeHandoverQrModal() {
+        const modal = document.getElementById('handoverQrModal');
+        if (modal) modal.style.display = 'none';
+    }
+    window.closeHandoverQrModal = closeHandoverQrModal;
+
+    function openHandoverVerifyModal(orderId, foodName, buyerName, qty, prefilledPin = '') {
         const modal = document.getElementById('handoverVerifyModal');
         if (!modal) return;
         modal.dataset.orderId = orderId;
+
+        if (typeof initHandoverVerificationModalEvents === 'function') {
+            initHandoverVerificationModalEvents();
+        }
 
         const foodEl = document.getElementById('verifyModalFoodName');
         const buyerEl = document.getElementById('verifyModalBuyerName');
@@ -4520,10 +4566,16 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         const digitInputs = modal.querySelectorAll('.handover-digit-box');
-        digitInputs.forEach(input => {
-            input.value = '';
-            input.disabled = false;
-        });
+        if (prefilledPin && prefilledPin.length === 4) {
+            prefilledPin.split('').forEach((d, i) => {
+                if (digitInputs[i]) digitInputs[i].value = d;
+            });
+        } else {
+            digitInputs.forEach(input => {
+                input.value = '';
+                input.disabled = false;
+            });
+        }
 
         const confirmBtn = document.getElementById('btnConfirmHandover');
         if (confirmBtn) {
@@ -4532,7 +4584,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         modal.style.display = 'flex';
-        if (digitInputs.length > 0) {
+        if (digitInputs.length > 0 && !prefilledPin) {
             setTimeout(() => digitInputs[0].focus(), 60);
         }
     }
@@ -4701,9 +4753,11 @@ document.addEventListener('DOMContentLoaded', () => {
         // Close Triggers
         const closeVerifyBtn = document.getElementById('closeHandoverVerifyModal');
         if (closeVerifyBtn && verifyModal) {
-            closeVerifyBtn.addEventListener('click', () => {
+            closeVerifyBtn.onclick = (e) => {
+                e.preventDefault();
+                e.stopPropagation();
                 verifyModal.style.display = 'none';
-            });
+            };
         }
         if (verifyModal) {
             verifyModal.addEventListener('click', (e) => {
@@ -4713,9 +4767,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const closeQrBtn = document.getElementById('closeHandoverQrModal');
         if (closeQrBtn && qrModal) {
-            closeQrBtn.addEventListener('click', () => {
+            closeQrBtn.onclick = (e) => {
+                e.preventDefault();
+                e.stopPropagation();
                 qrModal.style.display = 'none';
-            });
+            };
         }
         if (qrModal) {
             qrModal.addEventListener('click', (e) => {
@@ -4726,27 +4782,30 @@ document.addEventListener('DOMContentLoaded', () => {
         // WhatsApp Share button inside QR Modal
         const shareWaBtn = document.getElementById('btnShareQrOnWhatsApp');
         if (shareWaBtn && qrModal) {
-            shareWaBtn.addEventListener('click', () => {
+            shareWaBtn.onclick = (e) => {
+                e.preventDefault();
                 if (qrModal._currentPassOrder) {
                     dispatchWhatsAppPass(qrModal._currentPassOrder);
                 }
-            });
+            };
         }
 
         // In-App Camera Scanner Triggers
         const launchCamBtn = document.getElementById('btnLaunchCameraScanner');
         if (launchCamBtn) {
-            launchCamBtn.addEventListener('click', () => {
+            launchCamBtn.onclick = (e) => {
+                e.preventDefault();
                 startCameraScanner();
-            });
+            };
         }
 
         const closeCamBtn = document.getElementById('closeQrCameraScannerModal');
         const camModal = document.getElementById('qrCameraScannerModal');
         if (closeCamBtn) {
-            closeCamBtn.addEventListener('click', () => {
+            closeCamBtn.onclick = (e) => {
+                e.preventDefault();
                 stopCameraScanner();
-            });
+            };
         }
         if (camModal) {
             camModal.addEventListener('click', (e) => {
@@ -4775,8 +4834,8 @@ document.addEventListener('DOMContentLoaded', () => {
                         digitBoxes[idx - 1].focus();
                         digitBoxes[idx - 1].select();
                     } else if (e.key === 'Enter') {
-                        const confirmBtn = document.getElementById('btnConfirmHandover');
-                        if (confirmBtn) confirmBtn.click();
+                        e.preventDefault();
+                        submitHandoverVerification();
                     }
                 });
 
@@ -4798,105 +4857,140 @@ document.addEventListener('DOMContentLoaded', () => {
             // Confirm Button Handler
             const confirmBtn = document.getElementById('btnConfirmHandover');
             if (confirmBtn) {
-                confirmBtn.addEventListener('click', async () => {
-                    const orderId = verifyModal.dataset.orderId;
-                    const errorBox = document.getElementById('verifyModalError');
-                    if (errorBox) errorBox.style.display = 'none';
-
-                    if (!orderId) {
-                        if (errorBox) {
-                            errorBox.textContent = 'No active order selected for verification.';
-                            errorBox.style.display = 'block';
-                        }
-                        return;
-                    }
-
-                    const otp = digitBoxes.map(b => b.value.trim()).join('');
-                    if (otp.length !== 4 || !/^\d{4}$/.test(otp)) {
-                        if (errorBox) {
-                            errorBox.textContent = 'Please enter all 4 digits of the recipient PIN.';
-                            errorBox.style.display = 'block';
-                        }
-                        const emptyBox = digitBoxes.find(b => !b.value);
-                        if (emptyBox) emptyBox.focus();
-                        return;
-                    }
-
-                    confirmBtn.disabled = true;
-                    const origHtml = confirmBtn.innerHTML;
-                    confirmBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Verifying PIN...';
-
-                    // Fallback for local client orders (e.g. synthetic ORD-xxx)
-                    if (String(orderId).startsWith('ORD-')) {
-                        let localOrders = JSON.parse(localStorage.getItem('nn_local_orders') || '[]');
-                        const locOrder = localOrders.find(o => String(o.orderId) === String(orderId));
-                        const expectedPin = (locOrder && locOrder.handoverOtp) || String(orderId).padStart(4, '0').slice(-4);
-
-                        if (locOrder && otp !== expectedPin) {
-                            if (errorBox) {
-                                errorBox.textContent = 'Invalid Handover PIN! Please ask the NGO driver to show their pass.';
-                                errorBox.style.display = 'block';
-                            }
-                            confirmBtn.disabled = false;
-                            confirmBtn.innerHTML = origHtml;
-                            digitBoxes.forEach(b => b.value = '');
-                            digitBoxes[0].focus();
-                            return;
-                        }
-
-                        const now = new Date().toISOString();
-                        localOrders = localOrders.map(o => String(o.orderId) === String(orderId) ? { ...o, orderStatus: 'completed', handoverAt: now } : o);
-                        localStorage.setItem('nn_local_orders', JSON.stringify(localOrders));
-
-                        verifyModal.style.display = 'none';
-                        confirmBtn.disabled = false;
-                        confirmBtn.innerHTML = origHtml;
-                        showToast("Physical handover verified successfully! 🤝", "success");
-                        if (typeof loadPortalHistory === 'function') loadPortalHistory();
-                        return;
-                    }
-
-                    try {
-                        const token = sessionStorage.getItem('nourishToken') || localStorage.getItem('nourishToken');
-                        const res = await fetch(`${API_BASE}/orders/${orderId}/verify-handover`, {
-                            method: 'POST',
-                            headers: {
-                                'Authorization': `Bearer ${token}`,
-                                'Content-Type': 'application/json'
-                            },
-                            body: JSON.stringify({ otp })
-                        });
-                        const data = await res.json().catch(() => ({}));
-
-                        if (res.ok && data.success) {
-                            verifyModal.style.display = 'none';
-                            confirmBtn.disabled = false;
-                            confirmBtn.innerHTML = origHtml;
-                            showToast("Physical handover verified successfully! 🤝", "success");
-                            if (typeof loadPortalHistory === 'function') loadPortalHistory();
-                        } else {
-                            if (errorBox) {
-                                errorBox.textContent = data.error || 'Invalid PIN. Please ask the recipient for the 4 digits.';
-                                errorBox.style.display = 'block';
-                            }
-                            confirmBtn.disabled = false;
-                            confirmBtn.innerHTML = origHtml;
-                            digitBoxes.forEach(b => b.value = '');
-                            digitBoxes[0].focus();
-                        }
-                    } catch (err) {
-                        if (errorBox) {
-                            errorBox.textContent = 'Network error during verification. Please try again.';
-                            errorBox.style.display = 'block';
-                        }
-                        confirmBtn.disabled = false;
-                        confirmBtn.innerHTML = origHtml;
-                    }
-                });
+                confirmBtn.onclick = (e) => {
+                    e.preventDefault();
+                    submitHandoverVerification();
+                };
             }
         }
     }
     window.initHandoverVerificationModalEvents = initHandoverVerificationModalEvents;
+
+    let isVerifyingHandover = false;
+    async function submitHandoverVerification() {
+        if (isVerifyingHandover) return;
+        const verifyModal = document.getElementById('handoverVerifyModal');
+        if (!verifyModal) return;
+        const orderId = verifyModal.dataset.orderId;
+        const errorBox = document.getElementById('verifyModalError');
+        const confirmBtn = document.getElementById('btnConfirmHandover');
+        if (errorBox) {
+            errorBox.textContent = '';
+            errorBox.style.display = 'none';
+        }
+
+        if (!orderId) {
+            if (errorBox) {
+                errorBox.textContent = 'No active order selected for verification.';
+                errorBox.style.display = 'block';
+            }
+            return;
+        }
+
+        const digitBoxes = Array.from(verifyModal.querySelectorAll('.handover-digit-box'));
+        const otp = digitBoxes.map(b => b.value.trim()).join('');
+        if (otp.length !== 4 || !/^\d{4}$/.test(otp)) {
+            if (errorBox) {
+                errorBox.textContent = 'Please enter all 4 digits of the recipient PIN.';
+                errorBox.style.display = 'block';
+            }
+            const emptyBox = digitBoxes.find(b => !b.value);
+            if (emptyBox) emptyBox.focus();
+            return;
+        }
+
+        isVerifyingHandover = true;
+        if (confirmBtn) {
+            confirmBtn.disabled = true;
+            confirmBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Verifying PIN...';
+        }
+
+        // Fallback for local client orders (e.g. synthetic ORD-xxx)
+        if (String(orderId).startsWith('ORD-')) {
+            try {
+                let localOrders = JSON.parse(localStorage.getItem('nn_local_orders') || '[]');
+                const locOrder = localOrders.find(o => String(o.orderId) === String(orderId));
+                const expectedPin = (locOrder && locOrder.handoverOtp) || String(orderId).padStart(4, '0').slice(-4);
+
+                if (locOrder && otp !== expectedPin) {
+                    if (errorBox) {
+                        errorBox.textContent = 'Invalid Handover PIN! Please ask the NGO driver to show their pass.';
+                        errorBox.style.display = 'block';
+                    }
+                    if (confirmBtn) {
+                        confirmBtn.disabled = false;
+                        confirmBtn.innerHTML = '<i class="fa-solid fa-check-double"></i>&nbsp; Verify & Complete Handover';
+                    }
+                    digitBoxes.forEach(b => b.value = '');
+                    digitBoxes[0]?.focus();
+                    return;
+                }
+
+                const now = new Date().toISOString();
+                localOrders = localOrders.map(o => String(o.orderId) === String(orderId) ? { ...o, orderStatus: 'completed', handoverAt: now } : o);
+                localStorage.setItem('nn_local_orders', JSON.stringify(localOrders));
+
+                verifyModal.style.display = 'none';
+                if (confirmBtn) {
+                    confirmBtn.disabled = false;
+                    confirmBtn.innerHTML = '<i class="fa-solid fa-check-double"></i>&nbsp; Verify & Complete Handover';
+                }
+                showToast("Physical handover verified successfully! 🤝", "success");
+                if (typeof loadPortalHistory === 'function') loadPortalHistory();
+            } finally {
+                isVerifyingHandover = false;
+            }
+            return;
+        }
+
+        try {
+            const token = sessionStorage.getItem('nourishToken') || localStorage.getItem('nourishToken');
+            const headers = { 'Content-Type': 'application/json' };
+            if (token) headers['Authorization'] = `Bearer ${token}`;
+
+            const res = await fetch(`${API_BASE}/orders/${orderId}/verify-handover`, {
+                method: 'POST',
+                headers,
+                body: JSON.stringify({ otp })
+            });
+            const data = await res.json().catch(() => ({}));
+
+            if (res.ok && data.success) {
+                verifyModal.style.display = 'none';
+                if (confirmBtn) {
+                    confirmBtn.disabled = false;
+                    confirmBtn.innerHTML = '<i class="fa-solid fa-check-double"></i>&nbsp; Verify & Complete Handover';
+                }
+                showToast(data.message || "Physical handover verified successfully! 🤝", "success");
+                if (typeof loadPortalHistory === 'function') loadPortalHistory();
+            } else {
+                if (errorBox) {
+                    errorBox.textContent = data.error || 'Invalid PIN. Please ask the recipient for the 4 digits.';
+                    errorBox.style.display = 'block';
+                }
+                if (confirmBtn) {
+                    confirmBtn.disabled = false;
+                    confirmBtn.innerHTML = '<i class="fa-solid fa-check-double"></i>&nbsp; Verify & Complete Handover';
+                }
+                digitBoxes.forEach(b => b.value = '');
+                digitBoxes[0]?.focus();
+            }
+        } catch (err) {
+            console.error("Verification error:", err);
+            if (errorBox) {
+                errorBox.textContent = 'Network error during verification. Please try again.';
+                errorBox.style.display = 'block';
+            }
+            if (confirmBtn) {
+                confirmBtn.disabled = false;
+                confirmBtn.innerHTML = '<i class="fa-solid fa-check-double"></i>&nbsp; Verify & Complete Handover';
+            }
+        } finally {
+            isVerifyingHandover = false;
+        }
+    }
+    window.submitHandoverVerification = submitHandoverVerification;
+    window._submitHandoverVerificationInternal = submitHandoverVerification;
 
     // ---- GLOBAL DELETE COMMENT ----
     window.deleteComment = function (commentId, btnEl) {
@@ -5540,26 +5634,24 @@ document.addEventListener('DOMContentLoaded', () => {
             const orderId = urlParams.get('orderId');
             const pin = urlParams.get('pin');
 
-            if (action === 'verify-handover' && orderId && pin) {
+            if (action === 'verify-handover' && orderId) {
                 // Remove search params cleanly from address bar
                 window.history.replaceState({}, document.title, window.location.pathname);
 
-                // Open verification modal with pre-filled details
+                initHandoverVerificationModalEvents();
+
+                // Open verification modal with pre-filled details & PIN
                 if (typeof openHandoverVerifyModal === 'function') {
-                    openHandoverVerifyModal(orderId, `Order #${orderId}`, 'NGO Partner', '');
+                    openHandoverVerifyModal(orderId, `Order #${orderId}`, 'NGO Partner', '', pin || '');
                 }
 
-                const verifyModal = document.getElementById('handoverVerifyModal');
-                if (verifyModal) {
-                    const digitBoxes = Array.from(verifyModal.querySelectorAll('.handover-digit-box'));
-                    pin.split('').forEach((d, i) => {
-                        if (digitBoxes[i]) digitBoxes[i].value = d;
-                    });
-                    showToast(`Camera Scanned Order #${orderId} with PIN ${pin}! Verifying...`, "info");
-                    const confirmBtn = document.getElementById('btnConfirmHandover');
-                    if (confirmBtn) {
-                        setTimeout(() => confirmBtn.click(), 500);
-                    }
+                if (pin && pin.length === 4) {
+                    showToast(`Scanned Pass for Order #${orderId} with PIN ${pin}!`, "info");
+                    setTimeout(() => {
+                        if (typeof submitHandoverVerification === 'function') {
+                            submitHandoverVerification();
+                        }
+                    }, 400);
                 }
             }
         } catch (e) {
@@ -5567,6 +5659,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    initHandoverVerificationModalEvents();
     checkUrlVerificationParams();
 
 });
