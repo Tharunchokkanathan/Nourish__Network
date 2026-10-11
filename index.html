@@ -869,6 +869,108 @@
         </div>
     </div>
 
+    <!-- Physical Handover Verification Modal (for Donating Vendor) -->
+    <div id="handoverVerifyModal"
+        style="display: none; position: fixed; inset: 0; width: 100vw; height: 100vh; background: rgba(0, 0, 0, 0.92); z-index: 9999999; align-items: center; justify-content: center; backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); padding: 20px 10px;">
+        <div class="settings-modal-card"
+            style="width: 100% !important; max-width: 520px !important; margin: auto !important; padding: 2.5rem !important; background: #0a0a0a !important; border: 1.5px solid rgba(255, 255, 255, 0.14) !important; border-radius: 28px !important; box-shadow: 0 35px 90px rgba(0, 0, 0, 0.98) !important; color: #ffffff !important; text-align: center;">
+
+            <!-- Header -->
+            <div style="display: flex; justify-content: flex-end; margin-bottom: 0.5rem;">
+                <button id="closeHandoverVerifyModal"
+                    style="width: 38px; height: 38px; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.2); border-radius: 50%; font-size: 1.1rem; cursor: pointer; color: #ffffff; display: flex; align-items: center; justify-content: center; transition: all 0.2s ease;">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <div style="width: 58px; height: 58px; background: rgba(16, 185, 129, 0.12); border: 1.5px solid rgba(16, 185, 129, 0.35); border-radius: 18px; display: inline-flex; align-items: center; justify-content: center; margin-bottom: 1rem; box-shadow: 0 8px 24px rgba(16, 185, 129, 0.2);">
+                <i class="fa-solid fa-shield-halved" style="color: #10b981; font-size: 1.7rem;"></i>
+            </div>
+
+            <h2 style="margin: 0 0 6px; font-size: 1.6rem; font-weight: 700; color: #ffffff;">Verify Food Handover</h2>
+            <p style="margin: 0 0 1.5rem; font-size: 0.88rem; color: rgba(255,255,255,0.6); line-height: 1.5;">
+                Ask the recipient NGO / pickup volunteer for the <strong>4-digit security PIN</strong> displayed on their device.
+            </p>
+
+            <!-- Order Snapshot Box -->
+            <div id="verifyModalOrderSummary"
+                style="background: #141414; border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 16px; padding: 1rem 1.25rem; margin-bottom: 1.75rem; text-align: left; display: flex; align-items: center; gap: 14px;">
+                <div style="width: 44px; height: 44px; border-radius: 10px; background: rgba(255,255,255,0.05); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                    <i class="fa-solid fa-utensils" style="color: #e5e5e5; font-size: 1.1rem;"></i>
+                </div>
+                <div style="flex: 1; overflow: hidden;">
+                    <div id="verifyModalFoodName" style="font-weight: 700; font-size: 0.95rem; color: #ffffff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Surplus Meal</div>
+                    <div style="font-size: 0.82rem; color: rgba(255,255,255,0.55); margin-top: 2px;">
+                        Handing to: <strong id="verifyModalBuyerName" style="color: #e5e5e5;">NGO Partner</strong> · <span id="verifyModalQty">Portions</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 4-Digit Input Boxes -->
+            <div style="margin-bottom: 1.5rem;">
+                <label style="font-size: 0.78rem; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: rgba(255,255,255,0.7); display: block; margin-bottom: 12px;">
+                    Enter 4-Digit Recipient PIN
+                </label>
+                <div class="handover-pin-inputs" style="display: flex; justify-content: center; gap: 12px;">
+                    <input type="text" class="handover-digit-box" maxlength="1" inputmode="numeric" pattern="[0-9]*" autocomplete="off" data-index="0">
+                    <input type="text" class="handover-digit-box" maxlength="1" inputmode="numeric" pattern="[0-9]*" autocomplete="off" data-index="1">
+                    <input type="text" class="handover-digit-box" maxlength="1" inputmode="numeric" pattern="[0-9]*" autocomplete="off" data-index="2">
+                    <input type="text" class="handover-digit-box" maxlength="1" inputmode="numeric" pattern="[0-9]*" autocomplete="off" data-index="3">
+                </div>
+                <div id="verifyModalError" style="display: none; color: #f87171; font-size: 0.85rem; font-weight: 600; margin-top: 12px; padding: 8px 12px; background: rgba(239, 68, 68, 0.1); border-radius: 10px; border: 1px solid rgba(239, 68, 68, 0.25);"></div>
+            </div>
+
+            <button type="button" id="btnConfirmHandover" class="minimal-pill-btn"
+                style="width: 100% !important; min-height: 50px !important; background: #10b981 !important; color: #ffffff !important; border: none !important; font-weight: 700; font-size: 1rem; border-radius: 100px; box-shadow: 0 8px 24px rgba(16, 185, 129, 0.35) !important;">
+                <i class="fa-solid fa-check-double"></i>&nbsp; Verify & Complete Handover
+            </button>
+        </div>
+    </div>
+
+    <!-- Handover Pass QR Code Modal (for Recipient / NGO) -->
+    <div id="handoverQrModal"
+        style="display: none; position: fixed; inset: 0; width: 100vw; height: 100vh; background: rgba(0, 0, 0, 0.92); z-index: 9999999; align-items: center; justify-content: center; backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); padding: 20px 10px;">
+        <div class="settings-modal-card"
+            style="width: 100% !important; max-width: 440px !important; margin: auto !important; padding: 2.25rem !important; background: #0a0a0a !important; border: 1.5px solid rgba(255, 255, 255, 0.14) !important; border-radius: 28px !important; box-shadow: 0 35px 90px rgba(0, 0, 0, 0.98) !important; color: #ffffff !important; text-align: center;">
+
+            <!-- Header -->
+            <div style="display: flex; justify-content: flex-end; margin-bottom: 0.25rem;">
+                <button id="closeHandoverQrModal"
+                    style="width: 38px; height: 38px; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.2); border-radius: 50%; font-size: 1.1rem; cursor: pointer; color: #ffffff; display: flex; align-items: center; justify-content: center; transition: all 0.2s ease;">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <div style="width: 52px; height: 52px; background: rgba(255, 255, 255, 0.06); border: 1px solid rgba(255, 255, 255, 0.15); border-radius: 16px; display: inline-flex; align-items: center; justify-content: center; margin-bottom: 0.75rem;">
+                <i class="fa-solid fa-qrcode" style="color: #ffffff; font-size: 1.5rem;"></i>
+            </div>
+
+            <h2 style="margin: 0 0 4px; font-size: 1.5rem; font-weight: 700; color: #ffffff;">Pickup Handover Pass</h2>
+            <p id="qrModalFoodTitle" style="margin: 0 0 1.25rem; font-size: 0.88rem; color: rgba(255,255,255,0.6);">
+                Show this QR or security code to the donor kitchen staff
+            </p>
+
+            <!-- QR Code Graphic Container -->
+            <div style="background: #ffffff; padding: 16px; border-radius: 20px; display: inline-block; margin-bottom: 1.25rem; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
+                <img id="handoverQrImg" src="" alt="Handover QR" style="width: 200px; height: 200px; display: block; object-fit: contain;">
+            </div>
+
+            <!-- Big 4-Digit Display -->
+            <div style="background: #141414; border: 1.5px solid rgba(255, 255, 255, 0.12); border-radius: 18px; padding: 1rem; margin-bottom: 1.25rem;">
+                <div style="font-size: 0.75rem; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: rgba(255,255,255,0.55); margin-bottom: 6px;">
+                    Handover Verification PIN
+                </div>
+                <div id="qrModalDigits" style="font-family: monospace; font-size: 2.2rem; font-weight: 800; letter-spacing: 10px; color: #10b981;">
+                    ----
+                </div>
+            </div>
+
+            <p style="margin: 0; font-size: 0.8rem; color: rgba(255,255,255,0.45); line-height: 1.4;">
+                <i class="fa-solid fa-lock" style="color: #10b981;"></i> Cryptographically secured for fraud prevention.
+            </p>
+        </div>
+    </div>
+
     <!-- Toast Notification Container -->
     <div id="toastContainer" class="toast-container"></div>
 

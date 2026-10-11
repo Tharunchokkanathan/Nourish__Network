@@ -964,6 +964,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     orderStatus: 'confirmed',
                     notes: notes,
                     createdAt: new Date().toISOString(),
+                    handoverOtp: Math.floor(1000 + Math.random() * 9000).toString(),
                     pickupTime: c.item.pickupTime || c.item.pickup || 'Ready for Pickup',
 
                     // Seller information (viewed in Buyer history)
@@ -4331,17 +4332,15 @@ document.addEventListener('DOMContentLoaded', () => {
                                 </div>
 
                                 <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
-                                    <div class="pickup-code-pill" title="NGO Pickup Verification Code">
-                                        <i class="fa-solid fa-ticket"></i> PIN: <strong>NN-${String(o.orderId).padStart(4, '0')}</strong>
-                                    </div>
                                     ${!isCompleted ? `
-                                        <button class="history-action-btn btn-update-order-status" data-order-id="${o.orderId}" data-status="completed" style="background: rgba(255, 255, 255, 0.1); color: #ffffff; border: 1px solid rgba(255, 255, 255, 0.18); border-radius: 10px; padding: 8px 16px; font-weight: 600; font-size: 0.82rem; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;">
-                                            <i class="fa-solid fa-handshake"></i> Mark as Handed Over
+                                        <button class="btn-verify-handover-trigger" data-order-id="${o.orderId}" data-food-name="${encodeURIComponent(o.foodName || 'Surplus Meal')}" data-buyer-name="${encodeURIComponent(o.buyerName || 'NGO Partner')}" data-qty="${o.quantity} ${o.unit || 'portions'}">
+                                            <i class="fa-solid fa-shield-halved"></i> Verify & Hand Over
                                         </button>
                                     ` : `
-                                        <span style="color: #9ca3af; font-size: 0.85rem; font-weight: 700; display: inline-flex; align-items: center; gap: 6px;">
-                                            <i class="fa-solid fa-check-double"></i> Handover Complete
-                                        </span>
+                                        <div class="handover-verified-badge" title="Physically verified at collection">
+                                            <i class="fa-solid fa-circle-check"></i> Handover Verified
+                                            ${o.handoverAt ? `<span style="font-size:0.75rem; opacity:0.8; font-weight:500;">(${new Date(o.handoverAt).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })})</span>` : ''}
+                                        </div>
                                     `}
                                 </div>
                             </div>
@@ -4356,6 +4355,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     }) : 'Just now';
                     const isCompleted = o.orderStatus === 'completed';
                     const foodImg = o.imageUrl || (window.getSmartFoodImage ? window.getSmartFoodImage(o.foodName, o.category, null) : 'assets/default-food.jpg');
+                    const pin = o.handoverOtp || String(o.orderId).padStart(4, '0').slice(-4);
 
                     return `
                         <div class="history-card" id="order-card-${o.orderId}">
@@ -4377,7 +4377,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                 <div>
                                     <span class="history-status-badge ${isCompleted ? 'status-completed' : 'status-confirmed'}">
                                         <i class="fa-solid ${isCompleted ? 'fa-circle-check' : 'fa-box'}"></i>
-                                        ${isCompleted ? 'Picked Up' : 'Ready for Pickup'}
+                                        ${isCompleted ? 'Picked Up & Verified' : 'Ready for Pickup'}
                                     </span>
                                 </div>
                             </div>
@@ -4401,9 +4401,26 @@ document.addEventListener('DOMContentLoaded', () => {
                                 </div>
 
                                 <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
-                                    <div class="pickup-code-pill" title="Show this code at the restaurant counter for pickup">
-                                        <i class="fa-solid fa-ticket"></i> PIN: <strong>NN-${String(o.orderId).padStart(4, '0')}</strong>
-                                    </div>
+                                    ${!isCompleted ? `
+                                        <div class="handover-pass-box">
+                                            <div>
+                                                <div style="font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.5px; color: rgba(255, 255, 255, 0.6); margin-bottom: 2px;">
+                                                    Pickup Security PIN
+                                                </div>
+                                                <div class="handover-pass-digits">
+                                                    <i class="fa-solid fa-key" style="font-size: 0.85rem; color: #10b981;"></i>
+                                                    <span>${pin}</span>
+                                                </div>
+                                            </div>
+                                            <button class="btn-open-qr-pass" data-pin="${pin}" data-order-id="${o.orderId}" data-food-name="${encodeURIComponent(o.foodName || 'Surplus Meal')}">
+                                                <i class="fa-solid fa-qrcode"></i> Show QR Pass
+                                            </button>
+                                        </div>
+                                    ` : `
+                                        <div class="handover-verified-badge" title="Successfully received and verified">
+                                            <i class="fa-solid fa-circle-check"></i> Food Received & Verified
+                                        </div>
+                                    `}
                                 </div>
                             </div>
                         </div>
@@ -4411,47 +4428,29 @@ document.addEventListener('DOMContentLoaded', () => {
                 }).join('');
             }
 
-            // Attach action handlers for marking orders picked up
-            container.querySelectorAll('.btn-update-order-status').forEach(btn => {
-                btn.addEventListener('click', async () => {
+            // Attach action handlers for Physical Handover Verification (Seller)
+            container.querySelectorAll('.btn-verify-handover-trigger').forEach(btn => {
+                btn.addEventListener('click', () => {
                     const orderId = btn.dataset.orderId;
-                    const newStatus = btn.dataset.status;
-                    btn.disabled = true;
-                    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Updating...';
-
-                    // If local synthetic order ID, update in localStorage
-                    if (String(orderId).startsWith('ORD-')) {
-                        let localOrders = JSON.parse(localStorage.getItem('nn_local_orders') || '[]');
-                        localOrders = localOrders.map(o => String(o.orderId) === String(orderId) ? { ...o, orderStatus: newStatus } : o);
-                        localStorage.setItem('nn_local_orders', JSON.stringify(localOrders));
-                        showToast("Handover marked as completed! 🤝", "success");
-                        loadPortalHistory();
-                        return;
-                    }
-
-                    try {
-                        const patchRes = await fetch(`${API_BASE}/orders/${orderId}/status`, {
-                            method: 'PATCH',
-                            headers: {
-                                'Authorization': `Bearer ${token}`,
-                                'Content-Type': 'application/json'
-                            },
-                            body: JSON.stringify({ status: newStatus })
-                        });
-                        if (patchRes.ok) {
-                            showToast("Handover marked as completed! 🤝", "success");
-                            loadPortalHistory();
-                        } else {
-                            const err = await patchRes.json().catch(() => ({}));
-                            showToast(err.error || "Failed to update status", "error");
-                            btn.disabled = false;
-                        }
-                    } catch (e) {
-                        showToast("Network error updating order status", "error");
-                        btn.disabled = false;
-                    }
+                    const foodName = decodeURIComponent(btn.dataset.foodName || 'Surplus Meal');
+                    const buyerName = decodeURIComponent(btn.dataset.buyerName || 'NGO Partner');
+                    const qty = btn.dataset.qty || '';
+                    openHandoverVerifyModal(orderId, foodName, buyerName, qty);
                 });
             });
+
+            // Attach action handlers for Pickup QR Pass (Buyer)
+            container.querySelectorAll('.btn-open-qr-pass').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const orderId = btn.dataset.orderId;
+                    const pin = btn.dataset.pin;
+                    const foodName = decodeURIComponent(btn.dataset.foodName || 'Surplus Meal');
+                    openHandoverQrModal(orderId, foodName, pin);
+                });
+            });
+
+            // Initialize global modal event bindings once
+            initHandoverVerificationModalEvents();
 
         } catch (err) {
             console.error("Order history fetch error:", err);
@@ -4472,6 +4471,239 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
     window.loadPortalHistory = loadPortalHistory;
+
+    // ─── PHYSICAL HANDOVER VERIFICATION & QR PASS CONTROLLERS ────────────────
+    function openHandoverVerifyModal(orderId, foodName, buyerName, qty) {
+        const modal = document.getElementById('handoverVerifyModal');
+        if (!modal) return;
+        modal.dataset.orderId = orderId;
+
+        const foodEl = document.getElementById('verifyModalFoodName');
+        const buyerEl = document.getElementById('verifyModalBuyerName');
+        const qtyEl = document.getElementById('verifyModalQty');
+        const errorEl = document.getElementById('verifyModalError');
+
+        if (foodEl) foodEl.textContent = foodName || 'Surplus Meal';
+        if (buyerEl) buyerEl.textContent = buyerName || 'NGO Partner';
+        if (qtyEl) qtyEl.textContent = qty || '';
+        if (errorEl) {
+            errorEl.textContent = '';
+            errorEl.style.display = 'none';
+        }
+
+        const digitInputs = modal.querySelectorAll('.handover-digit-box');
+        digitInputs.forEach(input => {
+            input.value = '';
+            input.disabled = false;
+        });
+
+        const confirmBtn = document.getElementById('btnConfirmHandover');
+        if (confirmBtn) {
+            confirmBtn.disabled = false;
+            confirmBtn.innerHTML = '<i class="fa-solid fa-check-double"></i>&nbsp; Verify & Complete Handover';
+        }
+
+        modal.style.display = 'flex';
+        if (digitInputs.length > 0) {
+            setTimeout(() => digitInputs[0].focus(), 60);
+        }
+    }
+    window.openHandoverVerifyModal = openHandoverVerifyModal;
+
+    function openHandoverQrModal(orderId, foodName, pin) {
+        const modal = document.getElementById('handoverQrModal');
+        if (!modal) return;
+
+        const titleEl = document.getElementById('qrModalFoodTitle');
+        const digitsEl = document.getElementById('qrModalDigits');
+        const imgEl = document.getElementById('handoverQrImg');
+
+        if (titleEl) titleEl.textContent = `${foodName} · Order #${orderId}`;
+        if (digitsEl) digitsEl.textContent = pin || '----';
+        if (imgEl) {
+            const qrPayload = encodeURIComponent(`NOURISH_NETWORK:ORDER:${orderId}:PIN:${pin}`);
+            imgEl.src = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&margin=4&data=${qrPayload}`;
+        }
+
+        modal.style.display = 'flex';
+    }
+    window.openHandoverQrModal = openHandoverQrModal;
+
+    function initHandoverVerificationModalEvents() {
+        if (window._handoverEventsInitialized) return;
+        window._handoverEventsInitialized = true;
+
+        const verifyModal = document.getElementById('handoverVerifyModal');
+        const qrModal = document.getElementById('handoverQrModal');
+
+        // Close Triggers
+        const closeVerifyBtn = document.getElementById('closeHandoverVerifyModal');
+        if (closeVerifyBtn && verifyModal) {
+            closeVerifyBtn.addEventListener('click', () => {
+                verifyModal.style.display = 'none';
+            });
+        }
+        if (verifyModal) {
+            verifyModal.addEventListener('click', (e) => {
+                if (e.target === verifyModal) verifyModal.style.display = 'none';
+            });
+        }
+
+        const closeQrBtn = document.getElementById('closeHandoverQrModal');
+        if (closeQrBtn && qrModal) {
+            closeQrBtn.addEventListener('click', () => {
+                qrModal.style.display = 'none';
+            });
+        }
+        if (qrModal) {
+            qrModal.addEventListener('click', (e) => {
+                if (e.target === qrModal) qrModal.style.display = 'none';
+            });
+        }
+
+        // 4-Digit Box Interactive Mechanics (auto-advance, backspace, paste, enter)
+        if (verifyModal) {
+            const digitBoxes = Array.from(verifyModal.querySelectorAll('.handover-digit-box'));
+            digitBoxes.forEach((input, idx) => {
+                input.addEventListener('input', (e) => {
+                    const cleaned = e.target.value.replace(/\D/g, '');
+                    e.target.value = cleaned ? cleaned[0] : '';
+                    const errBox = document.getElementById('verifyModalError');
+                    if (errBox) errBox.style.display = 'none';
+
+                    if (e.target.value && idx < digitBoxes.length - 1) {
+                        digitBoxes[idx + 1].focus();
+                        digitBoxes[idx + 1].select();
+                    }
+                });
+
+                input.addEventListener('keydown', (e) => {
+                    if (e.key === 'Backspace' && !e.target.value && idx > 0) {
+                        digitBoxes[idx - 1].focus();
+                        digitBoxes[idx - 1].select();
+                    } else if (e.key === 'Enter') {
+                        const confirmBtn = document.getElementById('btnConfirmHandover');
+                        if (confirmBtn) confirmBtn.click();
+                    }
+                });
+
+                input.addEventListener('paste', (e) => {
+                    e.preventDefault();
+                    const clipboard = (e.clipboardData || window.clipboardData);
+                    const pasted = clipboard ? clipboard.getData('text') : '';
+                    const digits = pasted.replace(/\D/g, '').slice(0, 4);
+                    if (digits) {
+                        for (let i = 0; i < digitBoxes.length; i++) {
+                            digitBoxes[i].value = digits[i] || '';
+                        }
+                        const nextIdx = Math.min(digits.length, digitBoxes.length - 1);
+                        digitBoxes[nextIdx].focus();
+                    }
+                });
+            });
+
+            // Confirm Button Handler
+            const confirmBtn = document.getElementById('btnConfirmHandover');
+            if (confirmBtn) {
+                confirmBtn.addEventListener('click', async () => {
+                    const orderId = verifyModal.dataset.orderId;
+                    const errorBox = document.getElementById('verifyModalError');
+                    if (errorBox) errorBox.style.display = 'none';
+
+                    if (!orderId) {
+                        if (errorBox) {
+                            errorBox.textContent = 'No active order selected for verification.';
+                            errorBox.style.display = 'block';
+                        }
+                        return;
+                    }
+
+                    const otp = digitBoxes.map(b => b.value.trim()).join('');
+                    if (otp.length !== 4 || !/^\d{4}$/.test(otp)) {
+                        if (errorBox) {
+                            errorBox.textContent = 'Please enter all 4 digits of the recipient PIN.';
+                            errorBox.style.display = 'block';
+                        }
+                        const emptyBox = digitBoxes.find(b => !b.value);
+                        if (emptyBox) emptyBox.focus();
+                        return;
+                    }
+
+                    confirmBtn.disabled = true;
+                    const origHtml = confirmBtn.innerHTML;
+                    confirmBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Verifying PIN...';
+
+                    // Fallback for local client orders (e.g. synthetic ORD-xxx)
+                    if (String(orderId).startsWith('ORD-')) {
+                        let localOrders = JSON.parse(localStorage.getItem('nn_local_orders') || '[]');
+                        const locOrder = localOrders.find(o => String(o.orderId) === String(orderId));
+                        const expectedPin = (locOrder && locOrder.handoverOtp) || String(orderId).padStart(4, '0').slice(-4);
+
+                        if (locOrder && otp !== expectedPin) {
+                            if (errorBox) {
+                                errorBox.textContent = 'Invalid Handover PIN! Please ask the NGO driver to show their pass.';
+                                errorBox.style.display = 'block';
+                            }
+                            confirmBtn.disabled = false;
+                            confirmBtn.innerHTML = origHtml;
+                            digitBoxes.forEach(b => b.value = '');
+                            digitBoxes[0].focus();
+                            return;
+                        }
+
+                        const now = new Date().toISOString();
+                        localOrders = localOrders.map(o => String(o.orderId) === String(orderId) ? { ...o, orderStatus: 'completed', handoverAt: now } : o);
+                        localStorage.setItem('nn_local_orders', JSON.stringify(localOrders));
+
+                        verifyModal.style.display = 'none';
+                        confirmBtn.disabled = false;
+                        confirmBtn.innerHTML = origHtml;
+                        showToast("Physical handover verified successfully! 🤝", "success");
+                        if (typeof loadPortalHistory === 'function') loadPortalHistory();
+                        return;
+                    }
+
+                    try {
+                        const token = sessionStorage.getItem('nourishToken') || localStorage.getItem('nourishToken');
+                        const res = await fetch(`${API_BASE}/orders/${orderId}/verify-handover`, {
+                            method: 'POST',
+                            headers: {
+                                'Authorization': `Bearer ${token}`,
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({ otp })
+                        });
+                        const data = await res.json().catch(() => ({}));
+
+                        if (res.ok && data.success) {
+                            verifyModal.style.display = 'none';
+                            confirmBtn.disabled = false;
+                            confirmBtn.innerHTML = origHtml;
+                            showToast("Physical handover verified successfully! 🤝", "success");
+                            if (typeof loadPortalHistory === 'function') loadPortalHistory();
+                        } else {
+                            if (errorBox) {
+                                errorBox.textContent = data.error || 'Invalid PIN. Please ask the recipient for the 4 digits.';
+                                errorBox.style.display = 'block';
+                            }
+                            confirmBtn.disabled = false;
+                            confirmBtn.innerHTML = origHtml;
+                            digitBoxes.forEach(b => b.value = '');
+                            digitBoxes[0].focus();
+                        }
+                    } catch (err) {
+                        if (errorBox) {
+                            errorBox.textContent = 'Network error during verification. Please try again.';
+                            errorBox.style.display = 'block';
+                        }
+                        confirmBtn.disabled = false;
+                        confirmBtn.innerHTML = origHtml;
+                    }
+                });
+            }
+        }
+    }
+    window.initHandoverVerificationModalEvents = initHandoverVerificationModalEvents;
 
     // ---- GLOBAL DELETE COMMENT ----
     window.deleteComment = function (commentId, btnEl) {
@@ -5072,6 +5304,14 @@ document.addEventListener('DOMContentLoaded', () => {
             if (e.key === 'Escape') {
                 if (settingsModal && settingsModal.style.display !== 'none') {
                     settingsModal.style.display = 'none';
+                }
+                const handoverVerifyModal = document.getElementById('handoverVerifyModal');
+                if (handoverVerifyModal && handoverVerifyModal.style.display !== 'none') {
+                    handoverVerifyModal.style.display = 'none';
+                }
+                const handoverQrModal = document.getElementById('handoverQrModal');
+                if (handoverQrModal && handoverQrModal.style.display !== 'none') {
+                    handoverQrModal.style.display = 'none';
                 }
                 const authModal = document.getElementById('authModal');
                 if (authModal && authModal.classList.contains('active')) {

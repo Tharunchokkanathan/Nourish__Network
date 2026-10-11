@@ -56,7 +56,9 @@ function normalizeRow(row) {
         sellerfssaicode: 'sellerFssaiCode',
         selleraddress: 'sellerAddress',
         sellerpickupwindow: 'sellerPickupWindow',
-        selleravatar: 'sellerAvatar'
+        selleravatar: 'sellerAvatar',
+        handoverotp: 'handoverOtp',
+        handoverat: 'handoverAt'
     };
     for (const [lower, camel] of Object.entries(keyMap)) {
         if (lower in normalized && !(camel in normalized)) {
@@ -234,9 +236,17 @@ if (dbUrl) {
                     totalprice REAL NOT NULL DEFAULT 0,
                     status TEXT NOT NULL DEFAULT 'pending' CHECK(status IN ('pending','confirmed','completed','cancelled')),
                     notes TEXT,
+                    handoverotp TEXT,
+                    handoverat TIMESTAMP,
                     createdat TIMESTAMP NOT NULL DEFAULT NOW()
                 );
             `);
+
+            // Migrate existing orders table if columns are missing
+            await pool.query(`
+                ALTER TABLE orders ADD COLUMN IF NOT EXISTS handoverotp TEXT;
+                ALTER TABLE orders ADD COLUMN IF NOT EXISTS handoverat TIMESTAMP;
+            `).catch(() => {});
 
             // Ensure demo users exist so foreign keys in orders table succeed for demo workflows
             await pool.query(`
@@ -351,11 +361,17 @@ if (dbUrl) {
                 status     TEXT    NOT NULL DEFAULT 'pending'
                                     CHECK(status IN ('pending','confirmed','completed','cancelled')),
                 notes      TEXT,
+                handoverOtp TEXT,
+                handoverAt  TEXT,
                 createdAt  TEXT    NOT NULL DEFAULT (datetime('now')),
                 FOREIGN KEY (buyerId)   REFERENCES users(id),
                 FOREIGN KEY (listingId) REFERENCES food_listings(id)
             )
         `, logErr('orders'));
+
+        // SQLite migration for existing database
+        db.run(`ALTER TABLE orders ADD COLUMN handoverOtp TEXT;`, () => {});
+        db.run(`ALTER TABLE orders ADD COLUMN handoverAt TEXT;`, () => {});
     });
 
     function logErr(table) {
