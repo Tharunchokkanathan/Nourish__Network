@@ -2145,6 +2145,28 @@ app.get('/api/geocode/reverse', async (req, res) => {
             }
         }
 
+        // Secondary Fallback: BigDataCloud Reverse Geocoding
+        try {
+            const bdcUrl = `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${encodeURIComponent(nLat)}&longitude=${encodeURIComponent(nLng)}&localityLanguage=en`;
+            const bdcRes = await fetch(bdcUrl);
+            if (bdcRes.ok) {
+                const bdc = await bdcRes.json();
+                const parts = [
+                    bdc.locality || bdc.city || null,
+                    bdc.principalSubdivision || null,
+                    bdc.postcode || null,
+                    bdc.countryName || null
+                ].filter(Boolean);
+                if (parts.length > 0) {
+                    return res.status(200).json({
+                        success: true,
+                        address: parts.join(', '),
+                        raw: bdc
+                    });
+                }
+            }
+        } catch (e2) {}
+
         // Fallback to coordinates
         res.status(200).json({
             success: true,
