@@ -791,41 +791,37 @@ img {
 
 .image-grid {
     position: relative;
-    height: 550px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
 }
 
 .rounded-shadow {
     border-radius: 40px;
     box-shadow: 0 30px 70px rgba(0,0,0,0.5);
-    position: absolute;
     transition: all 0.8s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .img-1 {
-    width: 80%;
-    top: 0;
-    right: 0;
-    z-index: 1;
+    width: 100%;
+    max-width: 520px;
+    height: auto;
+    display: block;
+    border-radius: 40px;
+    box-shadow: 0 30px 70px rgba(0,0,0,0.5);
     animation: floatImage 6s ease-in-out infinite;
-}
-
-.img-2 {
-    width: 65%;
-    bottom: 0;
-    left: 0;
-    z-index: 2;
-    border: 10px solid var(--glass-bg);
-    backdrop-filter: blur(10px);
-    animation: floatImage 6s ease-in-out infinite 3s;
 }
 
 @keyframes floatImage {
     0%, 100% { transform: translateY(0) rotate(0deg); }
-    50% { transform: translateY(-20px) rotate(1deg); }
+    50% { transform: translateY(-16px) rotate(0.8deg); }
 }
 
-.image-grid:hover .img-1 { transform: scale(1.05) translate(-10px, -10px); }
-.image-grid:hover .img-2 { transform: scale(1.05) translate(10px, 10px); }
+.image-grid:hover .img-1 { 
+    transform: scale(1.03) translateY(-8px); 
+    box-shadow: 0 35px 80px rgba(16, 185, 129, 0.25);
+}
 
 /* =========================================
    HOW IT WORKS
@@ -2068,7 +2064,7 @@ button.btn-primary {
     }
 
     .image-grid {
-        height: 400px;
+        height: auto;
         margin-top: 2rem;
     }
 }
@@ -4942,15 +4938,12 @@ button:active,
     }
 
     .image-grid {
-        height: 320px !important;
+        height: auto !important;
     }
 
     .img-1 {
-        width: 88% !important;
-    }
-
-    .img-2 {
-        width: 72% !important;
+        width: 100% !important;
+        max-width: 100% !important;
     }
 
     .section-header h2 {
