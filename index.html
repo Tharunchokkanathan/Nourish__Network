@@ -743,10 +743,21 @@
                             <input type="tel" id="publicPhoneInput" class="minimal-input" placeholder="+91 98765 43210">
                         </div>
                         <div style="grid-column: 1 / -1;">
-                            <label style="font-size: 0.8rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.8px; color: rgba(255,255,255,0.8); margin-bottom: 6px; display: flex; align-items: center; gap: 6px;">
-                                <i class="fa-solid fa-location-dot" style="color: rgba(255, 255, 255, 0.6);"></i> Primary Address
-                            </label>
-                            <input type="text" id="locationInput" class="minimal-input" placeholder="123, Main Road, Bengaluru - 560001">
+                            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; flex-wrap: wrap; gap: 6px;">
+                                <label style="font-size: 0.8rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.8px; color: rgba(255,255,255,0.8); margin: 0; display: flex; align-items: center; gap: 6px;">
+                                    <i class="fa-solid fa-location-dot" style="color: #10b981;"></i> Primary Address & Location
+                                </label>
+                                <button type="button" id="btnDetectGpsLocationBadge" class="gps-locate-btn" onclick="window.detectCurrentGpsLocation && window.detectCurrentGpsLocation()" title="Set this location automatically using device GPS">
+                                    <i class="fa-solid fa-location-crosshairs" id="gpsBadgeIcon"></i> Auto-Detect (GPS)
+                                </button>
+                            </div>
+                            <div style="position: relative; display: flex; align-items: center;">
+                                <input type="text" id="locationInput" class="minimal-input" placeholder="e.g. 123, Main Road, Bengaluru - 560001" style="padding-right: 48px !important; width: 100%;">
+                                <button type="button" id="btnDetectGpsLocationInput" class="gps-input-btn" onclick="window.detectCurrentGpsLocation && window.detectCurrentGpsLocation()" title="Set this location automatically using device GPS">
+                                    <i class="fa-solid fa-location-crosshairs" id="gpsInputIcon" style="font-size: 1rem; pointer-events: none;"></i>
+                                </button>
+                            </div>
+                            <div id="gpsStatusFeedback" style="font-size: 0.78rem; margin-top: 6px; display: none; padding: 6px 12px; border-radius: 8px; transition: all 0.2s ease;"></div>
                         </div>
                     </div>
                 </div>

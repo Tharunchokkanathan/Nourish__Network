@@ -6167,5 +6167,81 @@ button:active,
     box-shadow: 0 6px 20px rgba(16, 185, 129, 0.25) !important;
 }
 
+/* ─────────────────────────────────────────────────────────────
+   GPS LOCATION AUTO-DETECTION SYSTEM
+   ───────────────────────────────────────────────────────────── */
+.gps-locate-btn {
+    background: rgba(16, 185, 129, 0.12) !important;
+    border: 1px solid rgba(16, 185, 129, 0.35) !important;
+    color: #10b981 !important;
+    font-size: 0.76rem !important;
+    font-weight: 700 !important;
+    padding: 5px 12px !important;
+    border-radius: 9px !important;
+    cursor: pointer !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 6px !important;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+.gps-locate-btn:hover {
+    background: rgba(16, 185, 129, 0.22) !important;
+    border-color: #10b981 !important;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 14px rgba(16, 185, 129, 0.25);
+}
+
+.gps-locate-btn:active {
+    transform: translateY(0);
+}
+
+.gps-input-btn {
+    position: absolute;
+    right: 7px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 36px;
+    height: 36px;
+    border-radius: 11px;
+    background: rgba(16, 185, 129, 0.12);
+    border: 1px solid rgba(16, 185, 129, 0.3);
+    color: #10b981;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    z-index: 2;
+}
+
+.gps-input-btn:hover {
+    background: rgba(16, 185, 129, 0.28);
+    border-color: #10b981;
+    transform: translateY(-50%) scale(1.06);
+    box-shadow: 0 0 15px rgba(16, 185, 129, 0.35);
+}
+
+.gps-input-btn:active {
+    transform: translateY(-50%) scale(0.96);
+}
+
+.gps-input-btn.locating {
+    animation: gpsPulse 1.2s infinite ease-in-out;
+}
+
+@keyframes gpsPulse {
+    0% {
+        box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.6);
+    }
+    70% {
+        box-shadow: 0 0 0 10px rgba(16, 185, 129, 0);
+    }
+    100% {
+        box-shadow: 0 0 0 0 rgba(16, 185, 129, 0);
+    }
+}
+
+
 
 

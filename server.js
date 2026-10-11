@@ -2099,6 +2099,66 @@ app.post('/api/orders/:id/verify-handover', (req, res) => {
     });
 });
 
+// ─── GPS REVERSE GEOCODING PROXY (Auto-detect address from coordinates) ─────────
+app.get('/api/geocode/reverse', async (req, res) => {
+    const { lat, lng } = req.query;
+    if (!lat || !lng) {
+        return res.status(400).json({ error: 'Latitude and longitude query parameters are required.' });
+    }
+
+    const nLat = parseFloat(lat);
+    const nLng = parseFloat(lng);
+    if (isNaN(nLat) || isNaN(nLng)) {
+        return res.status(400).json({ error: 'Invalid latitude or longitude numbers.' });
+    }
+
+    try {
+        const nominatimUrl = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${encodeURIComponent(nLat)}&lon=${encodeURIComponent(nLng)}`;
+        const response = await fetch(nominatimUrl, {
+            headers: {
+                'User-Agent': 'NourishNetwork/1.0 (contact@nourishnetwork.org)',
+                'Accept': 'application/json'
+            }
+        });
+
+        if (response.ok) {
+            const data = await response.json();
+            if (data && data.address) {
+                const a = data.address;
+                const parts = [
+                    a.amenity || a.building || a.house_number || null,
+                    a.road || a.street || a.pedestrian || null,
+                    a.suburb || a.neighbourhood || a.residential || null,
+                    a.city || a.town || a.village || a.city_district || null,
+                    a.state || null,
+                    a.postcode || null,
+                    a.country || null
+                ].filter(Boolean);
+
+                const formatted = parts.length > 0 ? parts.join(', ') : (data.display_name || `${nLat.toFixed(5)}, ${nLng.toFixed(5)}`);
+
+                return res.status(200).json({
+                    success: true,
+                    address: formatted,
+                    raw: data
+                });
+            }
+        }
+
+        // Fallback to coordinates
+        res.status(200).json({
+            success: true,
+            address: `${nLat.toFixed(5)}, ${nLng.toFixed(5)}`
+        });
+    } catch (err) {
+        console.warn('Geocoding service warning:', err.message);
+        res.status(200).json({
+            success: true,
+            address: `${nLat.toFixed(5)}, ${nLng.toFixed(5)}`
+        });
+    }
+});
+
 // ─── FALLBACK: Serve index.html for any non-API route ────────────────────────
 app.get('/{*path}', (req, res) => {
     if (!req.path.startsWith('/api')) {
