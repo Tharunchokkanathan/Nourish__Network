@@ -1697,10 +1697,11 @@ app.post('/api/listings/claim', authenticateToken, (req, res) => {
         // Insert order record into database so it reflects in real-time history
         db.get(`SELECT quantity, price FROM food_listings WHERE id = ?`, [listingId], (gErr, lRow) => {
             const claimQty = lRow ? (parseInt(lRow.quantity) || 1) : 1;
+            const handoverOtp = Math.floor(1000 + Math.random() * 9000).toString();
             db.run(
-                `INSERT INTO orders (buyerId, listingId, quantity, totalPrice, status, notes)
-                 VALUES (?, ?, ?, 0, 'confirmed', 'Direct Food Rescue Claim')`,
-                [ngoId, listingId, claimQty],
+                `INSERT INTO orders (buyerId, listingId, quantity, totalPrice, status, notes, handoverOtp)
+                 VALUES (?, ?, ?, 0, 'confirmed', 'Direct Food Rescue Claim', ?)`,
+                [ngoId, listingId, claimQty, handoverOtp],
                 (insErr) => {
                     if (insErr) console.error("Claim order tracking insert error:", insErr.message);
                 }
@@ -1860,11 +1861,12 @@ app.post('/api/checkout', authenticateToken, (req, res) => {
                             });
                         }
 
-                        // 3. Insert into orders table
+                        // 3. Insert into orders table with secure 4-digit handover OTP
+                        const handoverOtp = Math.floor(1000 + Math.random() * 9000).toString();
                         db.run(
-                            `INSERT INTO orders (buyerId, listingId, quantity, totalPrice, notes)
-                             VALUES (?, ?, ?, ?, ?)`,
-                            [buyerId, numId, qty, itemTotalPrice, notes || null],
+                            `INSERT INTO orders (buyerId, listingId, quantity, totalPrice, notes, handoverOtp, status)
+                             VALUES (?, ?, ?, ?, ?, ?, 'confirmed')`,
+                            [buyerId, numId, qty, itemTotalPrice, notes || null, handoverOtp],
                             function (insertErr) {
                                 if (insertErr) {
                                     console.error("Checkout INSERT order error:", insertErr);
@@ -1910,6 +1912,8 @@ app.get('/api/orders', authenticateToken, (req, res) => {
                 o.status AS orderStatus,
                 o.notes,
                 o.createdAt,
+                COALESCE(o.handoverOtp, '') AS handoverOtp,
+                o.handoverAt,
                 f.id AS listingId,
                 f.name AS foodName,
                 f.category,
@@ -1949,6 +1953,8 @@ app.get('/api/orders', authenticateToken, (req, res) => {
                 o.status AS orderStatus,
                 o.notes,
                 o.createdAt,
+                COALESCE(o.handoverOtp, '') AS handoverOtp,
+                o.handoverAt,
                 f.id AS listingId,
                 f.name AS foodName,
                 f.category,
@@ -1982,7 +1988,7 @@ app.get('/api/orders', authenticateToken, (req, res) => {
     }
 });
 
-// 14. UPDATE ORDER FULFILLMENT STATUS (e.g. 'completed' / 'picked up')
+// 14. UPDATE ORDER FULFILLMENT STATUS (e.g. 'cancelled' or fallback)
 // PATCH /api/orders/:id/status
 app.patch('/api/orders/:id/status', authenticateToken, (req, res) => {
     const orderId = req.params.id;
@@ -2008,10 +2014,81 @@ app.patch('/api/orders/:id/status', authenticateToken, (req, res) => {
             return res.status(403).json({ error: 'Unauthorized to update this order.' });
         }
 
-        db.run(`UPDATE orders SET status = ? WHERE id = ?`, [status, orderId], function (uErr) {
+        const now = new Date().toISOString();
+        const sql = status === 'completed'
+            ? `UPDATE orders SET status = ?, handoverAt = ? WHERE id = ?`
+            : `UPDATE orders SET status = ? WHERE id = ?`;
+        const params = status === 'completed' ? [status, now, orderId] : [status, orderId];
+
+        db.run(sql, params, function (uErr) {
             if (uErr) return res.status(500).json({ error: uErr.message });
             res.status(200).json({ message: `Order status updated to ${status}.`, orderId, status });
         });
+    });
+});
+
+// 14b. SECURE PHYSICAL HANDOVER VERIFICATION (PIN / OTP Validation)
+// POST /api/orders/:id/verify-handover
+// Body: { otp: "1234" }
+app.post('/api/orders/:id/verify-handover', authenticateToken, (req, res) => {
+    const orderId = req.params.id;
+    const { otp } = req.body;
+    const userId = req.user.id;
+
+    if (!otp || typeof otp !== 'string') {
+        return res.status(400).json({ error: '4-digit Handover OTP is required.' });
+    }
+
+    const cleanOtp = otp.trim();
+    if (!/^\d{4}$/.test(cleanOtp)) {
+        return res.status(400).json({ error: 'Handover OTP must be a valid 4-digit code.' });
+    }
+
+    const sql = `
+        SELECT o.id, o.status, o.handoverOtp, f.vendorId, f.name AS foodName, u.organizationName AS buyerName
+        FROM orders o
+        JOIN food_listings f ON o.listingId = f.id
+        JOIN users u ON o.buyerId = u.id
+        WHERE o.id = ?
+    `;
+
+    db.get(sql, [orderId], (err, order) => {
+        if (err) return res.status(500).json({ error: err.message });
+        if (!order) return res.status(404).json({ error: 'Order not found.' });
+
+        if (order.status === 'completed') {
+            return res.status(400).json({ error: 'This order has already been verified and handed over.' });
+        }
+
+        // Must be the donating restaurant/vendor
+        if (Number(order.vendorId) !== Number(userId)) {
+            return res.status(403).json({ error: 'Only the donating restaurant/vendor can verify the physical handover PIN.' });
+        }
+
+        // Expected OTP from record (or fallback to padded orderId if generated earlier without OTP)
+        const expectedOtp = order.handoverOtp || String(order.id).padStart(4, '0').slice(-4);
+
+        if (cleanOtp !== expectedOtp) {
+            return res.status(400).json({
+                error: 'Invalid Handover PIN! Please ask the pickup volunteer / NGO driver to show the 4-digit code on their screen.'
+            });
+        }
+
+        const now = new Date().toISOString();
+        db.run(
+            `UPDATE orders SET status = 'completed', handoverAt = ? WHERE id = ?`,
+            [now, orderId],
+            function (uErr) {
+                if (uErr) return res.status(500).json({ error: uErr.message });
+                console.log(`🤝 Handover physically verified for Order #${orderId} (${order.foodName} to ${order.buyerName})`);
+                res.status(200).json({
+                    success: true,
+                    message: `Physical handover verified! Food successfully received by ${order.buyerName}.`,
+                    orderId,
+                    handoverAt: now
+                });
+            }
+        );
     });
 });
 

@@ -97,6 +97,8 @@ async function resetDatabase() {
                     totalprice REAL NOT NULL DEFAULT 0,
                     status TEXT NOT NULL DEFAULT 'pending' CHECK(status IN ('pending','confirmed','completed','cancelled')),
                     notes TEXT,
+                    handoverotp TEXT,
+                    handoverat TIMESTAMP,
                     createdat TIMESTAMP NOT NULL DEFAULT NOW()
                 );
 
