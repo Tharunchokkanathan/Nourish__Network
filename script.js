@@ -4412,9 +4412,14 @@ document.addEventListener('DOMContentLoaded', () => {
                                                     <span>${pin}</span>
                                                 </div>
                                             </div>
-                                            <button class="btn-open-qr-pass" data-pin="${pin}" data-order-id="${o.orderId}" data-food-name="${encodeURIComponent(o.foodName || 'Surplus Meal')}">
-                                                <i class="fa-solid fa-qrcode"></i> Show QR Pass
-                                            </button>
+                                            <div style="display: flex; align-items: center; gap: 8px;">
+                                                <button class="btn-open-qr-pass" data-pin="${pin}" data-order-id="${o.orderId}" data-food-name="${encodeURIComponent(o.foodName || 'Surplus Meal')}" data-qty="${o.quantity} portions" data-seller-name="${encodeURIComponent(o.sellerName || 'Donor Kitchen')}" data-seller-address="${encodeURIComponent(o.sellerAddress || '')}" data-seller-phone="${encodeURIComponent(o.sellerPhone || '')}">
+                                                    <i class="fa-solid fa-qrcode"></i> Show QR
+                                                </button>
+                                                <button class="btn-whatsapp-dispatch" data-pin="${pin}" data-order-id="${o.orderId}" data-food-name="${encodeURIComponent(o.foodName || 'Surplus Meal')}" data-qty="${o.quantity} portions" data-seller-name="${encodeURIComponent(o.sellerName || 'Donor Kitchen')}" data-seller-address="${encodeURIComponent(o.sellerAddress || '')}" data-seller-phone="${encodeURIComponent(o.sellerPhone || '')}" title="Dispatch Pickup Pass to Driver via WhatsApp">
+                                                    <i class="fa-brands fa-whatsapp"></i> Share
+                                                </button>
+                                            </div>
                                         </div>
                                     ` : `
                                         <div class="handover-verified-badge" title="Successfully received and verified">
@@ -4445,7 +4450,30 @@ document.addEventListener('DOMContentLoaded', () => {
                     const orderId = btn.dataset.orderId;
                     const pin = btn.dataset.pin;
                     const foodName = decodeURIComponent(btn.dataset.foodName || 'Surplus Meal');
-                    openHandoverQrModal(orderId, foodName, pin);
+                    const meta = {
+                        qty: btn.dataset.qty || '',
+                        sellerName: decodeURIComponent(btn.dataset.sellerName || 'Donor Kitchen'),
+                        sellerAddress: decodeURIComponent(btn.dataset.sellerAddress || ''),
+                        sellerPhone: decodeURIComponent(btn.dataset.sellerPhone || '')
+                    };
+                    openHandoverQrModal(orderId, foodName, pin, meta);
+                });
+            });
+
+            // Attach action handlers for Direct WhatsApp Driver Dispatch (Buyer)
+            container.querySelectorAll('.btn-whatsapp-dispatch').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const orderInfo = {
+                        orderId: btn.dataset.orderId,
+                        foodName: decodeURIComponent(btn.dataset.foodName || 'Surplus Meal'),
+                        pin: btn.dataset.pin,
+                        qty: btn.dataset.qty || '',
+                        sellerName: decodeURIComponent(btn.dataset.sellerName || 'Donor Kitchen'),
+                        sellerAddress: decodeURIComponent(btn.dataset.sellerAddress || ''),
+                        sellerPhone: decodeURIComponent(btn.dataset.sellerPhone || '')
+                    };
+                    dispatchWhatsAppPass(orderInfo);
                 });
             });
 
@@ -4510,9 +4538,10 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     window.openHandoverVerifyModal = openHandoverVerifyModal;
 
-    function openHandoverQrModal(orderId, foodName, pin) {
+    function openHandoverQrModal(orderId, foodName, pin, meta = {}) {
         const modal = document.getElementById('handoverQrModal');
         if (!modal) return;
+        modal._currentPassOrder = { orderId, foodName, pin, ...meta };
 
         const titleEl = document.getElementById('qrModalFoodTitle');
         const digitsEl = document.getElementById('qrModalDigits');
@@ -4528,6 +4557,46 @@ document.addEventListener('DOMContentLoaded', () => {
         modal.style.display = 'flex';
     }
     window.openHandoverQrModal = openHandoverQrModal;
+
+    function dispatchWhatsAppPass(orderInfo) {
+        if (!orderInfo) return;
+        const { orderId, foodName, pin, qty, sellerName, sellerAddress, sellerPhone } = orderInfo;
+        const mapsQuery = sellerAddress ? encodeURIComponent(sellerAddress) : '';
+        const mapsLink = mapsQuery ? `https://www.google.com/maps/search/?api=1&query=${mapsQuery}` : '';
+
+        const lines = [
+            `🌱 *NOURISH NETWORK - FOOD RESCUE PASS*`,
+            `━━━━━━━━━━━━━━━━━━━━`,
+            `📦 *Order:* #NN-${String(orderId).padStart(4, '0')}`,
+            `🍲 *Food:* ${foodName || 'Surplus Meal'}${qty ? ` · ${qty}` : ''}`,
+            `🏢 *Donor Kitchen:* ${sellerName || 'Verified Partner'}`,
+            sellerAddress ? `📍 *Pickup Location:* ${sellerAddress}` : null,
+            sellerPhone ? `📞 *Kitchen Contact:* ${sellerPhone}` : null,
+            `🔑 *HANDOVER PIN:* *${pin || '----'}*`,
+            mapsLink ? `🗺️ *Directions:* ${mapsLink}` : null,
+            `━━━━━━━━━━━━━━━━━━━━`,
+            `⚡ _Show this 4-digit PIN to restaurant staff upon arrival to collect food._`
+        ].filter(Boolean);
+
+        const messageText = lines.join('\n');
+        const waUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(messageText)}`;
+
+        try {
+            const opened = window.open(waUrl, '_blank');
+            if (!opened) {
+                navigator.clipboard?.writeText(messageText).then(() => {
+                    showToast("Pickup pass copied! Paste into WhatsApp chat.", "info");
+                }).catch(() => {
+                    window.location.href = waUrl;
+                });
+            } else {
+                showToast("Opening WhatsApp Dispatch... 📲", "success");
+            }
+        } catch (e) {
+            window.location.href = waUrl;
+        }
+    }
+    window.dispatchWhatsAppPass = dispatchWhatsAppPass;
 
     function initHandoverVerificationModalEvents() {
         if (window._handoverEventsInitialized) return;
@@ -4558,6 +4627,16 @@ document.addEventListener('DOMContentLoaded', () => {
         if (qrModal) {
             qrModal.addEventListener('click', (e) => {
                 if (e.target === qrModal) qrModal.style.display = 'none';
+            });
+        }
+
+        // WhatsApp Share button inside QR Modal
+        const shareWaBtn = document.getElementById('btnShareQrOnWhatsApp');
+        if (shareWaBtn && qrModal) {
+            shareWaBtn.addEventListener('click', () => {
+                if (qrModal._currentPassOrder) {
+                    dispatchWhatsAppPass(qrModal._currentPassOrder);
+                }
             });
         }
 
