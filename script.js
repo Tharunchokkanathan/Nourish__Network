@@ -63,6 +63,12 @@ window.submitHandoverVerification = function () {
     }
 };
 
+window.detectCurrentGpsLocation = function (targetInputId) {
+    if (typeof window._detectCurrentGpsLocationInternal === 'function') {
+        return window._detectCurrentGpsLocationInternal(targetInputId);
+    }
+};
+
 // ---- SAFE EXPIRY HELPERS ----
 window.isValidExpiry = function (dateStr) {
     if (!dateStr || dateStr === 'null' || dateStr === 'undefined') return false;
@@ -5576,6 +5582,170 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         // Listen for the custom event to load data
         document.addEventListener('load-profile-data', loadProfile);
+
+        // ─── GPS AUTO-LOCATION DETECTOR ───────────────────────────────────────
+        async function detectCurrentGpsLocation(targetInputId = 'locationInput') {
+            const inputEl = document.getElementById(targetInputId) || document.getElementById('locationInput');
+            const badgeBtn = document.getElementById('btnDetectGpsLocationBadge');
+            const inputBtn = document.getElementById('btnDetectGpsLocationInput');
+            const badgeIcon = document.getElementById('gpsBadgeIcon');
+            const inputIcon = document.getElementById('gpsInputIcon');
+            const feedbackEl = document.getElementById('gpsStatusFeedback');
+
+            if (!navigator.geolocation) {
+                showToast("Geolocation is not supported by your browser.", "error");
+                if (feedbackEl) {
+                    feedbackEl.style.display = 'block';
+                    feedbackEl.style.background = 'rgba(239, 68, 68, 0.12)';
+                    feedbackEl.style.color = '#f87171';
+                    feedbackEl.style.border = '1px solid rgba(239, 68, 68, 0.25)';
+                    feedbackEl.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> GPS is not supported on this browser.';
+                }
+                return;
+            }
+
+            // Set UI loading state
+            if (badgeBtn) badgeBtn.disabled = true;
+            if (inputBtn) {
+                inputBtn.disabled = true;
+                inputBtn.classList.add('locating');
+            }
+            if (badgeIcon) badgeIcon.className = 'fa-solid fa-spinner fa-spin';
+            if (inputIcon) inputIcon.className = 'fa-solid fa-spinner fa-spin';
+
+            if (feedbackEl) {
+                feedbackEl.style.display = 'block';
+                feedbackEl.style.background = 'rgba(16, 185, 129, 0.12)';
+                feedbackEl.style.color = '#10b981';
+                feedbackEl.style.border = '1px solid rgba(16, 185, 129, 0.3)';
+                feedbackEl.innerHTML = '<i class="fa-solid fa-satellite-dish fa-spin"></i> Contacting GPS satellites & acquiring coordinates...';
+            }
+
+            showToast("Acquiring GPS coordinates... 🛰️", "info");
+
+            const resetUi = () => {
+                if (badgeBtn) badgeBtn.disabled = false;
+                if (inputBtn) {
+                    inputBtn.disabled = false;
+                    inputBtn.classList.remove('locating');
+                }
+                if (badgeIcon) badgeIcon.className = 'fa-solid fa-location-crosshairs';
+                if (inputIcon) inputIcon.className = 'fa-solid fa-location-crosshairs';
+            };
+
+            const geoOptions = {
+                enableHighAccuracy: true,
+                timeout: 15000,
+                maximumAge: 10000
+            };
+
+            navigator.geolocation.getCurrentPosition(
+                async (position) => {
+                    const { latitude, longitude, accuracy } = position.coords;
+                    if (feedbackEl) {
+                        feedbackEl.innerHTML = `<i class="fa-solid fa-compass fa-spin"></i> Acquired GPS (±${Math.round(accuracy)}m). Resolving address...`;
+                    }
+
+                    let resolvedAddress = null;
+
+                    // 1. Try server geocode proxy first
+                    try {
+                        const proxyRes = await fetch(`${API_BASE}/geocode/reverse?lat=${encodeURIComponent(latitude)}&lng=${encodeURIComponent(longitude)}`);
+                        if (proxyRes.ok) {
+                            const proxyData = await proxyRes.json();
+                            if (proxyData && proxyData.success && proxyData.address) {
+                                resolvedAddress = proxyData.address;
+                            }
+                        }
+                    } catch (pErr) {
+                        console.warn("Proxy geocode fallback:", pErr);
+                    }
+
+                    // 2. Direct client fallback via OpenStreetMap Nominatim
+                    if (!resolvedAddress) {
+                        try {
+                            const osmRes = await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${latitude}&lon=${longitude}`);
+                            if (osmRes.ok) {
+                                const osmData = await osmRes.json();
+                                if (osmData && osmData.address) {
+                                    const a = osmData.address;
+                                    const parts = [
+                                        a.amenity || a.building || a.house_number || null,
+                                        a.road || a.street || a.pedestrian || null,
+                                        a.suburb || a.neighbourhood || a.residential || null,
+                                        a.city || a.town || a.village || a.city_district || null,
+                                        a.state || null,
+                                        a.postcode || null,
+                                        a.country || null
+                                    ].filter(Boolean);
+                                    resolvedAddress = parts.length > 0 ? parts.join(', ') : osmData.display_name;
+                                }
+                            }
+                        } catch (osmErr) {
+                            console.warn("Client OSM geocode fallback:", osmErr);
+                        }
+                    }
+
+                    // 3. Fallback to coordinate string
+                    if (!resolvedAddress) {
+                        resolvedAddress = `${latitude.toFixed(5)}, ${longitude.toFixed(5)}`;
+                    }
+
+                    // Apply to input
+                    if (inputEl) {
+                        inputEl.value = resolvedAddress;
+                        inputEl.dataset.lat = latitude;
+                        inputEl.dataset.lng = longitude;
+
+                        inputEl.dispatchEvent(new Event('input', { bubbles: true }));
+                        inputEl.dispatchEvent(new Event('change', { bubbles: true }));
+
+                        inputEl.style.transition = 'all 0.3s ease';
+                        inputEl.style.borderColor = '#10b981';
+                        inputEl.style.boxShadow = '0 0 0 3px rgba(16, 185, 129, 0.3)';
+                        setTimeout(() => {
+                            inputEl.style.borderColor = '';
+                            inputEl.style.boxShadow = '';
+                        }, 3000);
+                    }
+
+                    if (feedbackEl) {
+                        feedbackEl.style.background = 'rgba(16, 185, 129, 0.12)';
+                        feedbackEl.style.color = '#10b981';
+                        feedbackEl.style.border = '1px solid rgba(16, 185, 129, 0.3)';
+                        feedbackEl.innerHTML = `<i class="fa-solid fa-circle-check"></i> Location set: <strong>${resolvedAddress}</strong> (Accuracy: ±${Math.round(accuracy)}m)`;
+                    }
+
+                    const shortSummary = resolvedAddress.split(',')[0] || resolvedAddress;
+                    showToast(`📍 Location auto-set: ${shortSummary}`, "success");
+                    resetUi();
+                },
+                (error) => {
+                    resetUi();
+                    let errorMsg = 'Failed to acquire GPS location. Please try again or type manually.';
+                    if (error.code === 1) {
+                        errorMsg = 'Location permission was denied. Please allow location access in your browser / phone settings.';
+                    } else if (error.code === 2) {
+                        errorMsg = 'Location position is unavailable. Please check your device GPS.';
+                    } else if (error.code === 3) {
+                        errorMsg = 'GPS location request timed out. Please try again.';
+                    }
+
+                    if (feedbackEl) {
+                        feedbackEl.style.display = 'block';
+                        feedbackEl.style.background = 'rgba(239, 68, 68, 0.12)';
+                        feedbackEl.style.color = '#f87171';
+                        feedbackEl.style.border = '1px solid rgba(239, 68, 68, 0.25)';
+                        feedbackEl.innerHTML = `<i class="fa-solid fa-triangle-exclamation"></i> ${errorMsg}`;
+                    }
+
+                    showToast(errorMsg, "error");
+                },
+                geoOptions
+            );
+        }
+        window.detectCurrentGpsLocation = detectCurrentGpsLocation;
+        window._detectCurrentGpsLocationInternal = detectCurrentGpsLocation;
 
         // Backdrop click to dismiss settings modal
         if (settingsModal) {
