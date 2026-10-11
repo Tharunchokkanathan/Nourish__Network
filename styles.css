@@ -6134,4 +6134,38 @@ button:active,
     box-shadow: 0 6px 18px rgba(37, 211, 102, 0.35) !important;
 }
 
+/* In-App QR Scanner Laser & Viewfinder */
+.scanner-laser-line {
+    position: absolute;
+    left: 5%;
+    width: 90%;
+    height: 3px;
+    background: linear-gradient(90deg, rgba(16, 185, 129, 0), #10b981, rgba(16, 185, 129, 0));
+    box-shadow: 0 0 15px #10b981, 0 0 30px #10b981;
+    border-radius: 100px;
+    animation: scannerScanAnim 2.2s ease-in-out infinite alternate;
+    pointer-events: none;
+    z-index: 10;
+}
+
+@keyframes scannerScanAnim {
+    0% {
+        top: 8%;
+        opacity: 0.9;
+    }
+    100% {
+        top: 90%;
+        opacity: 0.9;
+    }
+}
+
+.btn-open-scanner:hover {
+    background: rgba(255, 255, 255, 0.16) !important;
+    border-color: rgba(16, 185, 129, 0.6) !important;
+    color: #34d399 !important;
+    transform: translateY(-1px);
+    box-shadow: 0 6px 20px rgba(16, 185, 129, 0.25) !important;
+}
+
+
 

@@ -4550,13 +4550,106 @@ document.addEventListener('DOMContentLoaded', () => {
         if (titleEl) titleEl.textContent = `${foodName} · Order #${orderId}`;
         if (digitsEl) digitsEl.textContent = pin || '----';
         if (imgEl) {
-            const qrPayload = encodeURIComponent(`NOURISH_NETWORK:ORDER:${orderId}:PIN:${pin}`);
-            imgEl.src = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&margin=4&data=${qrPayload}`;
+            // Encode direct 1-tap verification action URL into the QR code
+            const baseUrl = window.location.origin;
+            const verifyLink = `${baseUrl}/?action=verify-handover&orderId=${encodeURIComponent(orderId)}&pin=${encodeURIComponent(pin)}`;
+            const qrPayload = encodeURIComponent(verifyLink);
+            imgEl.src = `https://api.qrserver.com/v1/create-qr-code/?size=260x260&margin=6&data=${qrPayload}`;
         }
 
         modal.style.display = 'flex';
     }
     window.openHandoverQrModal = openHandoverQrModal;
+
+    // ─── IN-APP CAMERA QR SCANNER (HTML5-QRCODE) ────────────────────────────
+    let html5QrScannerInstance = null;
+
+    function startCameraScanner() {
+        const modal = document.getElementById('qrCameraScannerModal');
+        if (!modal) return;
+        modal.style.display = 'flex';
+
+        if (typeof Html5Qrcode === 'undefined') {
+            showToast("Scanner library is initializing... please wait a moment.", "info");
+            return;
+        }
+
+        try {
+            if (html5QrScannerInstance) {
+                html5QrScannerInstance.stop().catch(() => {}).finally(() => {
+                    html5QrScannerInstance = null;
+                });
+            }
+
+            html5QrScannerInstance = new Html5Qrcode("qrReaderContainer");
+            const config = { fps: 15, qrbox: { width: 240, height: 240 } };
+
+            html5QrScannerInstance.start(
+                { facingMode: "environment" },
+                config,
+                (decodedText) => {
+                    handleScannedQrData(decodedText);
+                },
+                () => {}
+            ).catch(err => {
+                console.warn("Camera start warning:", err);
+                showToast("Camera access was not granted. Please enter the 4-digit PIN manually.", "error");
+            });
+        } catch (e) {
+            console.error("Camera init error:", e);
+        }
+    }
+    window.startCameraScanner = startCameraScanner;
+
+    function stopCameraScanner() {
+        const modal = document.getElementById('qrCameraScannerModal');
+        if (modal) modal.style.display = 'none';
+
+        if (html5QrScannerInstance) {
+            html5QrScannerInstance.stop().then(() => {
+                html5QrScannerInstance.clear();
+                html5QrScannerInstance = null;
+            }).catch(() => {
+                html5QrScannerInstance = null;
+            });
+        }
+    }
+    window.stopCameraScanner = stopCameraScanner;
+
+    function handleScannedQrData(decodedText) {
+        if (!decodedText) return;
+        let orderId = null;
+        let pin = null;
+
+        if (decodedText.includes('action=verify-handover')) {
+            try {
+                const parsed = new URL(decodedText, window.location.origin);
+                orderId = parsed.searchParams.get('orderId');
+                pin = parsed.searchParams.get('pin');
+            } catch (e) {}
+        } else if (decodedText.includes('ORDER:') && decodedText.includes('PIN:')) {
+            const mOrder = decodedText.match(/ORDER:([A-Za-z0-9_-]+)/);
+            const mPin = decodedText.match(/PIN:(\d{4})/);
+            if (mOrder) orderId = mOrder[1];
+            if (mPin) pin = mPin[1];
+        }
+
+        if (orderId && pin) {
+            stopCameraScanner();
+            openHandoverVerifyModal(orderId, `Order #${orderId}`, 'NGO Partner', '');
+            const verifyModal = document.getElementById('handoverVerifyModal');
+            if (verifyModal) {
+                const digitBoxes = Array.from(verifyModal.querySelectorAll('.handover-digit-box'));
+                pin.split('').forEach((d, i) => { if (digitBoxes[i]) digitBoxes[i].value = d; });
+                showToast(`QR Code Scanned! Verifying Order #${orderId}...`, "success");
+                const confirmBtn = document.getElementById('btnConfirmHandover');
+                if (confirmBtn) setTimeout(() => confirmBtn.click(), 300);
+            }
+        } else {
+            showToast("Unrecognized QR Code. Please scan a Nourish Network pass.", "error");
+        }
+    }
+    window.handleScannedQrData = handleScannedQrData;
 
     function dispatchWhatsAppPass(orderInfo) {
         if (!orderInfo) return;
@@ -4637,6 +4730,27 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (qrModal._currentPassOrder) {
                     dispatchWhatsAppPass(qrModal._currentPassOrder);
                 }
+            });
+        }
+
+        // In-App Camera Scanner Triggers
+        const launchCamBtn = document.getElementById('btnLaunchCameraScanner');
+        if (launchCamBtn) {
+            launchCamBtn.addEventListener('click', () => {
+                startCameraScanner();
+            });
+        }
+
+        const closeCamBtn = document.getElementById('closeQrCameraScannerModal');
+        const camModal = document.getElementById('qrCameraScannerModal');
+        if (closeCamBtn) {
+            closeCamBtn.addEventListener('click', () => {
+                stopCameraScanner();
+            });
+        }
+        if (camModal) {
+            camModal.addEventListener('click', (e) => {
+                if (e.target === camModal) stopCameraScanner();
             });
         }
 
@@ -5392,6 +5506,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (handoverQrModal && handoverQrModal.style.display !== 'none') {
                     handoverQrModal.style.display = 'none';
                 }
+                const qrCameraScannerModal = document.getElementById('qrCameraScannerModal');
+                if (qrCameraScannerModal && qrCameraScannerModal.style.display !== 'none') {
+                    if (typeof stopCameraScanner === 'function') stopCameraScanner();
+                }
                 const authModal = document.getElementById('authModal');
                 if (authModal && authModal.classList.contains('active')) {
                     authModal.classList.remove('active');
@@ -5414,4 +5532,42 @@ document.addEventListener('DOMContentLoaded', () => {
 
     attachSettingsListeners();
 
+    // ─── 1-TAP URL QR SCAN VERIFICATION CONTROLLER ───────────────────────────
+    function checkUrlVerificationParams() {
+        try {
+            const urlParams = new URLSearchParams(window.location.search);
+            const action = urlParams.get('action');
+            const orderId = urlParams.get('orderId');
+            const pin = urlParams.get('pin');
+
+            if (action === 'verify-handover' && orderId && pin) {
+                // Remove search params cleanly from address bar
+                window.history.replaceState({}, document.title, window.location.pathname);
+
+                // Open verification modal with pre-filled details
+                if (typeof openHandoverVerifyModal === 'function') {
+                    openHandoverVerifyModal(orderId, `Order #${orderId}`, 'NGO Partner', '');
+                }
+
+                const verifyModal = document.getElementById('handoverVerifyModal');
+                if (verifyModal) {
+                    const digitBoxes = Array.from(verifyModal.querySelectorAll('.handover-digit-box'));
+                    pin.split('').forEach((d, i) => {
+                        if (digitBoxes[i]) digitBoxes[i].value = d;
+                    });
+                    showToast(`Camera Scanned Order #${orderId} with PIN ${pin}! Verifying...`, "info");
+                    const confirmBtn = document.getElementById('btnConfirmHandover');
+                    if (confirmBtn) {
+                        setTimeout(() => confirmBtn.click(), 500);
+                    }
+                }
+            }
+        } catch (e) {
+            console.error("URL QR check error:", e);
+        }
+    }
+
+    checkUrlVerificationParams();
+
 });
+

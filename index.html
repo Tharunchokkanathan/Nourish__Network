@@ -27,6 +27,9 @@
     <!-- Chart.js for Impact Analytics Dashboard -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
+    <!-- HTML5 QR Code Scanner Library -->
+    <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+
     <!-- Anti-flash script for persistent sessions -->
     <script>
         (function () {
@@ -924,6 +927,45 @@
                 style="width: 100% !important; min-height: 50px !important; background: #10b981 !important; color: #ffffff !important; border: none !important; font-weight: 700; font-size: 1rem; border-radius: 100px; box-shadow: 0 8px 24px rgba(16, 185, 129, 0.35) !important;">
                 <i class="fa-solid fa-check-double"></i>&nbsp; Verify & Complete Handover
             </button>
+
+            <!-- Divider -->
+            <div style="margin: 1.25rem 0 0.85rem; display: flex; align-items: center; justify-content: center; gap: 10px;">
+                <span style="height: 1px; flex: 1; background: rgba(255,255,255,0.1);"></span>
+                <span style="font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px; color: rgba(255,255,255,0.45);">OR INSTANT SCAN</span>
+                <span style="height: 1px; flex: 1; background: rgba(255,255,255,0.1);"></span>
+            </div>
+
+            <button type="button" id="btnLaunchCameraScanner" class="btn-open-scanner"
+                style="width: 100%; padding: 12px 18px; background: rgba(255, 255, 255, 0.08); border: 1px solid rgba(255, 255, 255, 0.2); color: #ffffff; border-radius: 100px; font-weight: 600; font-size: 0.9rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; transition: all 0.2s ease;">
+                <i class="fa-solid fa-camera" style="color: #10b981;"></i> Scan Recipient QR Pass
+            </button>
+        </div>
+    </div>
+
+    <!-- In-App Camera QR Scanner Modal -->
+    <div id="qrCameraScannerModal"
+        style="display: none; position: fixed; inset: 0; width: 100vw; height: 100vh; background: rgba(0, 0, 0, 0.95); z-index: 99999999; align-items: center; justify-content: center; backdrop-filter: blur(14px); padding: 15px;">
+        <div style="width: 100%; max-width: 440px; background: #0a0a0a; border: 1.5px solid rgba(255, 255, 255, 0.16); border-radius: 28px; padding: 2rem; box-shadow: 0 40px 100px rgba(0, 0, 0, 0.98); color: #ffffff; text-align: center; position: relative;">
+            
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem;">
+                <div style="display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 1.1rem;">
+                    <i class="fa-solid fa-camera" style="color: #10b981;"></i> Scan Driver QR Pass
+                </div>
+                <button id="closeQrCameraScannerModal"
+                    style="width: 36px; height: 36px; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.2); border-radius: 50%; font-size: 1rem; cursor: pointer; color: #ffffff; display: flex; align-items: center; justify-content: center;">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <!-- Viewfinder with animated laser line -->
+            <div style="position: relative; width: 100%; max-width: 320px; height: 320px; margin: 0 auto 1.25rem; border-radius: 22px; overflow: hidden; background: #000000; border: 2px solid rgba(16, 185, 129, 0.4); box-shadow: 0 0 30px rgba(16, 185, 129, 0.2);">
+                <div id="qrReaderContainer" style="width: 100%; height: 100%;"></div>
+                <div class="scanner-laser-line"></div>
+            </div>
+
+            <p style="margin: 0; font-size: 0.84rem; color: rgba(255,255,255,0.65); line-height: 1.5;">
+                Point your camera at the <strong>Pickup Handover Pass</strong> on the NGO driver's phone.
+            </p>
         </div>
     </div>
 
