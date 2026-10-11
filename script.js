@@ -5686,6 +5686,25 @@ document.addEventListener('DOMContentLoaded', () => {
                         }
                     }
 
+                    // 2b. Secondary client fallback via BigDataCloud
+                    if (!resolvedAddress) {
+                        try {
+                            const bdcRes = await fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${latitude}&longitude=${longitude}&localityLanguage=en`);
+                            if (bdcRes.ok) {
+                                const bdc = await bdcRes.json();
+                                const parts = [
+                                    bdc.locality || bdc.city || null,
+                                    bdc.principalSubdivision || null,
+                                    bdc.postcode || null,
+                                    bdc.countryName || null
+                                ].filter(Boolean);
+                                if (parts.length > 0) resolvedAddress = parts.join(', ');
+                            }
+                        } catch (bdcErr) {
+                            console.warn("Client BDC geocode fallback:", bdcErr);
+                        }
+                    }
+
                     // 3. Fallback to coordinate string
                     if (!resolvedAddress) {
                         resolvedAddress = `${latitude.toFixed(5)}, ${longitude.toFixed(5)}`;
