@@ -3251,7 +3251,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                 </div>
                                 <div class="form-group">
                                     <label>Quantity (Portions)</label>
-                                    <input type="number" id="p-qty" class="form-control" value="10" min="1" required>
+                                    <input type="number" id="p-qty" class="form-control" value="0" min="0" placeholder="0" required>
                                 </div>
                                 <div class="form-group">
                                     <label>Price per Portion (₹)</label>
@@ -4519,13 +4519,21 @@ document.addEventListener('DOMContentLoaded', () => {
         const grid = document.getElementById('exchange-grid');
         if (!grid) return;
 
+        // Check if currently logged in user is a seller account
+        const user = JSON.parse(sessionStorage.getItem('nourishUser') || localStorage.getItem('nourishUser') || '{}');
+        const role = (user.accountType || user.type || user.role || '').toLowerCase();
+        const isSellerAcc = role.includes('restaurant') || role.includes('vendor') || role.includes('seller') || state.activePortal === 'seller';
+
         // Preserve in-progress stepper selections across data syncs
         const currentStepperVals = {};
         grid.querySelectorAll('.nn-food-card').forEach(card => {
             const id = card.dataset.id;
             const span = card.querySelector('.stepper-val');
             if (id && span) {
-                currentStepperVals[id] = parseInt(span.textContent || span.innerText, 10) || 1;
+                const parsed = parseInt(span.textContent || span.innerText, 10);
+                if (!isNaN(parsed)) {
+                    currentStepperVals[id] = parsed;
+                }
             }
         });
         const isInitialMount = grid.children.length === 0;
@@ -4564,8 +4572,13 @@ document.addEventListener('DOMContentLoaded', () => {
             const isAllInBasket = (remainingLive <= 0);
             const isExpired = window.isItemExpired(item.expiry);
 
-            const savedVal = currentStepperVals[item.id] || 1;
-            const stepperVal = isAllInBasket ? 0 : Math.max(1, Math.min(savedVal, remainingLive));
+            // In seller account, initial quantity starts at 0! For buyers/guests, default is 1.
+            const defaultInitialQty = isSellerAcc ? 0 : 1;
+            const savedVal = (currentStepperVals[item.id] !== undefined && !isNaN(currentStepperVals[item.id]))
+                ? currentStepperVals[item.id]
+                : defaultInitialQty;
+            const minQty = isSellerAcc ? 0 : 1;
+            const stepperVal = isAllInBasket ? 0 : Math.max(minQty, Math.min(savedVal, remainingLive));
 
             return `
             <div class="nn-food-card ${isInitialMount ? 'stagger-item' : ''} ${isAllInBasket ? 'is-sold-out' : ''} ${isExpired ? 'is-expired' : ''}" data-id="${item.id}" ${isInitialMount ? `style="animation-delay: ${idx * 0.05}s"` : ''}>
@@ -4618,6 +4631,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // 5. Cart & Basket Logic
     function attachBuyerListeners() {
+        const user = JSON.parse(sessionStorage.getItem('nourishUser') || localStorage.getItem('nourishUser') || '{}');
+        const role = (user.accountType || user.type || user.role || '').toLowerCase();
+        const isSellerAcc = role.includes('restaurant') || role.includes('vendor') || role.includes('seller') || state.activePortal === 'seller';
+        const minAllowed = isSellerAcc ? 0 : 1;
+
         document.querySelectorAll('.stepper-btn').forEach(btn => {
             btn.onclick = (e) => {
                 e.preventDefault();
@@ -4627,7 +4645,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 const span = card ? card.querySelector('.stepper-val') : document.getElementById(`stepper-${id}`);
                 if (!span) return;
 
-                let val = parseInt(span.textContent || span.innerText, 10) || 1;
+                const parsed = parseInt(span.textContent || span.innerText, 10);
+                let val = isNaN(parsed) ? (isSellerAcc ? 0 : 1) : parsed;
                 const item = state.listings.find(l => String(l.id) === String(id));
                 if (!item) return;
 
@@ -4643,7 +4662,9 @@ document.addEventListener('DOMContentLoaded', () => {
                         showToast(`Only ${maxAvailable} portion(s) available to add!`, "info");
                     }
                 } else if (btn.classList.contains('minus')) {
-                    if (val > 1) val--;
+                    if (val > minAllowed) {
+                        val--;
+                    }
                 }
                 span.textContent = val;
                 span.innerText = val;
@@ -4658,7 +4679,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 const id = btn.dataset.id || (card ? card.dataset.id : null);
                 const item = state.listings.find(l => String(l.id) === String(id));
                 const span = card ? card.querySelector('.stepper-val') : document.getElementById(`stepper-${id}`);
-                const qtyToAdd = span ? (parseInt(span.textContent || span.innerText, 10) || 1) : 1;
+                const qtyToAdd = span ? parseInt(span.textContent || span.innerText, 10) : 0;
+
+                if (qtyToAdd <= 0) {
+                    showToast("Please increase quantity to at least 1 portion.", "warning");
+                    return;
+                }
 
                 if (item && qtyToAdd > 0) {
                     addToCart(item, qtyToAdd, e);
