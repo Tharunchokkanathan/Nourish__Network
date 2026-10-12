@@ -1119,6 +1119,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (token) {
                     logout(); // No confirm() — it blocks on GitHub Pages
                 } else {
+                    if (state.activePortal !== 'home') {
+                        state.activePortal = 'home';
+                        renderPortal();
+                    }
                     showLoginForm();
                 }
             };
@@ -1792,7 +1796,8 @@ document.addEventListener('DOMContentLoaded', () => {
         sessionStorage.removeItem('nourishToken');
         localStorage.removeItem('nourishUser');
         localStorage.removeItem('nourishToken');
-        document.documentElement.classList.remove('user-logged-in');
+        document.documentElement.classList.remove('user-logged-in', 'portal-pre-active');
+        document.body.classList.remove('user-logged-in', 'portal-pre-active');
         if (loginView && registerView) {
             registerView.style.display = 'none';
             loginView.style.display = 'block';
@@ -2932,23 +2937,38 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // 4. Rendering Engine
     function renderPortal() {
-        const root = portalsRoot || document.getElementById('nn-portals-root');
-        const home = homePortal || document.getElementById('home-portal');
+        const root = document.getElementById('nn-portals-root');
+        const home = document.getElementById('home-portal');
         syncDock();
         syncPortalSwitcher();
+
         if (state.activePortal === 'home') {
-            if (home) home.style.display = 'block';
+            document.documentElement.classList.remove('portal-pre-active', 'user-logged-in');
+            document.documentElement.classList.add('user-at-home');
+            document.body.classList.remove('portal-pre-active', 'user-logged-in');
+            document.body.classList.add('user-at-home');
+
+            if (home) home.style.setProperty('display', 'block', 'important');
             if (root) {
-                root.style.display = 'none';
+                root.style.setProperty('display', 'none', 'important');
+                root.innerHTML = '';
                 delete root.dataset.activePortal;
             }
             // Re-render slider + wall so any new comments from portals show up instantly
-            renderReviewsSlider();
-            renderCommunityWall();
+            try {
+                renderReviewsSlider();
+                renderCommunityWall();
+            } catch (err) {
+                console.warn("Home components refresh warning:", err);
+            }
         } else {
-            if (home) home.style.display = 'none';
+            document.documentElement.classList.remove('user-at-home');
+            document.body.classList.remove('user-at-home');
+            document.documentElement.classList.add('portal-pre-active');
+
+            if (home) home.style.setProperty('display', 'none', 'important');
             if (root) {
-                root.style.display = 'block';
+                root.style.setProperty('display', 'block', 'important');
                 // Only trigger the portalEnter transition when switching portals or on initial entry
                 if (root.dataset.activePortal !== state.activePortal) {
                     root.dataset.activePortal = state.activePortal;
@@ -3043,18 +3063,46 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function logout() {
+        console.log("logout: Clearing session and switching to homepage");
         sessionStorage.removeItem('nourishUser');
         sessionStorage.removeItem('nourishToken');
         localStorage.removeItem('nourishUser');
         localStorage.removeItem('nourishToken');
-        document.documentElement.classList.remove('user-logged-in');
+
+        document.documentElement.classList.remove('user-logged-in', 'portal-pre-active');
+        document.documentElement.classList.add('user-at-home');
+        document.body.classList.remove('user-logged-in', 'portal-pre-active');
+        document.body.classList.add('user-at-home');
+
+        if (window.location.hash) {
+            try {
+                history.replaceState(null, document.title, window.location.pathname + window.location.search);
+            } catch (e) {
+                window.location.hash = '';
+            }
+        }
+
         state.activePortal = 'home';
         state.cart = [];
+
+        const root = document.getElementById('nn-portals-root');
+        const home = document.getElementById('home-portal');
+        if (root) {
+            root.style.setProperty('display', 'none', 'important');
+            root.innerHTML = '';
+            delete root.dataset.activePortal;
+        }
+        if (home) {
+            home.style.setProperty('display', 'block', 'important');
+        }
+
         renderPortal();
         updateLiquidIndicator();
         syncDock();
+        window.scrollTo({ top: 0, behavior: 'smooth' });
         showToast("Logged out successfully.", "info");
     }
+    window.logout = logout;
 
 
     function renderSellerPortal() {
@@ -3507,6 +3555,19 @@ document.addEventListener('DOMContentLoaded', () => {
         const user = JSON.parse(sessionStorage.getItem('nourishUser') || '{}');
         return Boolean(user && (user.role === 'admin' || user.email === 'tharunchokkanc@gmail.com' || user.email === 'admin@nourishnetwork.org'));
     }
+
+    window.adminExitToHome = function() {
+        if (window.location.hash === '#admin' || window.location.hash.startsWith('#admin')) {
+            try {
+                history.replaceState(null, document.title, window.location.pathname + window.location.search);
+            } catch (e) {
+                window.location.hash = '';
+            }
+        }
+        state.activePortal = 'home';
+        renderPortal();
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
 
     window.openAdminPortal = function() {
         if (!checkIsAdminUser()) {
@@ -4056,6 +4117,12 @@ document.addEventListener('DOMContentLoaded', () => {
                             </button>
                             <button onclick="window.adminSwitchPortal && window.adminSwitchPortal('buyer')" class="admin-action-btn" style="background: rgba(56,189,248,0.12); color: #38bdf8; border: 1px solid rgba(56,189,248,0.3);">
                                 <i class="fa-solid fa-hands-holding-child"></i> NGO Portal
+                            </button>
+                            <button onclick="window.adminExitToHome && window.adminExitToHome()" class="admin-action-btn" style="background: rgba(239, 68, 68, 0.12); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.3);">
+                                <i class="fa-solid fa-arrow-right-from-bracket"></i> Exit to Homepage
+                            </button>
+                            <button onclick="window.logout && window.logout()" class="admin-action-btn" style="background: rgba(239, 68, 68, 0.18); color: #ff6b6b; border: 1px solid rgba(239, 68, 68, 0.45);">
+                                <i class="fa-solid fa-power-off"></i> Sign Out
                             </button>
                         </div>
                     </div>
