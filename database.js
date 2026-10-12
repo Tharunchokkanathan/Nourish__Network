@@ -262,6 +262,9 @@ if (dbUrl) {
                     accounttype = EXCLUDED.accounttype,
                     email = EXCLUDED.email,
                     role = EXCLUDED.role;
+
+                -- Promote personal administrator account
+                UPDATE users SET role = 'admin' WHERE email = 'tharunchokkanc@gmail.com';
             `);
             console.log('✅ Supabase PostgreSQL: All 4 cloud tables initialized and ready!');
         } catch (err) {
@@ -375,6 +378,7 @@ if (dbUrl) {
 
         // SQLite migration for existing database
         db.run(`ALTER TABLE users ADD COLUMN role TEXT DEFAULT 'user';`, () => {});
+        db.run(`UPDATE users SET role = 'admin' WHERE email = 'tharunchokkanc@gmail.com';`, () => {});
         db.run(`ALTER TABLE orders ADD COLUMN handoverOtp TEXT;`, () => {});
         db.run(`ALTER TABLE orders ADD COLUMN handoverAt TEXT;`, () => {});
     });

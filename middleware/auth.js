@@ -33,4 +33,18 @@ function authenticateToken(req, res, next) {
     }
 }
 
-module.exports = { authenticateToken, JWT_SECRET };
+/**
+ * Middleware: Verify caller is an authenticated Administrator.
+ */
+function requireAdmin(req, res, next) {
+    authenticateToken(req, res, () => {
+        const u = req.user;
+        const isAdmin = u && (u.role === 'admin' || u.email === 'tharunchokkanc@gmail.com' || u.email === 'admin@nourishnetwork.org');
+        if (isAdmin) {
+            return next();
+        }
+        return res.status(403).json({ error: 'Access denied. Administrator privileges required.' });
+    });
+}
+
+module.exports = { authenticateToken, requireAdmin, JWT_SECRET };
