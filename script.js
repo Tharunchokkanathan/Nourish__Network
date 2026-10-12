@@ -2975,7 +2975,6 @@ document.addEventListener('DOMContentLoaded', () => {
         const navProfileBtn = document.getElementById('nav-profile-btn');
         const navAvatarImg = document.getElementById('nav-avatar-img');
 
-        const navAdminBtn = document.getElementById('nav-admin-btn');
         if (userToken) {
             if (loginTextDock) loginTextDock.innerText = 'Logout';
             if (loginIconDock) { loginIconDock.classList.remove('fa-user'); loginIconDock.classList.add('fa-right-from-bracket'); }
@@ -2985,17 +2984,11 @@ document.addEventListener('DOMContentLoaded', () => {
             const user = JSON.parse(sessionStorage.getItem('nourishUser') || '{}');
             if (navAvatarImg && user.avatarUrl) navAvatarImg.src = user.avatarUrl;
             else if (navAvatarImg && user.id) navAvatarImg.src = `assets/default-avatar.jpg`;
-
-            // Admin button is ONLY visible if logged in user is verified admin
-            const isAdmin = user && (user.role === 'admin' || user.email === 'tharunchokkanc@gmail.com' || user.email === 'admin@nourishnetwork.org');
-            if (navAdminBtn) navAdminBtn.style.display = isAdmin ? 'inline-flex' : 'none';
         } else {
             if (loginTextDock) loginTextDock.innerText = 'Login';
             if (loginIconDock) { loginIconDock.classList.remove('fa-right-from-bracket'); loginIconDock.classList.add('fa-user'); }
             // Hide avatar in navbar
             if (navProfileBtn) navProfileBtn.style.display = 'none';
-            // Hide admin button when not logged in
-            if (navAdminBtn) navAdminBtn.style.display = 'none';
         }
 
         // --- Always keep the dock visible ---
@@ -3057,8 +3050,6 @@ document.addEventListener('DOMContentLoaded', () => {
         document.documentElement.classList.remove('user-logged-in');
         state.activePortal = 'home';
         state.cart = [];
-        const navAdminBtn = document.getElementById('nav-admin-btn');
-        if (navAdminBtn) navAdminBtn.style.display = 'none';
         renderPortal();
         updateLiquidIndicator();
         syncDock();
@@ -3527,6 +3518,27 @@ document.addEventListener('DOMContentLoaded', () => {
         renderPortal();
         window.scrollTo({ top: 0, behavior: 'smooth' });
     };
+
+    // Secret shortcut: Ctrl+Shift+A (or Cmd+Shift+A) to open Admin Command Center
+    document.addEventListener('keydown', (e) => {
+        if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'A' || e.key === 'a')) {
+            e.preventDefault();
+            if (checkIsAdminUser()) {
+                window.openAdminPortal();
+            } else {
+                showToast("Access Denied: Administrator sign-in required.", "error");
+            }
+        }
+    });
+
+    // Check URL hash (#admin)
+    if (window.location.hash === '#admin') {
+        setTimeout(() => {
+            if (checkIsAdminUser()) {
+                window.openAdminPortal();
+            }
+        }, 500);
+    }
 
     window.adminSwitchPortal = function(portal) {
         state.activePortal = portal;
@@ -5896,6 +5908,13 @@ document.addEventListener('DOMContentLoaded', () => {
             if (subtitle) subtitle.textContent = isSeller
                 ? "Manage your restaurant's profile, compliance & pickup details"
                 : "Manage your NGO's profile, compliance & pickup details";
+
+            // Private Super Admin access row inside profile settings
+            const adminRow = document.getElementById('settingsAdminRow');
+            if (adminRow) {
+                adminRow.style.display = (typeof checkIsAdminUser === 'function' && checkIsAdminUser()) ? 'flex' : 'none';
+            }
+
             document.dispatchEvent(new CustomEvent('load-profile-data'));
         }
     };
