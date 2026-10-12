@@ -4855,19 +4855,19 @@ document.addEventListener('DOMContentLoaded', () => {
                     <!-- Subtabs Navigation -->
                     <div class="admin-tabs-nav">
                         <button class="admin-tab-btn active" id="adm-tab-btn-compliance" onclick="window.adminSwitchTab && window.adminSwitchTab('compliance')">
-                            <i class="fa-solid fa-id-card"></i> Compliance & Accreditation Queue
+                            <i class="fa-solid fa-id-card"></i> User Approvals
                             <span class="admin-count-pill" id="adm-badge-compliance">0</span>
                         </button>
                         <button class="admin-tab-btn" id="adm-tab-btn-listings" onclick="window.adminSwitchTab && window.adminSwitchTab('listings')">
-                            <i class="fa-solid fa-utensils"></i> Food Donation Moderation
+                            <i class="fa-solid fa-utensils"></i> Food Listings
                             <span class="admin-count-pill" id="adm-badge-listings">0</span>
                         </button>
                         <button class="admin-tab-btn" id="adm-tab-btn-handovers" onclick="window.adminSwitchTab && window.adminSwitchTab('handovers')">
-                            <i class="fa-solid fa-handshake-angle"></i> Handover Audit Trail
+                            <i class="fa-solid fa-handshake-angle"></i> Order Handovers
                             <span class="admin-count-pill" id="adm-badge-handovers">0</span>
                         </button>
                         <button class="admin-tab-btn" id="adm-tab-btn-users" onclick="window.adminSwitchTab && window.adminSwitchTab('users')">
-                            <i class="fa-solid fa-users-gear"></i> Master User Directory
+                            <i class="fa-solid fa-users-gear"></i> User Directory
                             <span class="admin-count-pill" id="adm-badge-users">0</span>
                         </button>
                     </div>
