@@ -857,6 +857,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const state = {
         activePortal: 'home',
         cart: [],
+        adminInspectedUser: (() => {
+            try { return JSON.parse(sessionStorage.getItem('nn_admin_inspected_user')); } catch (e) { return null; }
+        })(),
         listings: JSON.parse(localStorage.getItem('nn_cached_listings') || localStorage.getItem('nn_demo_listings') || '[]'),
         communityComments: (() => {
             let stored = [];
@@ -3148,12 +3151,23 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
     function renderSellerPortal() {
-        const user = JSON.parse(sessionStorage.getItem('nourishUser') || '{}');
-        const sellerListings = state.listings.filter(l => l.vendorId == user.id);
+        const sessionUser = JSON.parse(sessionStorage.getItem('nourishUser') || '{}');
+        const isAdmin = checkIsAdminUser();
+        let user = sessionUser;
+        if (isAdmin && state.adminInspectedUser) {
+            user = state.adminInspectedUser;
+        } else if (isAdmin && sessionStorage.getItem('nn_admin_inspected_user')) {
+            try {
+                state.adminInspectedUser = JSON.parse(sessionStorage.getItem('nn_admin_inspected_user'));
+                user = state.adminInspectedUser;
+            } catch (e) {}
+        }
+
+        const sellerListings = state.listings.filter(l => Number(l.vendorId) === Number(user.id));
         const fssai = user.fssaiCode || user.fssaicode || '';
 
         let totalMealsDonated = 0;
-        sellerListings.forEach(item => { totalMealsDonated += parseFloat(item.qty) || 0; });
+        sellerListings.forEach(item => { totalMealsDonated += parseFloat(item.quantity != null ? item.quantity : item.qty) || 0; });
 
         let badgeName = 'Member';
         let badgeClass = 'badge-member';
@@ -3167,6 +3181,28 @@ document.addEventListener('DOMContentLoaded', () => {
         root.innerHTML = `
             <div class="portal-wrapper" style="padding-top: 80px; min-height: 100vh;">
                 <div class="container" style="max-width: 1300px; margin: 0 auto; padding: 1.5rem 2rem 3rem;">
+
+                    ${isAdmin ? `
+                        <div class="admin-inspect-banner">
+                            <div class="admin-inspect-banner-content">
+                                <div class="admin-inspect-badge">
+                                    <i class="fa-solid fa-shield-halved"></i> Admin Inspection Mode
+                                </div>
+                                <div class="admin-inspect-details">
+                                    Inspecting: <strong>${user.organizationName || user.name || 'Vendor'}</strong>
+                                    <span class="admin-inspect-meta">(ID #${user.id} &bull; ${user.email} &bull; ${user.accountType || 'Restaurant'})</span>
+                                </div>
+                            </div>
+                            <div class="admin-inspect-actions">
+                                <button onclick="window.adminOpenUserPicker && window.adminOpenUserPicker('seller')" class="admin-inspect-pill-btn">
+                                    <i class="fa-solid fa-arrows-rotate"></i> Switch Vendor
+                                </button>
+                                <button onclick="window.adminExitToAdminHQ && window.adminExitToAdminHQ()" class="admin-inspect-pill-btn admin-inspect-exit-btn">
+                                    <i class="fa-solid fa-arrow-left"></i> Return to Admin HQ
+                                </button>
+                            </div>
+                        </div>
+                    ` : ''}
 
                     <h1 class="seller-page-title" style="display: flex; align-items: center; gap: 20px;">
                         <span class="premium-title">SELLER'S DASHBOARD</span>
@@ -3360,14 +3396,24 @@ document.addEventListener('DOMContentLoaded', () => {
         const container = document.getElementById('my-listings-container');
         if (!container) return;
 
-        const user = JSON.parse(sessionStorage.getItem('nourishUser'));
-        if (!user) return;
+        const sessionUser = JSON.parse(sessionStorage.getItem('nourishUser') || '{}');
+        const isAdmin = checkIsAdminUser();
+        let user = sessionUser;
+        if (isAdmin && state.adminInspectedUser) {
+            user = state.adminInspectedUser;
+        } else if (isAdmin && sessionStorage.getItem('nn_admin_inspected_user')) {
+            try {
+                state.adminInspectedUser = JSON.parse(sessionStorage.getItem('nn_admin_inspected_user'));
+                user = state.adminInspectedUser;
+            } catch (e) {}
+        }
+        if (!user || !user.id) return;
 
         // Filter to show only THIS seller's active items (sold out items cleared on refresh)
         const myItems = state.listings.filter(l => 
-            String(l.vendorId) === String(user.id) &&
+            Number(l.vendorId) === Number(user.id) &&
             l.status !== 'sold' &&
-            (parseInt(l.qty) || 0) > 0
+            (parseInt(l.quantity != null ? l.quantity : l.qty) || 0) > 0
         );
 
         const countBadge = document.getElementById('my-listings-count-badge');
@@ -3502,7 +3548,18 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function renderBuyerPortal() {
-        const user = JSON.parse(sessionStorage.getItem('nourishUser') || '{}');
+        const sessionUser = JSON.parse(sessionStorage.getItem('nourishUser') || '{}');
+        const isAdmin = checkIsAdminUser();
+        let user = sessionUser;
+        if (isAdmin && state.adminInspectedUser) {
+            user = state.adminInspectedUser;
+        } else if (isAdmin && sessionStorage.getItem('nn_admin_inspected_user')) {
+            try {
+                state.adminInspectedUser = JSON.parse(sessionStorage.getItem('nn_admin_inspected_user'));
+                user = state.adminInspectedUser;
+            } catch (e) {}
+        }
+
         const darpan = user.darpanId || user.darpanid || '';
 
         const root = portalsRoot || document.getElementById('nn-portals-root');
@@ -3511,6 +3568,29 @@ document.addEventListener('DOMContentLoaded', () => {
         root.innerHTML = `
             <div class="buyer-portal-layout animate-reveal" style="padding-top: 100px; min-height: 100vh;">
                 <div class="container" style="max-width: 1300px; margin: 0 auto; padding: 1.5rem 2rem 3rem;">
+
+                    ${isAdmin ? `
+                        <div class="admin-inspect-banner">
+                            <div class="admin-inspect-banner-content">
+                                <div class="admin-inspect-badge">
+                                    <i class="fa-solid fa-shield-halved"></i> Admin Inspection Mode
+                                </div>
+                                <div class="admin-inspect-details">
+                                    Inspecting: <strong>${user.organizationName || user.name || 'NGO Partner'}</strong>
+                                    <span class="admin-inspect-meta">(ID #${user.id} &bull; ${user.email} &bull; ${user.accountType || 'NGO'})</span>
+                                </div>
+                            </div>
+                            <div class="admin-inspect-actions">
+                                <button onclick="window.adminOpenUserPicker && window.adminOpenUserPicker('buyer')" class="admin-inspect-pill-btn">
+                                    <i class="fa-solid fa-arrows-rotate"></i> Switch NGO
+                                </button>
+                                <button onclick="window.adminExitToAdminHQ && window.adminExitToAdminHQ()" class="admin-inspect-pill-btn admin-inspect-exit-btn">
+                                    <i class="fa-solid fa-arrow-left"></i> Return to Admin HQ
+                                </button>
+                            </div>
+                        </div>
+                    ` : ''}
+
                     <h1 class="seller-page-title" style="display: flex; align-items: center; gap: 20px;">
                         <span class="premium-title">BUYER'S DASHBOARD</span>
                     </h1>
@@ -3722,8 +3802,203 @@ document.addEventListener('DOMContentLoaded', () => {
         }, 300);
     }
 
+    let currentAdminPickerType = 'seller';
+
     window.adminSwitchPortal = function(portal) {
-        state.activePortal = portal;
+        window.adminOpenUserPicker(portal);
+    };
+
+    window.adminOpenUserPicker = async function(portalType = 'seller') {
+        currentAdminPickerType = portalType;
+        const modal = document.getElementById('adminUserPickerModal');
+        if (!modal) return;
+
+        modal.classList.add('active');
+
+        const isSeller = portalType === 'seller';
+        const pill = document.getElementById('adminPickerPill');
+        const title = document.getElementById('adminPickerTitle');
+        const subtitle = document.getElementById('adminPickerSubtitle');
+        const searchInput = document.getElementById('adminPickerSearchInput');
+        if (searchInput) searchInput.value = '';
+
+        if (pill) {
+            pill.innerHTML = isSeller 
+                ? '<i class="fa-solid fa-shop"></i> Vendor Directory' 
+                : '<i class="fa-solid fa-hands-holding-child"></i> NGO / Buyer Directory';
+            pill.style.background = isSeller ? 'rgba(16,185,129,0.12)' : 'rgba(56,189,248,0.12)';
+            pill.style.color = isSeller ? '#34d399' : '#38bdf8';
+            pill.style.borderColor = isSeller ? 'rgba(16,185,129,0.3)' : 'rgba(56,189,248,0.3)';
+        }
+
+        if (title) {
+            title.textContent = isSeller 
+                ? 'Select Vendor / Restaurant to Inspect' 
+                : 'Select NGO / Community Partner to Inspect';
+        }
+
+        if (subtitle) {
+            subtitle.textContent = isSeller 
+                ? 'Choose which registered restaurant or food donor dashboard you want to inspect and audit.' 
+                : 'Choose which registered NGO partner or recipient dashboard you want to inspect and audit.';
+        }
+
+        const container = document.getElementById('adminPickerListContainer');
+        if ((!adminCache.users || adminCache.users.length === 0) && container) {
+            container.innerHTML = `<div style="text-align:center; padding: 2.5rem; color: rgba(255,255,255,0.4);"><i class="fa-solid fa-circle-notch fa-spin"></i> Loading registered accounts...</div>`;
+            try {
+                const token = sessionStorage.getItem('nourishToken') || '';
+                const res = await fetch(`${API_BASE}/admin/users?_t=${Date.now()}`, { headers: { 'Authorization': `Bearer ${token}` } });
+                const data = await res.json();
+                if (data && data.users) {
+                    adminCache.users = data.users;
+                }
+            } catch (e) {}
+        }
+
+        window.adminRenderPickerList('');
+    };
+
+    window.closeAdminPickerModal = function() {
+        const modal = document.getElementById('adminUserPickerModal');
+        if (modal) modal.classList.remove('active');
+    };
+
+    window.adminFilterPickerUsers = function(query) {
+        window.adminRenderPickerList(query);
+    };
+
+    window.adminRenderPickerList = function(query = '') {
+        const container = document.getElementById('adminPickerListContainer');
+        const countBadge = document.getElementById('adminPickerCountBadge');
+        if (!container) return;
+
+        const isSeller = currentAdminPickerType === 'seller';
+        const allUsers = adminCache.users || [];
+
+        const filteredByRole = allUsers.filter(u => {
+            const type = (u.accountType || u.type || '').toLowerCase();
+            if (isSeller) {
+                return type.includes('restaurant') || type.includes('vendor') || type.includes('seller');
+            } else {
+                return type.includes('ngo') || type.includes('shelter') || type.includes('buyer');
+            }
+        });
+
+        const q = (query || '').toLowerCase().trim();
+        const matches = filteredByRole.filter(u => {
+            if (!q) return true;
+            const name = (u.organizationName || u.name || '').toLowerCase();
+            const email = (u.email || '').toLowerCase();
+            const phone = (u.phone || '').toLowerCase();
+            const code = (u.fssaiCode || u.darpanId || '').toLowerCase();
+            return name.includes(q) || email.includes(q) || phone.includes(q) || code.includes(q) || String(u.id).includes(q);
+        });
+
+        if (countBadge) {
+            countBadge.textContent = `${matches.length} of ${filteredByRole.length} registered ${isSeller ? 'Vendors' : 'NGOs'}`;
+        }
+
+        if (matches.length === 0) {
+            container.innerHTML = `
+                <div style="text-align: center; padding: 3rem 1.5rem; background: rgba(255,255,255,0.02); border: 1px dashed rgba(255,255,255,0.1); border-radius: 18px; color: rgba(255,255,255,0.5);">
+                    <i class="fa-solid fa-magnifying-glass" style="font-size: 2rem; margin-bottom: 0.75rem; opacity: 0.4; display: block;"></i>
+                    <div style="font-weight: 700; color: #fff; margin-bottom: 4px;">No matching accounts found</div>
+                    <div style="font-size: 0.85rem;">Try adjusting your search terms or verify that accounts have registered.</div>
+                </div>
+            `;
+            return;
+        }
+
+        const currentInspectedId = state.adminInspectedUser ? state.adminInspectedUser.id : null;
+
+        let html = '';
+        matches.forEach(u => {
+            const isCurrent = currentInspectedId && Number(currentInspectedId) === Number(u.id);
+            const name = u.organizationName || u.name || (isSeller ? 'Unnamed Vendor' : 'Unnamed NGO');
+            const initials = name.replace(/[^a-zA-Z0-9 ]/g, '').split(' ').filter(Boolean).slice(0, 2).map(w => w[0].toUpperCase()).join('') || (isSeller ? 'VN' : 'NG');
+
+            let extraInfo = '';
+            if (isSeller) {
+                const listings = (adminCache.listings || state.listings || []).filter(l => Number(l.vendorId) === Number(u.id));
+                const activeCount = listings.filter(l => l.status !== 'sold' && l.status !== 'claimed').length;
+                extraInfo = `<span style="color:#10b981;"><i class="fa-solid fa-bowl-food"></i> ${listings.length} listings (${activeCount} active)</span>`;
+            } else {
+                const handovers = (adminCache.handovers || []).filter(h => Number(h.buyerId) === Number(u.id));
+                extraInfo = `<span style="color:#38bdf8;"><i class="fa-solid fa-hands-holding-child"></i> ${handovers.length} pickups/claims</span>`;
+            }
+
+            const accreditation = u.fssaiCode 
+                ? `<span class="admin-picker-meta-tag"><i class="fa-solid fa-shield-halved"></i> FSSAI: ${u.fssaiCode}</span>` 
+                : (u.darpanId ? `<span class="admin-picker-meta-tag"><i class="fa-solid fa-certificate"></i> DARPAN: ${u.darpanId}</span>` : '');
+
+            html += `
+                <div class="admin-picker-user-card ${isCurrent ? 'is-current-active' : ''}" onclick="window.adminInspectUserPortal(${u.id})">
+                    <div class="admin-picker-avatar-wrap" style="${isCurrent ? 'border-color: #10b981;' : ''}">
+                        ${u.avatarUrl ? `<img src="${u.avatarUrl}" alt="${name}">` : `<span>${initials}</span>`}
+                    </div>
+                    <div class="admin-picker-details">
+                        <div class="admin-picker-title-row">
+                            <span class="admin-picker-name">${name}</span>
+                            <span class="admin-picker-id-tag">ID #${u.id}</span>
+                            ${isCurrent ? '<span style="font-size:0.7rem; color:#10b981; font-weight:800; background:rgba(16,185,129,0.15); border:1px solid rgba(16,185,129,0.3); padding:2px 8px; border-radius:100px;">● Currently Viewing</span>' : ''}
+                            ${u.isVerified 
+                                ? '<span class="admin-picker-verified-pill"><i class="fa-solid fa-circle-check"></i> Verified</span>' 
+                                : '<span class="admin-picker-unverified-pill"><i class="fa-solid fa-clock"></i> Unverified</span>'}
+                        </div>
+                        <div class="admin-picker-sub-row">
+                            <span><i class="fa-solid fa-envelope"></i> ${u.email}</span>
+                            ${u.phone ? `<span><i class="fa-solid fa-phone"></i> ${u.phone}</span>` : ''}
+                            ${accreditation}
+                            ${extraInfo}
+                        </div>
+                    </div>
+                    <button class="admin-picker-open-btn" onclick="event.stopPropagation(); window.adminInspectUserPortal(${u.id})">
+                        <span>${isCurrent ? 'Open' : 'Inspect'}</span> <i class="fa-solid fa-arrow-up-right-from-square"></i>
+                    </button>
+                </div>
+            `;
+        });
+
+        container.innerHTML = html;
+    };
+
+    window.adminInspectUserPortal = async function(userId) {
+        window.closeAdminPickerModal();
+
+        let target = (adminCache.users || []).find(u => Number(u.id) === Number(userId));
+        if (!target) {
+            try {
+                const token = sessionStorage.getItem('nourishToken') || '';
+                const res = await fetch(`${API_BASE}/admin/users?_t=${Date.now()}`, { headers: { 'Authorization': `Bearer ${token}` } });
+                const data = await res.json();
+                if (data && data.users) {
+                    adminCache.users = data.users;
+                    target = data.users.find(u => Number(u.id) === Number(userId));
+                }
+            } catch (e) {}
+        }
+
+        if (!target) {
+            showToast("User account not found.", "error");
+            return;
+        }
+
+        state.adminInspectedUser = target;
+        sessionStorage.setItem('nn_admin_inspected_user', JSON.stringify(target));
+
+        const role = (target.accountType || target.type || '').toLowerCase();
+        const isSeller = role.includes('restaurant') || role.includes('vendor') || role.includes('seller');
+        state.activePortal = isSeller ? 'seller' : 'buyer';
+
+        showToast(`Viewing ${target.organizationName || target.name || target.email} (${isSeller ? 'Vendor' : 'NGO'}) 🛡️`, "success");
+
+        renderPortal();
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
+
+    window.adminExitToAdminHQ = function() {
+        state.activePortal = 'admin';
         renderPortal();
         window.scrollTo({ top: 0, behavior: 'smooth' });
     };
@@ -4218,6 +4493,9 @@ document.addEventListener('DOMContentLoaded', () => {
                             : `<span style="color:#f59e0b; font-weight:700; font-size:0.78rem;"><i class="fa-solid fa-clock"></i> Unverified</span>`}
                     </td>
                     <td style="text-align:right; white-space:nowrap;">
+                        <button onclick="window.adminInspectUserPortal(${u.id})" class="admin-action-btn" style="background:rgba(56,189,248,0.12); color:#38bdf8; border:1px solid rgba(56,189,248,0.3); margin-right:6px; font-size:0.75rem; padding:5px 10px;" title="Inspect User Dashboard">
+                            <i class="fa-solid fa-arrow-up-right-from-square"></i> Open Portal
+                        </button>
                         ${u.email === 'tharunchokkanc@gmail.com' ? `
                             <span style="font-size:0.75rem; color:#10b981; font-weight:800; background:rgba(16,185,129,0.12); border:1px solid rgba(16,185,129,0.3); padding:4px 10px; border-radius:8px;">
                                 <i class="fa-solid fa-crown"></i> Super Admin
@@ -4924,17 +5202,26 @@ document.addEventListener('DOMContentLoaded', () => {
                     return;
                 }
 
+                const sessionUser = JSON.parse(sessionStorage.getItem('nourishUser') || '{}');
+                const isAdmin = checkIsAdminUser();
+                let targetUser = sessionUser;
+                if (isAdmin && state.adminInspectedUser) {
+                    targetUser = state.adminInspectedUser;
+                }
+
                 const payload = {
                     name, category, quantity: parseInt(qty),
                     price: parseFloat(price), description,
                     imageUrl: customImg || getSmartFoodImage(name, category, null),
-                    expiryTime: (expiry && window.isValidExpiry(expiry)) ? new Date(expiry).toISOString() : null
+                    expiryTime: (expiry && window.isValidExpiry(expiry)) ? new Date(expiry).toISOString() : null,
+                    vendorId: targetUser.id,
+                    vendorName: targetUser.organizationName || targetUser.name
                 };
 
                 // ---- DEMO MODE: bypass API for demo tokens ----
                 const isDemoToken = token.startsWith('demo-token');
                 if (isDemoToken) {
-                    const user = JSON.parse(sessionStorage.getItem('nourishUser') || '{}');
+                    const user = targetUser;
                     if (pId) {
                         // UPDATE existing
                         const idx = state.listings.findIndex(l => l.id == pId);

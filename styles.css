@@ -6592,6 +6592,230 @@ button:active,
     color: #000000;
 }
 
+/* ─── ADMIN INSPECTION MODE BANNER & USER PICKER ────────────────────────── */
+.admin-inspect-banner {
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.14), rgba(56, 189, 248, 0.14)) !important;
+    border: 1.5px solid rgba(56, 189, 248, 0.35) !important;
+    border-radius: 20px !important;
+    padding: 14px 22px !important;
+    margin-bottom: 2rem !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    flex-wrap: wrap !important;
+    gap: 14px !important;
+    box-shadow: 0 12px 36px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.12) !important;
+    backdrop-filter: blur(14px) !important;
+    animation: fadeInDown 0.25s ease !important;
+}
+
+.admin-inspect-banner-content {
+    display: flex !important;
+    align-items: center !important;
+    gap: 14px !important;
+    flex-wrap: wrap !important;
+}
+
+.admin-inspect-badge {
+    background: rgba(56, 189, 248, 0.2) !important;
+    color: #38bdf8 !important;
+    border: 1px solid rgba(56, 189, 248, 0.45) !important;
+    padding: 4px 12px !important;
+    border-radius: 100px !important;
+    font-size: 0.74rem !important;
+    font-weight: 800 !important;
+    letter-spacing: 0.6px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 6px !important;
+    text-transform: uppercase !important;
+}
+
+.admin-inspect-details {
+    color: #ffffff !important;
+    font-size: 0.95rem !important;
+}
+
+.admin-inspect-meta {
+    color: rgba(255, 255, 255, 0.6) !important;
+    font-size: 0.84rem !important;
+    margin-left: 6px !important;
+}
+
+.admin-inspect-actions {
+    display: flex !important;
+    align-items: center !important;
+    gap: 10px !important;
+    flex-wrap: wrap !important;
+}
+
+.admin-inspect-pill-btn {
+    background: rgba(255, 255, 255, 0.08) !important;
+    color: #ffffff !important;
+    border: 1px solid rgba(255, 255, 255, 0.2) !important;
+    padding: 7px 16px !important;
+    border-radius: 100px !important;
+    font-size: 0.82rem !important;
+    font-weight: 700 !important;
+    cursor: pointer !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 7px !important;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+.admin-inspect-pill-btn:hover {
+    background: rgba(255, 255, 255, 0.16) !important;
+    border-color: rgba(255, 255, 255, 0.4) !important;
+    transform: translateY(-1px) !important;
+    color: #ffffff !important;
+}
+
+.admin-inspect-exit-btn {
+    background: rgba(239, 68, 68, 0.15) !important;
+    color: #f87171 !important;
+    border-color: rgba(239, 68, 68, 0.35) !important;
+}
+
+.admin-inspect-exit-btn:hover {
+    background: rgba(239, 68, 68, 0.3) !important;
+    border-color: rgba(239, 68, 68, 0.6) !important;
+    color: #ffffff !important;
+}
+
+/* User Picker Cards inside Modal */
+.admin-picker-user-card {
+    display: flex !important;
+    align-items: center !important;
+    gap: 14px !important;
+    background: rgba(255, 255, 255, 0.03) !important;
+    border: 1.5px solid rgba(255, 255, 255, 0.08) !important;
+    border-radius: 18px !important;
+    padding: 14px 18px !important;
+    cursor: pointer !important;
+    transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+.admin-picker-user-card:hover {
+    background: rgba(255, 255, 255, 0.07) !important;
+    border-color: rgba(56, 189, 248, 0.45) !important;
+    transform: translateY(-2px) !important;
+    box-shadow: 0 10px 28px rgba(0, 0, 0, 0.5) !important;
+}
+
+.admin-picker-user-card.is-current-active {
+    border-color: #10b981 !important;
+    background: rgba(16, 185, 129, 0.08) !important;
+}
+
+.admin-picker-avatar-wrap {
+    width: 48px !important;
+    height: 48px !important;
+    border-radius: 14px !important;
+    background: #18181b !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    font-weight: 800 !important;
+    color: #ffffff !important;
+    font-size: 1.05rem !important;
+    flex-shrink: 0 !important;
+    border: 1px solid rgba(255, 255, 255, 0.12) !important;
+    overflow: hidden !important;
+}
+
+.admin-picker-avatar-wrap img {
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: cover !important;
+}
+
+.admin-picker-details {
+    flex: 1 !important;
+    min-width: 0 !important;
+}
+
+.admin-picker-title-row {
+    display: flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+    flex-wrap: wrap !important;
+    margin-bottom: 4px !important;
+}
+
+.admin-picker-name {
+    font-weight: 700 !important;
+    color: #ffffff !important;
+    font-size: 1rem !important;
+}
+
+.admin-picker-id-tag {
+    font-size: 0.72rem !important;
+    color: rgba(255, 255, 255, 0.45) !important;
+    font-family: monospace !important;
+    background: rgba(255, 255, 255, 0.06) !important;
+    padding: 2px 6px !important;
+    border-radius: 6px !important;
+}
+
+.admin-picker-verified-pill {
+    font-size: 0.7rem !important;
+    color: #10b981 !important;
+    background: rgba(16, 185, 129, 0.12) !important;
+    border: 1px solid rgba(16, 185, 129, 0.28) !important;
+    padding: 2px 8px !important;
+    border-radius: 100px !important;
+    font-weight: 700 !important;
+}
+
+.admin-picker-unverified-pill {
+    font-size: 0.7rem !important;
+    color: #f59e0b !important;
+    background: rgba(245, 158, 11, 0.12) !important;
+    border: 1px solid rgba(245, 158, 11, 0.28) !important;
+    padding: 2px 8px !important;
+    border-radius: 100px !important;
+    font-weight: 700 !important;
+}
+
+.admin-picker-sub-row {
+    display: flex !important;
+    align-items: center !important;
+    gap: 12px !important;
+    flex-wrap: wrap !important;
+    font-size: 0.78rem !important;
+    color: rgba(255, 255, 255, 0.6) !important;
+}
+
+.admin-picker-meta-tag {
+    font-family: monospace !important;
+    font-size: 0.75rem !important;
+    color: #38bdf8 !important;
+}
+
+.admin-picker-open-btn {
+    background: rgba(56, 189, 248, 0.12) !important;
+    color: #38bdf8 !important;
+    border: 1px solid rgba(56, 189, 248, 0.3) !important;
+    border-radius: 12px !important;
+    padding: 8px 16px !important;
+    font-size: 0.82rem !important;
+    font-weight: 700 !important;
+    cursor: pointer !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 6px !important;
+    white-space: nowrap !important;
+    transition: all 0.2s ease !important;
+}
+
+.admin-picker-open-btn:hover {
+    background: #38bdf8 !important;
+    color: #000000 !important;
+    transform: translateY(-1px) !important;
+}
+
+
 
 
 
