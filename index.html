@@ -20,7 +20,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
     <!-- Custom Styles -->
-    <link rel="stylesheet" href="styles.css?v=1.7">
+    <link rel="stylesheet" href="styles.css?v=1.8">
 
 
 
@@ -634,6 +634,89 @@
         </div>
     </div>
 
+    <!-- Secret Restricted Admin Gatekeeper Modal -->
+    <div id="adminAuthModal" class="modal-overlay" style="z-index: 100000;" onclick="if(event.target === this) window.closeAdminAuthModal && window.closeAdminAuthModal();">
+        <div class="modal-content glass-card minimal-auth-card" style="max-width: 440px; background: rgba(10, 15, 12, 0.94); border: 1.5px solid rgba(16, 185, 129, 0.3); box-shadow: 0 30px 80px rgba(0,0,0,0.9), 0 0 50px rgba(16, 185, 129, 0.12); padding: 2.5rem 2.25rem;">
+            <button class="modal-close" onclick="window.closeAdminAuthModal && window.closeAdminAuthModal()" title="Close Gatekeeper">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+            
+            <div style="text-align: center; margin-bottom: 1.75rem;">
+                <div style="width: 58px; height: 58px; margin: 0 auto 12px; background: rgba(16, 185, 129, 0.12); border: 1.5px solid rgba(16, 185, 129, 0.35); border-radius: 18px; display: flex; align-items: center; justify-content: center; box-shadow: 0 0 25px rgba(16, 185, 129, 0.2);">
+                    <i class="fa-solid fa-shield-halved" style="color: #10b981; font-size: 1.6rem;"></i>
+                </div>
+                <div style="display: inline-block; font-size: 0.72rem; letter-spacing: 1.5px; text-transform: uppercase; font-weight: 800; color: #10b981; background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.25); padding: 3px 10px; border-radius: 100px; margin-bottom: 8px;">
+                    Restricted Access
+                </div>
+                <h2 style="margin: 0 0 6px; font-size: 1.5rem; font-weight: 800; color: #ffffff; letter-spacing: -0.02em;">
+                    Command Gatekeeper
+                </h2>
+                <p style="margin: 0; color: rgba(255, 255, 255, 0.55); font-size: 0.85rem; line-height: 1.45;">
+                    Authorized personnel only. Enter administrator credentials to access platform governance.
+                </p>
+            </div>
+
+            <form id="adminLoginForm" onsubmit="window.handleAdminLogin && window.handleAdminLogin(event); return false;" class="minimal-auth-form">
+                <div id="adminAuthAlert" style="display: none; background: rgba(239, 68, 68, 0.12); border: 1px solid rgba(239, 68, 68, 0.35); color: #f87171; border-radius: 12px; padding: 10px 14px; font-size: 0.82rem; margin-bottom: 1rem; text-align: center;"></div>
+
+                <div class="minimal-input-wrap" style="margin-bottom: 1rem;">
+                    <input type="email" id="adminEmailInput" class="minimal-input" placeholder="Admin Email" required autocomplete="username" style="background: rgba(255, 255, 255, 0.04); border-color: rgba(255, 255, 255, 0.15);">
+                </div>
+
+                <div class="minimal-input-wrap" style="margin-bottom: 1.5rem;">
+                    <input type="password" id="adminPasswordInput" class="minimal-input" placeholder="Admin Password" required autocomplete="current-password" style="background: rgba(255, 255, 255, 0.04); border-color: rgba(255, 255, 255, 0.15);">
+                    <i class="fa-regular fa-eye-slash toggle-password-icon minimal-eye-icon" data-target="adminPasswordInput" title="Show/Hide Password"></i>
+                </div>
+
+                <button type="submit" id="adminLoginSubmitBtn" class="minimal-pill-btn" style="background: linear-gradient(135deg, #10b981, #059669); color: #ffffff; border: none; font-weight: 700; font-size: 0.95rem; box-shadow: 0 10px 25px rgba(16, 185, 129, 0.35); display: flex; align-items: center; justify-content: center; gap: 8px;">
+                    <i class="fa-solid fa-key"></i> Authenticate & Unlock
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Add New Administrator Modal -->
+    <div id="adminAddModal" class="modal-overlay" style="z-index: 100000;" onclick="if(event.target === this) this.classList.remove('active');">
+        <div class="modal-content glass-card minimal-auth-card" style="max-width: 460px; background: #0d0d0d; border: 1.5px solid rgba(255, 255, 255, 0.15); box-shadow: 0 30px 80px rgba(0,0,0,0.95); padding: 2.5rem 2rem;">
+            <button class="modal-close" onclick="document.getElementById('adminAddModal').classList.remove('active')" title="Close">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+            
+            <div style="text-align: center; margin-bottom: 1.75rem;">
+                <div style="width: 52px; height: 52px; margin: 0 auto 10px; background: rgba(245, 158, 11, 0.12); border: 1.5px solid rgba(245, 158, 11, 0.35); border-radius: 16px; display: flex; align-items: center; justify-content: center;">
+                    <i class="fa-solid fa-user-shield" style="color: #fbbf24; font-size: 1.5rem;"></i>
+                </div>
+                <h2 style="margin: 0 0 6px; font-size: 1.4rem; font-weight: 800; color: #ffffff;">
+                    Add Platform Administrator
+                </h2>
+                <p style="margin: 0; color: rgba(255, 255, 255, 0.55); font-size: 0.85rem;">
+                    Grant administrative governance credentials to a new officer or partner.
+                </p>
+            </div>
+
+            <form id="createAdminForm" onsubmit="window.handleCreateAdminSubmit && window.handleCreateAdminSubmit(event); return false;" class="minimal-auth-form">
+                <div class="minimal-input-wrap" style="margin-bottom: 1rem;">
+                    <input type="text" id="newAdminOrgInput" class="minimal-input" placeholder="Admin Full Name / Title" required>
+                </div>
+                <div class="minimal-input-wrap" style="margin-bottom: 1rem;">
+                    <input type="email" id="newAdminEmailInput" class="minimal-input" placeholder="Admin Email Address" required>
+                </div>
+                <div class="minimal-input-wrap" style="margin-bottom: 1.5rem;">
+                    <input type="password" id="newAdminPasswordInput" class="minimal-input" placeholder="Admin Password (min 6 chars)" required minlength="6">
+                </div>
+
+                <div style="display: flex; gap: 10px; justify-content: flex-end;">
+                    <button type="button" onclick="document.getElementById('adminAddModal').classList.remove('active')" class="minimal-pill-btn" style="background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15); color: #ffffff;">
+                        Cancel
+                    </button>
+                    <button type="submit" id="createAdminSubmitBtn" class="minimal-pill-btn" style="background: #10b981; border: none; color: #ffffff; font-weight: 700;">
+                        <i class="fa-solid fa-plus"></i> Grant Admin Privileges
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <!-- Settings Modal - Full Page Premium Liquid-Glass Design -->
     <div id="settingsModal"
         style="display: none; position: fixed; inset: 0; width: 100vw; height: 100vh; background: rgba(0, 0, 0, 0.92); z-index: 99999; align-items: center; justify-content: center; backdrop-filter: blur(10px); overflow-y: auto; padding: 20px 10px;">
@@ -1135,7 +1218,7 @@
     </svg>
 
     <!-- Custom Script -->
-    <script src="script.js?v=1.7"></script>
+    <script src="script.js?v=1.8"></script>
 </body>
 
 </html>

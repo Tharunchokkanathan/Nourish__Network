@@ -3569,10 +3569,87 @@ document.addEventListener('DOMContentLoaded', () => {
         window.scrollTo({ top: 0, behavior: 'smooth' });
     };
 
+    window.openAdminAuthModal = function() {
+        const modal = document.getElementById('adminAuthModal');
+        if (modal) {
+            modal.classList.add('active');
+            const alert = document.getElementById('adminAuthAlert');
+            if (alert) alert.style.display = 'none';
+            const emailInput = document.getElementById('adminEmailInput');
+            if (emailInput) setTimeout(() => emailInput.focus(), 150);
+        }
+    };
+
+    window.closeAdminAuthModal = function() {
+        const modal = document.getElementById('adminAuthModal');
+        if (modal) modal.classList.remove('active');
+    };
+
+    window.handleAdminLogin = async function(event) {
+        if (event) event.preventDefault();
+        const email = (document.getElementById('adminEmailInput')?.value || '').trim();
+        const password = document.getElementById('adminPasswordInput')?.value || '';
+        const alert = document.getElementById('adminAuthAlert');
+        const submitBtn = document.getElementById('adminLoginSubmitBtn');
+
+        if (!email || !password) {
+            if (alert) {
+                alert.textContent = 'Please enter both administrator email and password.';
+                alert.style.display = 'block';
+            }
+            return;
+        }
+
+        const originalBtnText = submitBtn ? submitBtn.innerHTML : '';
+        if (submitBtn) {
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Authenticating...';
+        }
+
+        try {
+            const res = await fetch(`${API_BASE}/auth/admin-login`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, password })
+            });
+            const data = await res.json();
+
+            if (res.ok && data.token) {
+                sessionStorage.setItem('nourishToken', data.token);
+                sessionStorage.setItem('nourishUser', JSON.stringify(data.user));
+                localStorage.setItem('nourishToken', data.token);
+                localStorage.setItem('nourishUser', JSON.stringify(data.user));
+                
+                document.documentElement.classList.add('user-logged-in');
+                window.closeAdminAuthModal();
+
+                state.activePortal = 'admin';
+                renderPortal();
+                syncDock();
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+                showToast("Access Granted: Welcome to Command Center.", "success");
+            } else {
+                if (alert) {
+                    alert.textContent = data.error || 'Authentication rejected. Administrator privileges required.';
+                    alert.style.display = 'block';
+                }
+            }
+        } catch (err) {
+            if (alert) {
+                alert.textContent = 'Network or server error during administrator sign in.';
+                alert.style.display = 'block';
+            }
+        } finally {
+            if (submitBtn) {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = originalBtnText;
+            }
+        }
+    };
+
     window.openAdminPortal = function() {
         if (!checkIsAdminUser()) {
-            showToast("Access Denied: Administrator sign-in required.", "error");
-            if (authModal) authModal.classList.add('active');
+            window.openAdminAuthModal();
             return;
         }
         state.activePortal = 'admin';
@@ -3580,14 +3657,14 @@ document.addEventListener('DOMContentLoaded', () => {
         window.scrollTo({ top: 0, behavior: 'smooth' });
     };
 
-    // Secret shortcut: Ctrl+Shift+A (or Cmd+Shift+A) to open Admin Command Center
+    // Secret shortcut: Ctrl+Shift+A (or Cmd+Shift+A) to open Admin Gatekeeper / Command Center
     document.addEventListener('keydown', (e) => {
         if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'A' || e.key === 'a')) {
             e.preventDefault();
             if (checkIsAdminUser()) {
                 window.openAdminPortal();
             } else {
-                showToast("Access Denied: Administrator sign-in required.", "error");
+                window.openAdminAuthModal();
             }
         }
     });
@@ -3597,8 +3674,10 @@ document.addEventListener('DOMContentLoaded', () => {
         setTimeout(() => {
             if (checkIsAdminUser()) {
                 window.openAdminPortal();
+            } else {
+                window.openAdminAuthModal();
             }
-        }, 500);
+        }, 300);
     }
 
     window.adminSwitchPortal = function(portal) {
@@ -3698,6 +3777,82 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         } catch (err) {
             showToast("Network error removing user.", "error");
+        }
+    };
+
+    window.adminToggleRole = async function(userId, newRole) {
+        const actionText = newRole === 'admin' ? 'promote this user to Administrator' : 'revoke Administrator privileges for this user';
+        if (!confirm(`Are you sure you want to ${actionText}?`)) return;
+
+        try {
+            const token = sessionStorage.getItem('nourishToken') || '';
+            const res = await fetch(`${API_BASE}/admin/users/${userId}/role`, {
+                method: 'PATCH',
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({ role: newRole })
+            });
+            const data = await res.json();
+            if (res.ok && data.success) {
+                showToast(data.message || `User role updated to ${newRole.toUpperCase()}.`, "success");
+                const user = adminCache.users.find(u => u.id == userId);
+                if (user) user.role = newRole;
+                renderAdminUsersTable();
+                updateAdminBadgeCounts();
+            } else {
+                showToast(data.error || "Failed to update role.", "error");
+            }
+        } catch (err) {
+            showToast("Network error updating role.", "error");
+        }
+    };
+
+    window.handleCreateAdminSubmit = async function(event) {
+        if (event) event.preventDefault();
+        const organizationName = (document.getElementById('newAdminOrgInput')?.value || '').trim();
+        const email = (document.getElementById('newAdminEmailInput')?.value || '').trim();
+        const password = document.getElementById('newAdminPasswordInput')?.value || '';
+        const submitBtn = document.getElementById('createAdminSubmitBtn');
+
+        if (!email || !password) {
+            showToast("Please provide both email and password.", "error");
+            return;
+        }
+
+        const origText = submitBtn ? submitBtn.innerHTML : '';
+        if (submitBtn) {
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Creating...';
+        }
+
+        try {
+            const token = sessionStorage.getItem('nourishToken') || '';
+            const res = await fetch(`${API_BASE}/admin/users/create-admin`, {
+                method: 'POST',
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({ organizationName, email, password })
+            });
+            const data = await res.json();
+            if (res.ok && data.success) {
+                showToast(data.message || "New administrator created successfully!", "success");
+                document.getElementById('adminAddModal')?.classList.remove('active');
+                document.getElementById('createAdminForm')?.reset();
+                await fetchAndRenderAdminData(true);
+            } else {
+                showToast(data.error || "Failed to create administrator.", "error");
+            }
+        } catch (err) {
+            showToast("Network error creating administrator.", "error");
+        } finally {
+            if (submitBtn) {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = origText;
+            }
         }
     };
 
@@ -3955,13 +4110,18 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         let html = `
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem; flex-wrap:wrap; gap:10px;">
-                <p style="color:rgba(255,255,255,0.7); font-size:0.88rem; margin:0;">
-                    Master directory of all registered organization leads, account credentials, and platform roles.
-                </p>
-                <div style="font-size:0.82rem; color: #10b981; font-weight:700;">
-                    ${adminCache.users.length} Total Registered Users
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem; flex-wrap:wrap; gap:12px;">
+                <div>
+                    <p style="color:rgba(255,255,255,0.7); font-size:0.88rem; margin:0;">
+                        Master directory of registered organization leads, account credentials, and platform roles.
+                    </p>
+                    <div style="font-size:0.82rem; color: #10b981; font-weight:700; margin-top:3px;">
+                        ${adminCache.users.length} Total Users (${adminCache.users.filter(u => u.role === 'admin').length} Administrators)
+                    </div>
                 </div>
+                <button onclick="document.getElementById('adminAddModal')?.classList.add('active')" class="admin-action-btn" style="background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1.5px solid rgba(16, 185, 129, 0.35); font-weight: 700; display: inline-flex; align-items: center; gap: 8px; padding: 8px 16px;">
+                    <i class="fa-solid fa-user-plus"></i> Add New Admin
+                </button>
             </div>
             <div class="admin-table-container">
                 <table class="admin-table">
@@ -3973,7 +4133,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             <th>Contact Phone</th>
                             <th>Accreditation</th>
                             <th>Verification</th>
-                            <th style="text-align:right;">Actions</th>
+                            <th style="text-align:right;">Admin Actions</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -4011,15 +4171,28 @@ document.addEventListener('DOMContentLoaded', () => {
                             ? `<span style="color:#10b981; font-weight:700; font-size:0.78rem;"><i class="fa-solid fa-circle-check"></i> Verified</span>` 
                             : `<span style="color:#f59e0b; font-weight:700; font-size:0.78rem;"><i class="fa-solid fa-clock"></i> Unverified</span>`}
                     </td>
-                    <td style="text-align:right;">
-                        ${!isAdmin ? `
-                            <button onclick="window.adminToggleVerify(${u.id}, ${!u.isVerified})" class="admin-action-btn ${u.isVerified ? 'delete' : 'verify'}" style="margin-right:6px;" title="${u.isVerified ? 'Revoke verification' : 'Approve verification'}">
-                                ${u.isVerified ? '<i class="fa-solid fa-ban"></i>' : '<i class="fa-solid fa-check"></i>'}
-                            </button>
+                    <td style="text-align:right; white-space:nowrap;">
+                        ${u.email === 'tharunchokkanc@gmail.com' ? `
+                            <span style="font-size:0.75rem; color:#10b981; font-weight:800; background:rgba(16,185,129,0.12); border:1px solid rgba(16,185,129,0.3); padding:4px 10px; border-radius:8px;">
+                                <i class="fa-solid fa-crown"></i> Super Admin
+                            </span>
+                        ` : `
+                            ${isAdmin ? `
+                                <button onclick="window.adminToggleRole(${u.id}, 'user')" class="admin-action-btn" style="background:rgba(245,158,11,0.12); color:#fbbf24; border:1px solid rgba(245,158,11,0.3); margin-right:6px; font-size:0.75rem; padding:5px 10px;" title="Revoke Admin Privileges">
+                                    <i class="fa-solid fa-user-minus"></i> Revoke Admin
+                                </button>
+                            ` : `
+                                <button onclick="window.adminToggleRole(${u.id}, 'admin')" class="admin-action-btn" style="background:rgba(16,185,129,0.12); color:#34d399; border:1px solid rgba(16,185,129,0.3); margin-right:6px; font-size:0.75rem; padding:5px 10px;" title="Promote to Administrator">
+                                    <i class="fa-solid fa-user-shield"></i> Make Admin
+                                </button>
+                                <button onclick="window.adminToggleVerify(${u.id}, ${!u.isVerified})" class="admin-action-btn ${u.isVerified ? 'delete' : 'verify'}" style="margin-right:6px;" title="${u.isVerified ? 'Revoke verification' : 'Approve verification'}">
+                                    ${u.isVerified ? '<i class="fa-solid fa-ban"></i>' : '<i class="fa-solid fa-check"></i>'}
+                                </button>
+                            `}
                             <button onclick="window.adminDeleteUser(${u.id})" class="admin-action-btn delete" title="Delete user">
                                 <i class="fa-solid fa-trash"></i>
                             </button>
-                        ` : `<span style="font-size:0.72rem; color:rgba(255,255,255,0.4);">System Root</span>`}
+                        `}
                     </td>
                 </tr>
             `;

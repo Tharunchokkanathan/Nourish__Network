@@ -367,6 +367,64 @@ app.post('/api/login', (req, res) => {
     });
 });
 
+// ─── DEDICATED RESTRICTED ADMIN GATEWAY LOGIN ──────────────────────────────
+app.post('/api/auth/admin-login', async (req, res) => {
+    const { email, password } = req.body;
+    if (!email || !password) {
+        return res.status(400).json({ error: 'Please enter both administrator email and password.' });
+    }
+
+    const cleanEmail = email.trim().toLowerCase();
+
+    // Fast bypass for root admin credentials
+    if ((cleanEmail === 'admin@nourishnetwork.org' || cleanEmail === 'admindemo@gmail.com') && (password === 'admin123' || password === 'demo123')) {
+        const adminUser = { id: 777, email: 'admin@nourishnetwork.org', accountType: 'admin', role: 'admin', organizationName: 'Nourish HQ Operations', isVerified: 1 };
+        return res.status(200).json({
+            message: 'Administrator authentication verified.',
+            token: makeToken(adminUser),
+            user: { id: adminUser.id, email: adminUser.email, name: adminUser.organizationName, organizationName: adminUser.organizationName, type: 'admin', accountType: 'admin', role: 'admin', isVerified: 1 }
+        });
+    }
+
+    db.get(`SELECT * FROM users WHERE LOWER(email) = ?`, [cleanEmail], async (err, user) => {
+        if (err) return res.status(500).json({ error: err.message });
+        if (!user) return res.status(401).json({ error: 'Invalid administrator credentials.' });
+
+        try {
+            const match = await bcrypt.compare(password, user.password);
+            if (!match) return res.status(401).json({ error: 'Invalid administrator credentials.' });
+
+            const isSuperAdmin = (user.email === 'tharunchokkanc@gmail.com' || user.email === 'admin@nourishnetwork.org');
+            const isAdmin = user.role === 'admin' || isSuperAdmin;
+
+            if (!isAdmin) {
+                return res.status(403).json({ error: 'Access Denied: This account does not possess Administrator privileges.' });
+            }
+
+            user.role = 'admin';
+            const token = makeToken(user);
+
+            return res.status(200).json({
+                message: 'Administrator authentication verified.',
+                token,
+                user: {
+                    id: user.id,
+                    email: user.email,
+                    name: user.organizationName || 'System Administrator',
+                    organizationName: user.organizationName || 'Nourish HQ Operations',
+                    type: 'admin',
+                    accountType: 'admin',
+                    role: 'admin',
+                    isVerified: 1,
+                    avatarUrl: user.avatarUrl || ''
+                }
+            });
+        } catch (bcryptErr) {
+            return res.status(500).json({ error: bcryptErr.message });
+        }
+    });
+});
+
 // ─── CROSS-DEVICE LOGIN APPROVAL STATE & HELPERS ────────────────────────────
 const pendingLoginSessions = new Map();
 
@@ -2269,6 +2327,65 @@ app.delete('/api/admin/users/:id', requireAdmin, (req, res) => {
         if (err) return res.status(500).json({ error: err.message });
         res.status(200).json({ success: true, userId, message: 'User account removed.' });
     });
+});
+
+// 4b. Promote or Revoke Admin Role
+app.patch('/api/admin/users/:id/role', requireAdmin, (req, res) => {
+    const userId = req.params.id;
+    const { role } = req.body;
+    const newRole = role === 'admin' ? 'admin' : 'user';
+
+    db.get(`SELECT email FROM users WHERE id = ?`, [userId], (err, targetUser) => {
+        if (err) return res.status(500).json({ error: err.message });
+        if (!targetUser) return res.status(404).json({ error: 'User not found.' });
+
+        if (targetUser.email === 'tharunchokkanc@gmail.com' && newRole !== 'admin') {
+            return res.status(400).json({ error: 'Cannot revoke Primary Super Administrator role.' });
+        }
+
+        db.run(`UPDATE users SET role = ? WHERE id = ?`, [newRole, userId], function(updateErr) {
+            if (updateErr) return res.status(500).json({ error: updateErr.message });
+            res.status(200).json({
+                success: true,
+                userId,
+                role: newRole,
+                message: `User role successfully updated to ${newRole.toUpperCase()}.`
+            });
+        });
+    });
+});
+
+// 4c. Create New Admin Account Directly
+app.post('/api/admin/users/create-admin', requireAdmin, async (req, res) => {
+    const { email, password, organizationName } = req.body;
+    if (!email || !password) {
+        return res.status(400).json({ error: 'Admin email and password are required.' });
+    }
+
+    try {
+        const hashedPassword = await bcrypt.hash(password, 10);
+        const orgName = organizationName || 'Nourish HQ Operations';
+
+        db.run(
+            `INSERT INTO users (organizationName, email, password, accountType, role, isVerified) VALUES (?, ?, ?, 'admin', 'admin', 1)`,
+            [orgName, email.trim().toLowerCase(), hashedPassword],
+            function(err) {
+                if (err) {
+                    if (err.message && err.message.includes('UNIQUE')) {
+                        return res.status(400).json({ error: 'An account with this email already exists.' });
+                    }
+                    return res.status(500).json({ error: err.message });
+                }
+                res.status(201).json({
+                    success: true,
+                    userId: this.lastID,
+                    message: `New Administrator account created for ${email}.`
+                });
+            }
+        );
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
 });
 
 // 5. All Food Listings Moderation Feed
