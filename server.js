@@ -2258,7 +2258,7 @@ app.get('/api/geocode/reverse', async (req, res) => {
 // 1. Platform Master Stats & KPI Metrics
 app.get('/api/admin/stats', requireAdmin, (req, res) => {
     try {
-        db.all(`SELECT count(*) as totalListings, sum(case when status='available' then 1 else 0 end) as activeListings, sum(case when status='claimed' then 1 else 0 end) as claimedListings, sum(cast(quantity as real)) as totalPortions FROM food_listings`, [], (err, listingStats) => {
+        db.all(`SELECT count(*) as totalListings, sum(case when status NOT IN ('claimed','sold') OR status IS NULL then 1 else 0 end) as activeListings, sum(case when status IN ('claimed','sold') then 1 else 0 end) as claimedListings, sum(cast(quantity as real)) as totalPortions FROM food_listings`, [], (err, listingStats) => {
             const lStat = (listingStats && listingStats[0]) || {};
             
             db.all(`SELECT count(*) as totalOrders, sum(case when status='completed' then 1 else 0 end) as completedHandovers, sum(case when status='pending' or status='confirmed' then 1 else 0 end) as pendingHandovers, sum(quantity) as portionsDelivered FROM orders`, [], (oErr, orderStats) => {
