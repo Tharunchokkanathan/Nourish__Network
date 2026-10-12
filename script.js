@@ -4696,12 +4696,6 @@ document.addEventListener('DOMContentLoaded', () => {
                             <button onclick="window.adminSwitchPortal && window.adminSwitchPortal('buyer')" class="admin-action-btn" style="background: rgba(56,189,248,0.12); color: #38bdf8; border: 1px solid rgba(56,189,248,0.3);">
                                 <i class="fa-solid fa-hands-holding-child"></i> NGO Portal
                             </button>
-                            <button onclick="window.adminExitToHome && window.adminExitToHome()" class="admin-action-btn" style="background: rgba(239, 68, 68, 0.12); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.3);">
-                                <i class="fa-solid fa-arrow-right-from-bracket"></i> Exit to Homepage
-                            </button>
-                            <button onclick="window.logout && window.logout()" class="admin-action-btn" style="background: rgba(239, 68, 68, 0.18); color: #ff6b6b; border: 1px solid rgba(239, 68, 68, 0.45);">
-                                <i class="fa-solid fa-power-off"></i> Sign Out
-                            </button>
                         </div>
                     </div>
 
