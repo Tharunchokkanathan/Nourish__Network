@@ -942,13 +942,41 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
+        const user = JSON.parse(sessionStorage.getItem('nourishUser') || localStorage.getItem('nourishUser') || '{}');
+        const phoneInput = document.getElementById('cart-buyer-phone');
+        const addrInput = document.getElementById('cart-buyer-address');
+        const buyerPhone = (phoneInput?.value || user.publicPhone || user.phone || '').trim();
+        const buyerAddress = (addrInput?.value || user.address || '').trim();
+
+        const missingPhone = !buyerPhone || buyerPhone.replace(/[^0-9]/g, '').length < 6;
+        const missingAddress = !buyerAddress || buyerAddress.length < 3;
+
+        if (missingPhone && missingAddress) {
+            showToast("⚠️ Please enter your mobile number and location before placing an order!", "error");
+            if (phoneInput) { phoneInput.focus(); phoneInput.style.borderColor = '#ef4444'; }
+            if (addrInput) { addrInput.style.borderColor = '#ef4444'; }
+            return;
+        }
+        if (missingPhone) {
+            showToast("⚠️ Please enter your mobile number before placing an order!", "error");
+            if (phoneInput) { phoneInput.focus(); phoneInput.style.borderColor = '#ef4444'; }
+            return;
+        }
+        if (missingAddress) {
+            showToast("⚠️ Please enter your delivery/organization location before placing an order!", "error");
+            if (addrInput) { addrInput.focus(); addrInput.style.borderColor = '#ef4444'; }
+            return;
+        }
+
+        if (phoneInput) phoneInput.style.borderColor = '';
+        if (addrInput) addrInput.style.borderColor = '';
+
         if (btn) {
             btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Processing...';
             btn.disabled = true;
         }
 
         try {
-            const user = JSON.parse(sessionStorage.getItem('nourishUser') || localStorage.getItem('nourishUser') || '{}');
             const notes = document.getElementById('claim-notes')?.value || '';
 
             const orderItems = state.cart.map(c => ({
@@ -957,6 +985,20 @@ document.addEventListener('DOMContentLoaded', () => {
                 price: parseFloat(c.item.price) || 0
             }));
 
+            // Auto-sync buyer profile in background if phone or address were newly entered
+            if (token && (!user.phone || !user.address || user.phone !== buyerPhone || user.address !== buyerAddress)) {
+                fetch(`${API_BASE}/user/me`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                    body: JSON.stringify({ phone: buyerPhone, publicPhone: buyerPhone, address: buyerAddress })
+                }).then(r => r.json()).then(d => {
+                    if (d && d.user) {
+                        sessionStorage.setItem('nourishUser', JSON.stringify(d.user));
+                        localStorage.setItem('nourishUser', JSON.stringify(d.user));
+                    }
+                }).catch(() => {});
+            }
+
             // Step 1: Call backend checkout API with strict database validation
             const res = await fetch(`${API_BASE}/checkout`, {
                 method: 'POST',
@@ -964,7 +1006,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${token}`
                 },
-                body: JSON.stringify({ items: orderItems, notes })
+                body: JSON.stringify({ items: orderItems, notes, phone: buyerPhone, address: buyerAddress })
             });
 
             const data = await res.json().catch(() => ({}));
@@ -3407,6 +3449,18 @@ document.addEventListener('DOMContentLoaded', () => {
                                     <label>Short Description</label>
                                     <textarea id="p-desc" class="form-control" rows="2" placeholder="Describe the food freshness, ingredients, etc..."></textarea>
                                 </div>
+                                <div class="form-group">
+                                    <label style="display:flex; align-items:center; gap:6px;">
+                                        <i class="fa-solid fa-phone" style="color:var(--accent-primary);"></i> Contact Mobile Number <span style="color:#ef4444; font-weight:700;">*</span>
+                                    </label>
+                                    <input type="tel" id="p-phone" class="form-control" placeholder="e.g. +91 98765 43210" value="${user.publicPhone || user.phone || ''}" required>
+                                </div>
+                                <div class="form-group">
+                                    <label style="display:flex; align-items:center; gap:6px;">
+                                        <i class="fa-solid fa-location-dot" style="color:var(--accent-primary);"></i> Kitchen / Pickup Location <span style="color:#ef4444; font-weight:700;">*</span>
+                                    </label>
+                                    <input type="text" id="p-address" class="form-control" placeholder="e.g. 12, Indiranagar, Bengaluru" value="${user.address || ''}" required>
+                                </div>
                                 <div class="full-width" style="display:flex; gap: 10px;">
                                     <button type="submit" id="submit-btn" class="nn-publish-btn"><i class="fa-solid fa-leaf"></i> Publish Listing</button>
                                     <button type="button" id="cancel-edit-btn" class="nn-cancel-btn" style="display:none;"><i class="fa-solid fa-xmark"></i> Cancel Edit</button>
@@ -3525,6 +3579,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     document.getElementById('p-price').value = item.price;
                     document.getElementById('p-desc').value = item.description || '';
                     if (document.getElementById('p-img')) document.getElementById('p-img').value = item.imageUrl || item.img || '';
+                    if (document.getElementById('p-phone')) document.getElementById('p-phone').value = item.vendorPhone || item.phone || user.publicPhone || user.phone || '';
+                    if (document.getElementById('p-address')) document.getElementById('p-address').value = item.vendorAddress || item.address || user.address || '';
                     if (item.expiry && window.isValidExpiry(item.expiry)) {
                         try {
                             const localIso = window.toLocalDateTimeLocalString(item.expiry);
@@ -5175,6 +5231,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 document.getElementById('submit-btn').innerHTML = '<i class="fa-solid fa-leaf"></i> Publish Listing';
                 cancelBtn.style.display = 'none';
                 resetExpiryInput();
+                const u = (checkIsAdminUser() && state.adminInspectedUser) ? state.adminInspectedUser : JSON.parse(sessionStorage.getItem('nourishUser') || '{}');
+                if (document.getElementById('p-phone')) document.getElementById('p-phone').value = u.publicPhone || u.phone || '';
+                if (document.getElementById('p-address')) document.getElementById('p-address').value = u.address || '';
             });
         }
 
@@ -5253,13 +5312,65 @@ document.addEventListener('DOMContentLoaded', () => {
                     targetUser = state.adminInspectedUser;
                 }
 
+                const pPhoneInput = document.getElementById('p-phone');
+                const pAddressInput = document.getElementById('p-address');
+                const phoneVal = (pPhoneInput?.value || targetUser.publicPhone || targetUser.phone || '').trim();
+                const addressVal = (pAddressInput?.value || targetUser.address || '').trim();
+
+                const missingPhone = !phoneVal || phoneVal.replace(/[^0-9]/g, '').length < 6;
+                const missingAddress = !addressVal || addressVal.length < 3;
+
+                if (missingPhone && missingAddress) {
+                    showToast("⚠️ Please enter your mobile number and pickup location to publish listing!", "error");
+                    if (pPhoneInput) { pPhoneInput.focus(); pPhoneInput.style.borderColor = '#ef4444'; }
+                    if (pAddressInput) { pAddressInput.style.borderColor = '#ef4444'; }
+                    return;
+                }
+                if (missingPhone) {
+                    showToast("⚠️ Please enter your mobile number to publish listing!", "error");
+                    if (pPhoneInput) { pPhoneInput.focus(); pPhoneInput.style.borderColor = '#ef4444'; }
+                    return;
+                }
+                if (missingAddress) {
+                    showToast("⚠️ Please enter your pickup location to publish listing!", "error");
+                    if (pAddressInput) { pAddressInput.focus(); pAddressInput.style.borderColor = '#ef4444'; }
+                    return;
+                }
+
+                if (pPhoneInput) pPhoneInput.style.borderColor = '';
+                if (pAddressInput) pAddressInput.style.borderColor = '';
+
+                // Background sync seller phone and address if newly entered or changed
+                if (token && (!targetUser.phone || !targetUser.address || targetUser.phone !== phoneVal || targetUser.address !== addressVal)) {
+                    const updateEndpoint = (isAdmin && state.adminInspectedUser) ? `${API_BASE}/admin/users/${targetUser.id}` : `${API_BASE}/user/me`;
+                    fetch(updateEndpoint, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                        body: JSON.stringify({ phone: phoneVal, publicPhone: phoneVal, address: addressVal })
+                    }).then(r => r.json()).then(d => {
+                        if (d && d.user) {
+                            if (isAdmin && state.adminInspectedUser) {
+                                state.adminInspectedUser = d.user;
+                                sessionStorage.setItem('nn_admin_inspected_user', JSON.stringify(d.user));
+                            } else {
+                                sessionStorage.setItem('nourishUser', JSON.stringify(d.user));
+                                localStorage.setItem('nourishUser', JSON.stringify(d.user));
+                            }
+                        }
+                    }).catch(() => {});
+                }
+
                 const payload = {
                     name, category, quantity: parseInt(qty),
                     price: parseFloat(price), description,
+                    phone: phoneVal,
+                    address: addressVal,
                     imageUrl: customImg || getSmartFoodImage(name, category, null),
                     expiryTime: (expiry && window.isValidExpiry(expiry)) ? new Date(expiry).toISOString() : null,
                     vendorId: targetUser.id,
-                    vendorName: targetUser.organizationName || targetUser.name
+                    vendorName: targetUser.organizationName || targetUser.name,
+                    vendorPhone: phoneVal,
+                    vendorAddress: addressVal
                 };
 
                 // ---- DEMO MODE: bypass API for demo tokens ----
@@ -5276,6 +5387,8 @@ document.addEventListener('DOMContentLoaded', () => {
                                 qty: parseInt(qty),
                                 price: parseFloat(price),
                                 description,
+                                vendorPhone: phoneVal,
+                                vendorAddress: addressVal,
                                 img: getSmartFoodImage(name, category, customImg),
                                 expiry: expiry ? new Date(expiry).toISOString() : null
                             };
@@ -5295,6 +5408,8 @@ document.addEventListener('DOMContentLoaded', () => {
                             vendorId: user.id,
                             vendorName: user.name || 'Demo Seller',
                             vendorAvatar: user.avatarUrl || 'assets/default-avatar.jpg',
+                            vendorPhone: phoneVal,
+                            vendorAddress: addressVal,
                             isVerified: true,
                             fssaiCode: user.fssaiCode || '',
                             img: getSmartFoodImage(name, category, customImg)
@@ -5314,6 +5429,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     document.getElementById('submit-btn').innerHTML = '<i class="fa-solid fa-leaf"></i> Publish Listing';
                     if (cancelBtn) cancelBtn.style.display = 'none';
                     resetExpiryInput();
+                    if (pPhoneInput) pPhoneInput.value = phoneVal || targetUser.publicPhone || targetUser.phone || '';
+                    if (pAddressInput) pAddressInput.value = addressVal || targetUser.address || '';
                     renderSellerListings();
                     return;
 
@@ -5362,6 +5479,8 @@ document.addEventListener('DOMContentLoaded', () => {
                         document.getElementById('submit-btn').innerHTML = '<i class="fa-solid fa-leaf"></i> Publish Listing';
                         if (cancelBtn) cancelBtn.style.display = 'none';
                         resetExpiryInput();
+                        if (pPhoneInput) pPhoneInput.value = phoneVal || targetUser.publicPhone || targetUser.phone || '';
+                        if (pAddressInput) pAddressInput.value = addressVal || targetUser.address || '';
                         if (typeof broadcastInventoryChange === 'function') broadcastInventoryChange();
                         refreshState(); // Refresh everything
                     } else {
@@ -5380,7 +5499,18 @@ document.addEventListener('DOMContentLoaded', () => {
     // 7. Initialize Everything
 
 
-    const openCart = () => cartDrawer.classList.add('active');
+    const openCart = () => {
+        if (cartDrawer) cartDrawer.classList.add('active');
+        const buyerUser = JSON.parse(sessionStorage.getItem('nourishUser') || localStorage.getItem('nourishUser') || '{}');
+        const phoneInput = document.getElementById('cart-buyer-phone');
+        const addrInput = document.getElementById('cart-buyer-address');
+        if (phoneInput && !phoneInput.value.trim()) {
+            phoneInput.value = buyerUser.publicPhone || buyerUser.phone || '';
+        }
+        if (addrInput && !addrInput.value.trim()) {
+            addrInput.value = buyerUser.address || '';
+        }
+    };
 
     if (cartToggle) {
         cartToggle.addEventListener('click', openCart);
