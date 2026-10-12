@@ -1275,6 +1275,22 @@ document.addEventListener('DOMContentLoaded', () => {
             };
         }
 
+        const commentsDock = document.getElementById('comments-toggle-dock');
+        if (commentsDock) {
+            commentsDock.onclick = (e) => {
+                if (e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                }
+                console.log("Dock: Comments Clicked");
+                if (typeof openCommentsModal === 'function') {
+                    openCommentsModal();
+                } else if (typeof window.openCommentsModal === 'function') {
+                    window.openCommentsModal();
+                }
+            };
+        }
+
         const cartDock = document.getElementById('cart-toggle-dock');
         if (cartDock) {
             cartDock.onclick = (e) => {
@@ -2991,7 +3007,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     e.preventDefault();
                     e.stopPropagation();
                 }
-                if (typeof window.openPortalComments === 'function') window.openPortalComments();
+                console.log("Dock: Comments Clicked (from initSwitcher)");
+                if (typeof openCommentsModal === 'function') openCommentsModal();
+                else if (typeof window.openCommentsModal === 'function') window.openCommentsModal();
+                else if (typeof window.openPortalComments === 'function') window.openPortalComments();
             });
         }
 
@@ -3355,18 +3374,8 @@ document.addEventListener('DOMContentLoaded', () => {
                         </div>
                     </div>
 
-                    <!-- Portal Tabs -->
-                    <div class="portal-tabs" style="display:flex; gap: 0.5rem; margin-bottom: 2.5rem; border-bottom: 1px solid var(--border-glow); padding-bottom: 0;">
-                        <button class="portal-tab-btn active" data-tab="listings" style="padding: 0.75rem 1.75rem; background: none; border: none; border-bottom: 2px solid var(--accent-primary); color: var(--accent-primary); font-weight: 700; font-size: 0.95rem; cursor: pointer; letter-spacing: 1px;">
-                            <i class="fa-solid fa-utensils"></i> LISTINGS
-                        </button>
-                        <button class="portal-tab-btn" data-tab="comments" style="padding: 0.75rem 1.75rem; background: none; border: none; border-bottom: 2px solid transparent; color: var(--text-muted); font-weight: 700; font-size: 0.95rem; cursor: pointer; letter-spacing: 1px;">
-                            <i class="fa-solid fa-comments"></i> COMMENTS
-                        </button>
-                    </div>
-
-                    <!-- Tab: Listings -->
-                    <div id="tab-listings" class="portal-tab-content">
+                    <!-- Listings -->
+                    <div id="tab-listings" class="portal-tab-content" style="display:block;">
                         <div class="seller-listings-header">
                             <h2>LISTINGS</h2>
                             <span class="listings-count-badge" id="my-listings-count-badge">${sellerListings.length} items</span>
@@ -3498,30 +3507,11 @@ document.addEventListener('DOMContentLoaded', () => {
                         </div>
                     </div>
 
-                    <!-- Tab: Comments -->
-                    <div id="tab-comments" class="portal-tab-content" style="display:none;">
-                        <div class="seller-form-card">
-                            <div class="seller-form-header">
-                                <h3><i class="fa-solid fa-comments" style="color:var(--accent-primary);"></i> &nbsp;SHARE YOUR VOICE</h3>
-                            </div>
-                            <p style="color:var(--text-muted); margin-bottom:2rem; font-size:0.95rem;">Your comment will appear live in the <strong style="color:var(--accent-primary);">Voices of Impact</strong> section on the home page.</p>
-                            <form id="portal-comment-form" class="nn-form">
-                                <div class="form-group">
-                                    <label>Your Experience</label>
-                                    <textarea id="portal-comment-text" class="form-control" rows="3" placeholder="Share your experience with Nourish Network..." required></textarea>
-                                </div>
-                                <button type="submit" class="nn-publish-btn" style="width:100%;">Broadcast to Voices of Impact &nbsp;<i class="fa-solid fa-paper-plane"></i></button>
-                            </form>
-                            <div id="portal-comments-list" style="margin-top:2.5rem;"></div>
-                        </div>
-                    </div>
-
                 </div>
             </div>
         `;
         renderSellerListings();
         attachSellerListeners();
-        attachPortalCommentTab();
         initImpactChart();
     }
 
@@ -3754,38 +3744,10 @@ document.addEventListener('DOMContentLoaded', () => {
                         </div>
                     </div>
 
-                    <!-- Portal Tabs -->
-                    <div class="portal-tabs" style="display:flex; gap: 0.5rem; margin-bottom: 2.5rem; border-bottom: 1px solid var(--border-glow); padding-bottom: 0;">
-                        <button class="portal-tab-btn active" data-tab="listings" style="padding: 0.75rem 1.75rem; background: none; border: none; border-bottom: 2px solid var(--accent-primary); color: var(--accent-primary); font-weight: 700; font-size: 0.95rem; cursor: pointer; letter-spacing: 1px;">
-                            <i class="fa-solid fa-basket-shopping"></i> LISTINGS
-                        </button>
-                        <button class="portal-tab-btn" data-tab="comments" style="padding: 0.75rem 1.75rem; background: none; border: none; border-bottom: 2px solid transparent; color: var(--text-muted); font-weight: 700; font-size: 0.95rem; cursor: pointer; letter-spacing: 1px;">
-                            <i class="fa-solid fa-comments"></i> COMMENTS
-                        </button>
-                    </div>
-
-                    <!-- Tab: Listings -->
-                    <div id="tab-listings" class="portal-tab-content">
+                    <!-- Listings -->
+                    <div id="tab-listings" class="portal-tab-content" style="display:block;">
                         <div class="items-grid" id="exchange-grid">
                             <!-- Cards will render here -->
-                        </div>
-                    </div>
-
-                    <!-- Tab: Comments -->
-                    <div id="tab-comments" class="portal-tab-content" style="display:none;">
-                        <div class="seller-form-card">
-                            <div class="seller-form-header">
-                                <h3><i class="fa-solid fa-comments" style="color:var(--accent-primary);"></i> &nbsp;SHARE YOUR VOICE</h3>
-                            </div>
-                            <p style="color:var(--text-muted); margin-bottom:2rem; font-size:0.95rem;">Your comment will appear live in the <strong style="color:var(--accent-primary);">Voices of Impact</strong> section on the home page.</p>
-                            <form id="portal-comment-form" class="nn-form">
-                                <div class="form-group">
-                                    <label>Your Experience</label>
-                                    <textarea id="portal-comment-text" class="form-control" rows="3" placeholder="Share your experience with Nourish Network..." required></textarea>
-                                </div>
-                                <button type="submit" class="nn-publish-btn" style="width:100%;">Broadcast to Voices of Impact &nbsp;<i class="fa-solid fa-paper-plane"></i></button>
-                            </form>
-                            <div id="portal-comments-list" style="margin-top:2.5rem;"></div>
                         </div>
                     </div>
 
@@ -3793,7 +3755,6 @@ document.addEventListener('DOMContentLoaded', () => {
             </div>
         `;
         renderExchangeGrid();
-        attachPortalCommentTab();
     }
 
     // ═════════════════════════════════════════════════════════════════════════
@@ -5583,49 +5544,44 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Portal Comments Trigger (Floating Dock)
-    window.openPortalComments = function () {
-        if (state.activePortal === 'buyer' || state.activePortal === 'seller') {
-            const commentsTab = document.getElementById('tab-comments');
-            const isCommentsActive = commentsTab && commentsTab.style.display !== 'none';
-
-            if (isCommentsActive) {
-                // If already on Comments, toggle back to Listings tab
-                const listingsTabBtn = document.querySelector('.portal-tab-btn[data-tab="listings"]');
-                if (listingsTabBtn) {
-                    listingsTabBtn.click();
-                    const listingsSection = document.getElementById('tab-listings') || document.querySelector('.portal-tabs');
-                    if (listingsSection) {
-                        listingsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                    }
-                    return;
-                }
-            }
-
-            // Switch to Comments tab
-            const commentTabBtn = document.querySelector('.portal-tab-btn[data-tab="comments"]');
-            if (commentTabBtn) {
-                commentTabBtn.click();
-            } else {
-                document.querySelectorAll('.portal-tab-content').forEach(t => t.style.display = 'none');
-                if (commentsTab) commentsTab.style.display = 'block';
-                if (typeof renderPortalCommentList === 'function') renderPortalCommentList();
-            }
-
-            const targetSection = document.getElementById('tab-comments') || document.querySelector('.portal-tabs');
-            if (targetSection) {
-                targetSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
-            }
-
-            setTimeout(() => {
-                const commentInput = document.getElementById('portal-comment-text');
-                if (commentInput) commentInput.focus();
-            }, 300);
-        } else {
-            const commSection = document.getElementById('community');
-            if (commSection) commSection.scrollIntoView({ behavior: 'smooth' });
+    // ---- REAL-TIME COMMENTS MODAL (FLOATING DOCK TRIGGERED) ----
+    function openCommentsModal() {
+        console.log("openCommentsModal called, activePortal:", state.activePortal);
+        const modal = document.getElementById('commentsModal');
+        if (!modal) {
+            console.error("commentsModal element not found!");
+            return;
         }
-    };
+
+        modal.classList.add('active');
+        modal.style.setProperty('display', 'flex', 'important');
+        modal.style.setProperty('opacity', '1', 'important');
+        modal.style.setProperty('visibility', 'visible', 'important');
+        modal.style.setProperty('pointer-events', 'auto', 'important');
+        modal.style.setProperty('z-index', '999999', 'important');
+
+        renderPortalCommentList();
+
+        setTimeout(() => {
+            const input = document.getElementById('portal-comment-text');
+            if (input) input.focus();
+        }, 150);
+    }
+    window.openCommentsModal = openCommentsModal;
+    window.openPortalComments = openCommentsModal;
+
+    function closeCommentsModal() {
+        console.log("closeCommentsModal called");
+        const modal = document.getElementById('commentsModal');
+        if (modal) {
+            modal.classList.remove('active');
+            modal.style.setProperty('display', 'none', 'important');
+            modal.style.setProperty('opacity', '0', 'important');
+            modal.style.setProperty('visibility', 'hidden', 'important');
+            modal.style.setProperty('pointer-events', 'none', 'important');
+        }
+    }
+    window.closeCommentsModal = closeCommentsModal;
 
     const commentsToggleDock = document.getElementById('comments-toggle-dock');
     if (commentsToggleDock) {
@@ -5635,7 +5591,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 e.stopPropagation();
             }
             console.log("Dock: Comments Clicked");
-            if (typeof window.openPortalComments === 'function') window.openPortalComments();
+            openCommentsModal();
         });
     }
 
@@ -5682,103 +5638,116 @@ document.addEventListener('DOMContentLoaded', () => {
         `).join('');
     }
 
-    // ---- PORTAL TAB SWITCHER + COMMENT SYNC ----
-    function attachPortalCommentTab() {
-        // Tab switching
-        const tabBtns = document.querySelectorAll('.portal-tab-btn');
-        tabBtns.forEach(btn => {
-            btn.addEventListener('click', () => {
-                const target = btn.dataset.tab;
-                // Update button styles
-                tabBtns.forEach(b => {
-                    b.style.borderBottomColor = 'transparent';
-                    b.style.color = 'var(--text-muted)';
-                });
-                btn.style.borderBottomColor = 'var(--accent-primary)';
-                btn.style.color = 'var(--accent-primary)';
-                // Show/hide tab content
-                document.querySelectorAll('.portal-tab-content').forEach(t => t.style.display = 'none');
-                const tab = document.getElementById(`tab-${target}`);
-                if (tab) tab.style.display = 'block';
-                // Render existing comments or history when switching tabs
-                if (target === 'comments') renderPortalCommentList();
-                if (target === 'history') loadPortalHistory();
-            });
-        });
-
-        // Comment form submission
+    // ---- COMMENTS MODAL INITIALIZER & SYNC ENGINE ----
+    function initPortalCommentModal() {
         const form = document.getElementById('portal-comment-form');
         const input = document.getElementById('portal-comment-text');
-        if (!form || !input) return;
+        if (form && input && !form.dataset.modalBound) {
+            form.dataset.modalBound = "true";
+            form.addEventListener('submit', (e) => {
+                e.preventDefault();
+                const text = input.value.trim();
+                if (!text) return;
 
-        form.addEventListener('submit', (e) => {
-            e.preventDefault();
-            const text = input.value.trim();
-            if (!text) return;
+                const user = JSON.parse(sessionStorage.getItem('nourishUser') || '{}');
+                const name = user.name || (state.activePortal === 'seller' ? 'Elite Vendor' : 'Community Partner');
+                const org = user.orgName || user.name || (state.activePortal === 'seller' ? 'Gourmet Provider' : 'NGO Partner');
 
-            const user = JSON.parse(sessionStorage.getItem('nourishUser') || '{}');
-            const name = user.name || (state.activePortal === 'seller' ? 'Elite Vendor' : 'Community Partner');
-            const org = user.orgName || user.name || (state.activePortal === 'seller' ? 'Gourmet Provider' : 'NGO Partner');
+                const newComment = {
+                    id: Date.now().toString(),
+                    name,
+                    org,
+                    role: (state.activePortal === 'seller' || user.accountType === 'restaurant' || user.accountType === 'vendor') ? 'seller' : 'buyer',
+                    text,
+                    stars: 5,
+                    img: (user.avatarUrl && !user.avatarUrl.includes('pravatar') && !user.avatarUrl.includes('default-avatar')) ? user.avatarUrl : null
+                };
 
-            const newComment = {
-                id: Date.now().toString(),
-                name,
-                org,
-                role: (state.activePortal === 'seller' || user.accountType === 'restaurant' || user.accountType === 'vendor') ? 'seller' : 'buyer',
-                text,
-                stars: 5,
-                img: (user.avatarUrl && !user.avatarUrl.includes('pravatar') && !user.avatarUrl.includes('default-avatar')) ? user.avatarUrl : null
-            };
+                state.communityComments.push(newComment);
+                // Persist so comments survive page navigation
+                localStorage.setItem('nn_comments', JSON.stringify(state.communityComments));
 
-            state.communityComments.push(newComment);
-            // Persist so comments survive page navigation
-            localStorage.setItem('nn_comments', JSON.stringify(state.communityComments));
+                // Sync to home page Voices of Impact slider
+                renderCommunityWall();
+                renderReviewsSlider();
 
+                // Jump to newest slide in the slider
+                const slides = document.querySelectorAll('.review-slide');
+                const dots = document.querySelectorAll('.dot');
+                if (slides.length > 0) {
+                    slides.forEach(s => s.classList.remove('active'));
+                    dots.forEach(d => d.classList.remove('active'));
+                    slides[slides.length - 1].classList.add('active');
+                    if (dots[dots.length - 1]) dots[dots.length - 1].classList.add('active');
+                }
 
-            // Sync to home page Voices of Impact slider
-            renderCommunityWall();
-            renderReviewsSlider();
+                // Re-render modal comment list
+                renderPortalCommentList();
 
-            // Jump to newest slide in the slider
-            const slides = document.querySelectorAll('.review-slide');
-            const dots = document.querySelectorAll('.dot');
-            if (slides.length > 0) {
-                slides.forEach(s => s.classList.remove('active'));
-                dots.forEach(d => d.classList.remove('active'));
-                slides[slides.length - 1].classList.add('active');
-                if (dots[dots.length - 1]) dots[dots.length - 1].classList.add('active');
-            }
+                input.value = '';
+                showToast("Your voice is now live in 'Voices of Impact'! 🌱", "success");
+            });
+        }
 
-            // Re-render the in-portal comment list
-            renderPortalCommentList();
+        // Close when clicking comments modal backdrop
+        const commModalBackdrop = document.getElementById('commentsModal');
+        if (commModalBackdrop && !commModalBackdrop.dataset.backdropBound) {
+            commModalBackdrop.dataset.backdropBound = "true";
+            commModalBackdrop.addEventListener('click', (e) => {
+                if (e.target === commModalBackdrop) closeCommentsModal();
+            });
+        }
 
-            input.value = '';
-            showToast("Your voice is now live in 'Voices of Impact'! 🌱", "success");
-        });
+        // Refresh button in comments modal
+        const refreshBtn = document.getElementById('refreshCommentsModalBtn');
+        if (refreshBtn && !refreshBtn.dataset.bound) {
+            refreshBtn.dataset.bound = "true";
+            refreshBtn.addEventListener('click', () => {
+                const icon = refreshBtn.querySelector('i');
+                if (icon) {
+                    icon.classList.add('fa-spin');
+                    setTimeout(() => icon.classList.remove('fa-spin'), 600);
+                }
+                renderPortalCommentList();
+            });
+        }
 
-        // Initial render of existing comments
         renderPortalCommentList();
+    }
+    window.initPortalCommentModal = initPortalCommentModal;
+    function attachPortalCommentTab() {
+        initPortalCommentModal();
     }
 
     function renderPortalCommentList() {
         const wall = document.getElementById('portal-comments-list');
         if (!wall) return;
-        if (state.communityComments.length === 0) {
-            wall.innerHTML = `<p style="color:var(--text-muted); text-align:center; padding: 2rem;">No comments yet. Be the first to share!</p>`;
+        if (!state.communityComments || state.communityComments.length === 0) {
+            wall.innerHTML = `
+                <div style="text-align: center; padding: 2.5rem 1rem; color: rgba(255,255,255,0.4);">
+                    <i class="fa-regular fa-comment-dots" style="font-size: 2.2rem; margin-bottom: 0.75rem; display: block; opacity: 0.5;"></i>
+                    <p style="margin: 0; font-size: 0.95rem;">No comments yet. Be the first to share your voice above!</p>
+                </div>
+            `;
+            if (typeof syncDock === 'function') syncDock();
             return;
         }
+
         wall.innerHTML = state.communityComments.slice().reverse().map(c => `
             <div class="comment-bubble" data-comment-id="${c.id}" 
-                style="margin-bottom: 1rem; position: relative; padding: 1.25rem 1.5rem; border-radius: 16px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06); transition: border-color 0.2s;">
+                style="margin-bottom: 0.75rem; position: relative; padding: 1.25rem 1.5rem; border-radius: 16px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.07); transition: all 0.2s ease;">
                 <button class="comment-delete-btn" onclick="window.deleteComment('${c.id}', this)"
                     aria-label="Delete comment" title="Delete this comment"
-                    style="position:absolute; top:12px; right:12px; background:rgba(239,68,68,0.1); border:1px solid rgba(239,68,68,0.3); color:#ef4444; border-radius:8px; width:34px; height:34px; cursor:pointer; display:flex; align-items:center; justify-content:center; opacity:0; transition:all 0.2s ease; font-size:0.85rem;">
+                    style="position:absolute; top:12px; right:12px; background:rgba(239,68,68,0.12); border:1px solid rgba(239,68,68,0.3); color:#ef4444; border-radius:8px; width:34px; height:34px; cursor:pointer; display:flex; align-items:center; justify-content:center; opacity:0; transition:all 0.2s ease; font-size:0.85rem;">
                     <i class="fa-solid fa-trash-can"></i>
                 </button>
-                <strong style="color: var(--accent-primary); display:block; padding-right: 2.5rem;">${c.name} 
-                    <span style="font-weight:400; opacity:0.6; font-size:0.8rem;">• ${c.org}</span>
-                </strong>
-                <p style="margin-top:0.5rem; color: var(--text-secondary); font-size: 0.95rem;">"${c.text}"</p>
+                <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 6px; padding-right: 2.5rem; flex-wrap: wrap;">
+                    ${c.img ? `<img src="${c.img}" alt="${c.name}" style="width: 28px; height: 28px; border-radius: 50%; object-fit: cover;">` : `<div style="width: 28px; height: 28px; border-radius: 50%; background: rgba(16,185,129,0.2); color: var(--accent-primary, #10b981); display: flex; align-items: center; justify-content: center; font-size: 0.75rem; font-weight: 700;">${(c.name || 'U')[0].toUpperCase()}</div>`}
+                    <strong style="color: var(--accent-primary, #10b981); font-size: 0.95rem;">${c.name}</strong>
+                    <span style="font-weight: 400; opacity: 0.55; font-size: 0.8rem; color: #ffffff;">• ${c.org}</span>
+                    <span class="badge" style="font-size: 0.65rem; padding: 2px 7px; border-radius: 6px; margin-left: auto; background: rgba(255,255,255,0.06); color: rgba(255,255,255,0.7); text-transform: uppercase;">${c.role || 'Member'}</span>
+                </div>
+                <p style="margin: 0.25rem 0 0; color: rgba(255,255,255,0.85); font-size: 0.95rem; line-height: 1.5;">"${c.text}"</p>
             </div>
         `).join('');
 
@@ -5786,7 +5755,7 @@ document.addEventListener('DOMContentLoaded', () => {
         wall.querySelectorAll('.comment-bubble').forEach(bubble => {
             const btn = bubble.querySelector('.comment-delete-btn');
             bubble.addEventListener('mouseenter', () => { if (btn) btn.style.opacity = '1'; bubble.style.borderColor = 'rgba(239,68,68,0.3)'; });
-            bubble.addEventListener('mouseleave', () => { if (btn) btn.style.opacity = '0'; bubble.style.borderColor = 'rgba(255,255,255,0.06)'; });
+            bubble.addEventListener('mouseleave', () => { if (btn) btn.style.opacity = '0'; bubble.style.borderColor = 'rgba(255,255,255,0.07)'; });
         });
 
         if (typeof syncDock === 'function') syncDock();
@@ -5842,6 +5811,10 @@ document.addEventListener('DOMContentLoaded', () => {
             const hModal = document.getElementById('historyModal');
             if (hModal && (hModal.style.display !== 'none' || hModal.classList.contains('active'))) {
                 closeHistoryModal();
+            }
+            const cModal = document.getElementById('commentsModal');
+            if (cModal && (cModal.style.display !== 'none' || cModal.classList.contains('active'))) {
+                closeCommentsModal();
             }
         }
     });
@@ -6844,10 +6817,31 @@ document.addEventListener('DOMContentLoaded', () => {
             else if (typeof window.closeHistoryModal === 'function') window.closeHistoryModal();
             return;
         }
+
+        // Delegated comments modal open (dock button, icon, or comments label)
+        const commBtn = e.target.closest('#comments-toggle-dock, .portal-comments-dock, [data-action="open-comments"]');
+        if (commBtn) {
+            e.preventDefault();
+            e.stopPropagation();
+            console.log("Delegated click caught for Comments dock button");
+            if (typeof openCommentsModal === 'function') openCommentsModal();
+            else if (typeof window.openCommentsModal === 'function') window.openCommentsModal();
+            return;
+        }
+
+        // Delegated comments modal close
+        const closeCommBtn = e.target.closest('#closeCommentsModal, .close-comments-modal-btn');
+        if (closeCommBtn) {
+            e.preventDefault();
+            if (typeof closeCommentsModal === 'function') closeCommentsModal();
+            else if (typeof window.closeCommentsModal === 'function') window.closeCommentsModal();
+            return;
+        }
     });
 
     // --- BOOTSTRAP APP ---
     initSwitcher();
+    initPortalCommentModal();
     renderReviewsSlider();
     renderCommunityWall();
     updateCartBadge();
