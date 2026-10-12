@@ -1670,31 +1670,59 @@ app.post('/api/listings', authenticateToken, async (req, res) => {
     const targetVendorId = (isAdminUser && req.body.vendorId) ? req.body.vendorId : req.user.id;
     const targetVendorName = (isAdminUser && req.body.vendorName) ? req.body.vendorName : req.user.name;
 
-    const sql = `
-        INSERT INTO food_listings
-            (vendorId, vendorName, name, description, category, price, quantity, unit,
-             expiryTime, pickupTime, condition, allergens, imageUrl, datePosted)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
-    `;
-    const params = [
-        targetVendorId,
-        targetVendorName,
-        name,
-        description || '',
-        category || 'Cooked',
-        parseFloat(price) || 0,
-        quantity,
-        unit || 'Plate',
-        expiryTime || null,
-        pickupTime || null,
-        condition || 'Fresh',
-        allergens || null,
-        finalImageUrl || null
-    ];
+    // Strict Compliance: Verify vendor's mobile number and pickup location before publishing
+    db.get(`SELECT id, phone, publicPhone, address FROM users WHERE id = ?`, [targetVendorId], (uErr, vendorRow) => {
+        if (uErr) return res.status(500).json({ error: uErr.message });
 
-    db.run(sql, params, function (err) {
-        if (err) return res.status(500).json({ error: err.message });
-        const listingId = this.lastID;
+        const vPhone = (req.body.phone || (vendorRow && (vendorRow.phone || vendorRow.publicPhone)) || '').trim();
+        const vAddress = (req.body.address || (vendorRow && vendorRow.address) || '').trim();
+
+        const noPhone = !vPhone || vPhone.replace(/[^0-9]/g, '').length < 6;
+        const noAddress = !vAddress || vAddress.length < 3;
+
+        if (noPhone && noAddress) {
+            return res.status(400).json({ error: 'Please enter your mobile number and pickup location to publish listing!' });
+        }
+        if (noPhone) {
+            return res.status(400).json({ error: 'Please enter your mobile number to publish listing!' });
+        }
+        if (noAddress) {
+            return res.status(400).json({ error: 'Please enter your pickup location to publish listing!' });
+        }
+
+        // Auto-update vendor profile if new details were submitted
+        if (req.body.phone || req.body.address) {
+            db.run(
+                `UPDATE users SET phone = COALESCE(?, phone), publicPhone = COALESCE(?, publicPhone), address = COALESCE(?, address) WHERE id = ?`,
+                [req.body.phone || null, req.body.phone || null, req.body.address || null, targetVendorId]
+            );
+        }
+
+        const sql = `
+            INSERT INTO food_listings
+                (vendorId, vendorName, name, description, category, price, quantity, unit,
+                 expiryTime, pickupTime, condition, allergens, imageUrl, datePosted)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+        `;
+        const params = [
+            targetVendorId,
+            targetVendorName,
+            name,
+            description || '',
+            category || 'Cooked',
+            parseFloat(price) || 0,
+            quantity,
+            unit || 'Plate',
+            expiryTime || null,
+            pickupTime || null,
+            condition || 'Fresh',
+            allergens || null,
+            finalImageUrl || null
+        ];
+
+        db.run(sql, params, function (err) {
+            if (err) return res.status(500).json({ error: err.message });
+            const listingId = this.lastID;
 
         // Broadcast notification email to all registered buyers/NGOs in background
         const hostUrl = `${req.protocol}://${req.get('host')}`;
@@ -1727,6 +1755,7 @@ app.post('/api/listings', authenticateToken, async (req, res) => {
             message: 'Food listing published successfully! 🌱',
             id: listingId
         });
+    });
     });
 });
 
@@ -1817,59 +1846,87 @@ app.post('/api/listings/claim', authenticateToken, (req, res) => {
         return res.status(400).json({ error: 'listingId is required.' });
     }
 
-    const sql = `
-        UPDATE food_listings
-        SET status    = 'claimed',
-            claimedBy = ?
-        WHERE id = ? AND status = 'available'
-    `;
+    // Strict Compliance: Verify buyer/NGO mobile number and location before claiming
+    db.get(`SELECT id, phone, publicPhone, address FROM users WHERE id = ?`, [ngoId], (uErr, buyerRow) => {
+        if (uErr) return res.status(500).json({ error: uErr.message });
 
-    db.run(sql, [ngoId, listingId], function (err) {
-        if (err) return res.status(500).json({ error: err.message });
-        if (this.changes === 0) return res.status(400).json({ error: 'Listing not found or already claimed.' });
+        const bPhone = (req.body.phone || (buyerRow && (buyerRow.phone || buyerRow.publicPhone)) || '').trim();
+        const bAddress = (req.body.address || (buyerRow && buyerRow.address) || '').trim();
 
-        // Insert order record into database so it reflects in real-time history
-        db.get(`SELECT quantity, price FROM food_listings WHERE id = ?`, [listingId], (gErr, lRow) => {
-            const claimQty = lRow ? (parseInt(lRow.quantity) || 1) : 1;
-            const handoverOtp = Math.floor(1000 + Math.random() * 9000).toString();
+        const noPhone = !bPhone || bPhone.replace(/[^0-9]/g, '').length < 6;
+        const noAddress = !bAddress || bAddress.length < 3;
+
+        if (noPhone && noAddress) {
+            return res.status(400).json({ error: 'Please enter your mobile number and location before claiming food!' });
+        }
+        if (noPhone) {
+            return res.status(400).json({ error: 'Please enter your mobile number before claiming food!' });
+        }
+        if (noAddress) {
+            return res.status(400).json({ error: 'Please enter your location before claiming food!' });
+        }
+
+        if (req.body.phone || req.body.address) {
             db.run(
-                `INSERT INTO orders (buyerId, listingId, quantity, totalPrice, status, notes, handoverOtp)
-                 VALUES (?, ?, ?, 0, 'confirmed', 'Direct Food Rescue Claim', ?)`,
-                [ngoId, listingId, claimQty, handoverOtp],
-                (insErr) => {
-                    if (insErr) console.error("Claim order tracking insert error:", insErr.message);
-                }
+                `UPDATE users SET phone = COALESCE(?, phone), publicPhone = COALESCE(?, publicPhone), address = COALESCE(?, address) WHERE id = ?`,
+                [req.body.phone || null, req.body.phone || null, req.body.address || null, ngoId]
             );
-        });
+        }
 
-        // Notify seller about claimed food in background
-        const hostUrl = `${req.protocol}://${req.get('host')}`;
-        setImmediate(() => {
-            db.get(
-                `SELECT f.name as foodName, f.price, f.quantity, u.email as sellerEmail, u.organizationName as sellerName 
-                 FROM food_listings f 
-                 JOIN users u ON f.vendorId = u.id 
-                 WHERE f.id = ?`,
-                [listingId],
-                (sErr, row) => {
-                    if (!sErr && row && row.sellerEmail) {
-                        sendSellerOrderNotificationEmail({
-                            sellerEmail: row.sellerEmail,
-                            sellerName: row.sellerName,
-                            buyerName: req.user.name || 'Community Partner',
-                            buyerEmail: req.user.email,
-                            foodName: row.foodName,
-                            quantity: row.quantity || 1,
-                            totalPrice: 0,
-                            notes: 'Claimed by NGO Partner',
-                            hostUrl
-                        }).catch(e => console.error("Async Claim Seller Email Error:", e));
+        const sql = `
+            UPDATE food_listings
+            SET status    = 'claimed',
+                claimedBy = ?
+            WHERE id = ? AND status = 'available'
+        `;
+
+        db.run(sql, [ngoId, listingId], function (err) {
+            if (err) return res.status(500).json({ error: err.message });
+            if (this.changes === 0) return res.status(400).json({ error: 'Listing not found or already claimed.' });
+
+            // Insert order record into database so it reflects in real-time history
+            db.get(`SELECT quantity, price FROM food_listings WHERE id = ?`, [listingId], (gErr, lRow) => {
+                const claimQty = lRow ? (parseInt(lRow.quantity) || 1) : 1;
+                const handoverOtp = Math.floor(1000 + Math.random() * 9000).toString();
+                db.run(
+                    `INSERT INTO orders (buyerId, listingId, quantity, totalPrice, status, notes, handoverOtp)
+                     VALUES (?, ?, ?, 0, 'confirmed', 'Direct Food Rescue Claim', ?)`,
+                    [ngoId, listingId, claimQty, handoverOtp],
+                    (insErr) => {
+                        if (insErr) console.error("Claim order tracking insert error:", insErr.message);
                     }
-                }
-            );
-        });
+                );
+            });
 
-        res.status(200).json({ message: 'Food successfully claimed! 🤝' });
+            // Notify seller about claimed food in background
+            const hostUrl = `${req.protocol}://${req.get('host')}`;
+            setImmediate(() => {
+                db.get(
+                    `SELECT f.name as foodName, f.price, f.quantity, u.email as sellerEmail, u.organizationName as sellerName 
+                     FROM food_listings f 
+                     JOIN users u ON f.vendorId = u.id 
+                     WHERE f.id = ?`,
+                    [listingId],
+                    (sErr, row) => {
+                        if (!sErr && row && row.sellerEmail) {
+                            sendSellerOrderNotificationEmail({
+                                sellerEmail: row.sellerEmail,
+                                sellerName: row.sellerName,
+                                buyerName: req.user.name || 'Community Partner',
+                                buyerEmail: req.user.email,
+                                foodName: row.foodName,
+                                quantity: row.quantity || 1,
+                                totalPrice: 0,
+                                notes: 'Claimed by NGO Partner',
+                                hostUrl
+                            }).catch(e => console.error("Async Claim Seller Email Error:", e));
+                        }
+                    }
+                );
+            });
+
+            res.status(200).json({ message: 'Food successfully claimed! 🤝' });
+        });
     });
 });
 
@@ -1885,7 +1942,34 @@ app.post('/api/checkout', authenticateToken, (req, res) => {
         return res.status(400).json({ error: 'No items in basket.' });
     }
 
-    // Process items sequentially to guarantee strict stock validation and avoid race conditions
+    // Strict Compliance: Verify buyer mobile number and delivery location before processing order
+    db.get(`SELECT id, phone, publicPhone, address FROM users WHERE id = ?`, [buyerId], (uErr, buyerRow) => {
+        if (uErr) return res.status(500).json({ error: uErr.message });
+
+        const bPhone = (req.body.phone || (buyerRow && (buyerRow.phone || buyerRow.publicPhone)) || '').trim();
+        const bAddress = (req.body.address || (buyerRow && buyerRow.address) || '').trim();
+
+        const noPhone = !bPhone || bPhone.replace(/[^0-9]/g, '').length < 6;
+        const noAddress = !bAddress || bAddress.length < 3;
+
+        if (noPhone && noAddress) {
+            return res.status(400).json({ error: 'Please enter your mobile number and location before placing an order!' });
+        }
+        if (noPhone) {
+            return res.status(400).json({ error: 'Please enter your mobile number before placing an order!' });
+        }
+        if (noAddress) {
+            return res.status(400).json({ error: 'Please enter your location before placing an order!' });
+        }
+
+        if (req.body.phone || req.body.address) {
+            db.run(
+                `UPDATE users SET phone = COALESCE(?, phone), publicPhone = COALESCE(?, publicPhone), address = COALESCE(?, address) WHERE id = ?`,
+                [req.body.phone || null, req.body.phone || null, req.body.address || null, buyerId]
+            );
+        }
+
+        // Process items sequentially to guarantee strict stock validation and avoid race conditions
     let index = 0;
     const placedOrders = [];
 
@@ -2025,6 +2109,7 @@ app.post('/api/checkout', authenticateToken, (req, res) => {
     }
 
     processNextItem();
+    });
 });
 
 

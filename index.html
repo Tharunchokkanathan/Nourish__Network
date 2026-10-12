@@ -424,6 +424,28 @@
                 <div class="empty-cart-msg">Your cart is empty.</div>
             </div>
             <div class="cart-summary">
+                <!-- Buyer Contact & Location Verification (Required to Order) -->
+                <div id="buyer-contact-required-box" style="margin-bottom: 1.25rem; padding: 14px 16px; background: rgba(255, 255, 255, 0.04); border: 1.5px solid rgba(255, 255, 255, 0.12); border-radius: 18px; text-align: left; box-shadow: 0 8px 24px rgba(0,0,0,0.4);">
+                    <div style="font-size: 0.8rem; font-weight: 800; color: #38bdf8; margin-bottom: 10px; display: flex; align-items: center; justify-content: space-between;">
+                        <span style="display: flex; align-items: center; gap: 7px;">
+                            <i class="fa-solid fa-truck-ramp-box"></i> Buyer Order Details
+                        </span>
+                        <span style="font-size: 0.7rem; color: #ef4444; font-weight: 700; background: rgba(239, 68, 68, 0.12); border: 1px solid rgba(239, 68, 68, 0.3); padding: 2px 7px; border-radius: 6px;">Required</span>
+                    </div>
+                    <div style="margin-bottom: 10px;">
+                        <label style="font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.5px; color: rgba(255, 255, 255, 0.75); display: flex; align-items: center; gap: 5px; margin-bottom: 4px; font-weight: 600;">
+                            <i class="fa-solid fa-phone" style="font-size: 0.75rem; color: #38bdf8;"></i> Mobile Number <span style="color: #ef4444; font-weight: 800;">*</span>
+                        </label>
+                        <input type="tel" id="cart-buyer-phone" class="minimal-input" placeholder="e.g. +91 98765 43210" style="font-size: 0.85rem; padding: 8px 12px; width: 100%; border-radius: 10px; background: rgba(0, 0, 0, 0.6) !important; border: 1.5px solid rgba(255, 255, 255, 0.15); color: #fff;">
+                    </div>
+                    <div>
+                        <label style="font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.5px; color: rgba(255, 255, 255, 0.75); display: flex; align-items: center; gap: 5px; margin-bottom: 4px; font-weight: 600;">
+                            <i class="fa-solid fa-location-dot" style="font-size: 0.75rem; color: #10b981;"></i> Delivery / Org Location <span style="color: #ef4444; font-weight: 800;">*</span>
+                        </label>
+                        <input type="text" id="cart-buyer-address" class="minimal-input" placeholder="e.g. 12, Besant Nagar, Chennai" style="font-size: 0.85rem; padding: 8px 12px; width: 100%; border-radius: 10px; background: rgba(0, 0, 0, 0.6) !important; border: 1.5px solid rgba(255, 255, 255, 0.15); color: #fff;">
+                    </div>
+                </div>
+
                 <div class="summary-row"><span>Subtotal</span> <span id="cart-subtotal">₹0</span></div>
                 <div class="summary-row total"><span>Total Cost</span> <span id="cart-total">₹0</span></div>
                 <button id="confirm-claim" onclick="window.placeOrderDemo()"
@@ -1254,7 +1276,7 @@
     </svg>
 
     <!-- Custom Script -->
-    <script src="script.js?v=2.6"></script>
+    <script src="script.js?v=2.7"></script>
 </body>
 
 </html>
