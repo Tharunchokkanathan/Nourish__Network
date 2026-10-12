@@ -2983,6 +2983,18 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }
 
+        // Wire up Dock Comments button (Both Portals)
+        const commentsDockItem = document.getElementById('comments-toggle-dock');
+        if (commentsDockItem) {
+            commentsDockItem.addEventListener('click', (e) => {
+                if (e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                }
+                if (typeof window.openPortalComments === 'function') window.openPortalComments();
+            });
+        }
+
         // Wire up Dock History button (Both Portals)
         const historyDockItem = document.getElementById('history-toggle-dock');
         if (historyDockItem) {
@@ -3154,9 +3166,10 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         // --- Show/hide dock items based on portal ---
-        // IDs from index.html: cart-toggle-dock (buyer), add-listing-dock (seller)
+        // IDs from index.html: cart-toggle-dock (buyer), add-listing-dock (seller), comments-toggle-dock (both)
         const cartDockItem = document.getElementById('cart-toggle-dock');
         const addDockItem = document.getElementById('add-listing-dock');
+        const commentsDockItem = document.getElementById('comments-toggle-dock');
         const historyDockItem = document.getElementById('history-toggle-dock');
         const loginDockItem = document.getElementById('login-toggle-dock');
         const settingsDockItem = document.getElementById('settings-toggle-dock');
@@ -3167,6 +3180,7 @@ document.addEventListener('DOMContentLoaded', () => {
             landingItems.forEach(el => el.style.setProperty('display', 'none', 'important'));
             if (cartDockItem) cartDockItem.style.setProperty('display', 'flex', 'important');
             if (addDockItem) addDockItem.style.setProperty('display', 'none', 'important');
+            if (commentsDockItem) commentsDockItem.style.setProperty('display', 'flex', 'important');
             if (historyDockItem) historyDockItem.style.setProperty('display', 'flex', 'important');
             if (settingsDockItem) settingsDockItem.style.setProperty('display', 'flex', 'important');
             if (loginDockItem) loginDockItem.style.setProperty('display', 'flex', 'important');
@@ -3174,6 +3188,7 @@ document.addEventListener('DOMContentLoaded', () => {
             landingItems.forEach(el => el.style.setProperty('display', 'none', 'important'));
             if (cartDockItem) cartDockItem.style.setProperty('display', 'none', 'important');
             if (addDockItem) addDockItem.style.setProperty('display', 'flex', 'important');
+            if (commentsDockItem) commentsDockItem.style.setProperty('display', 'flex', 'important');
             if (historyDockItem) historyDockItem.style.setProperty('display', 'flex', 'important');
             if (settingsDockItem) settingsDockItem.style.setProperty('display', 'flex', 'important');
             if (loginDockItem) loginDockItem.style.setProperty('display', 'flex', 'important');
@@ -3181,6 +3196,7 @@ document.addEventListener('DOMContentLoaded', () => {
             landingItems.forEach(el => el.style.setProperty('display', 'none', 'important'));
             if (cartDockItem) cartDockItem.style.setProperty('display', 'none', 'important');
             if (addDockItem) addDockItem.style.setProperty('display', 'none', 'important');
+            if (commentsDockItem) commentsDockItem.style.setProperty('display', 'none', 'important');
             if (historyDockItem) historyDockItem.style.setProperty('display', 'none', 'important');
             if (settingsDockItem) settingsDockItem.style.setProperty('display', 'none', 'important');
             if (loginDockItem) loginDockItem.style.setProperty('display', 'flex', 'important');
@@ -3188,9 +3204,22 @@ document.addEventListener('DOMContentLoaded', () => {
             landingItems.forEach(el => el.style.setProperty('display', 'flex', 'important'));
             if (cartDockItem) cartDockItem.style.setProperty('display', 'none', 'important');
             if (addDockItem) addDockItem.style.setProperty('display', 'none', 'important');
+            if (commentsDockItem) commentsDockItem.style.setProperty('display', 'none', 'important');
             if (historyDockItem) historyDockItem.style.setProperty('display', 'none', 'important');
             if (settingsDockItem) settingsDockItem.style.setProperty('display', 'none', 'important');
             if (loginDockItem) loginDockItem.style.setProperty('display', 'flex', 'important');
+        }
+
+        // Sync Comments count badge
+        const commentsBadge = document.getElementById('comments-dock-badge');
+        if (commentsBadge) {
+            const count = (state.communityComments && state.communityComments.length) || 0;
+            if (count > 0 && (state.activePortal === 'buyer' || state.activePortal === 'seller')) {
+                commentsBadge.textContent = count;
+                commentsBadge.style.display = 'flex';
+            } else {
+                commentsBadge.style.display = 'none';
+            }
         }
     }
 
@@ -5554,6 +5583,62 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    // Portal Comments Trigger (Floating Dock)
+    window.openPortalComments = function () {
+        if (state.activePortal === 'buyer' || state.activePortal === 'seller') {
+            const commentsTab = document.getElementById('tab-comments');
+            const isCommentsActive = commentsTab && commentsTab.style.display !== 'none';
+
+            if (isCommentsActive) {
+                // If already on Comments, toggle back to Listings tab
+                const listingsTabBtn = document.querySelector('.portal-tab-btn[data-tab="listings"]');
+                if (listingsTabBtn) {
+                    listingsTabBtn.click();
+                    const listingsSection = document.getElementById('tab-listings') || document.querySelector('.portal-tabs');
+                    if (listingsSection) {
+                        listingsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    }
+                    return;
+                }
+            }
+
+            // Switch to Comments tab
+            const commentTabBtn = document.querySelector('.portal-tab-btn[data-tab="comments"]');
+            if (commentTabBtn) {
+                commentTabBtn.click();
+            } else {
+                document.querySelectorAll('.portal-tab-content').forEach(t => t.style.display = 'none');
+                if (commentsTab) commentsTab.style.display = 'block';
+                if (typeof renderPortalCommentList === 'function') renderPortalCommentList();
+            }
+
+            const targetSection = document.getElementById('tab-comments') || document.querySelector('.portal-tabs');
+            if (targetSection) {
+                targetSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+
+            setTimeout(() => {
+                const commentInput = document.getElementById('portal-comment-text');
+                if (commentInput) commentInput.focus();
+            }, 300);
+        } else {
+            const commSection = document.getElementById('community');
+            if (commSection) commSection.scrollIntoView({ behavior: 'smooth' });
+        }
+    };
+
+    const commentsToggleDock = document.getElementById('comments-toggle-dock');
+    if (commentsToggleDock) {
+        commentsToggleDock.addEventListener('click', (e) => {
+            if (e) {
+                e.preventDefault();
+                e.stopPropagation();
+            }
+            console.log("Dock: Comments Clicked");
+            if (typeof window.openPortalComments === 'function') window.openPortalComments();
+        });
+    }
+
 
 
 
@@ -5703,6 +5788,8 @@ document.addEventListener('DOMContentLoaded', () => {
             bubble.addEventListener('mouseenter', () => { if (btn) btn.style.opacity = '1'; bubble.style.borderColor = 'rgba(239,68,68,0.3)'; });
             bubble.addEventListener('mouseleave', () => { if (btn) btn.style.opacity = '0'; bubble.style.borderColor = 'rgba(255,255,255,0.06)'; });
         });
+
+        if (typeof syncDock === 'function') syncDock();
     }
 
     // ---- REAL-TIME HISTORY MODAL (FLOATING DOCK TRIGGERED) ----
