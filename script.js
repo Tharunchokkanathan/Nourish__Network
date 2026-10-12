@@ -6840,6 +6840,24 @@ document.addEventListener('DOMContentLoaded', () => {
             const isSeller = role.includes('restaurant') || role.includes('vendor') || role.includes('seller') || state.activePortal === 'seller';
             if (fssaiWrap) fssaiWrap.style.display = isSeller ? 'block' : 'none';
             if (darpanWrap) darpanWrap.style.display = isSeller ? 'none' : 'block';
+
+            // Clean leftover state: buyers never have FSSAI; sellers never have DARPAN
+            if (!isSeller) {
+                const fssaiInp = document.getElementById('fssaiInput');
+                if (fssaiInp) fssaiInp.value = '';
+                const fssaiFb = document.getElementById('fssaiFeedback');
+                if (fssaiFb) { fssaiFb.style.display = 'none'; fssaiFb.innerHTML = ''; }
+                const fssaiTag = document.getElementById('fssaiStateTag');
+                if (fssaiTag) fssaiTag.style.display = 'none';
+            } else {
+                const darpanInp = document.getElementById('darpanInput');
+                if (darpanInp) darpanInp.value = '';
+                const darpanFb = document.getElementById('darpanFeedback');
+                if (darpanFb) { darpanFb.style.display = 'none'; darpanFb.innerHTML = ''; }
+                const darpanTag = document.getElementById('darpanStateTag');
+                if (darpanTag) darpanTag.style.display = 'none';
+            }
+
             if (subtitle) subtitle.textContent = isSeller
                 ? "Manage your restaurant's profile, compliance & pickup details"
                 : "Manage your NGO's profile, compliance & pickup details";
@@ -7013,7 +7031,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (publicPhoneInput) publicPhoneInput.value = profile.publicPhone || profile.phone || '';
                 if (websiteInput) websiteInput.value = profile.website || '';
                 if (fssaiInput) {
-                    fssaiInput.value = profile.fssaiCode || profile.fssaicode || '';
+                    fssaiInput.value = isSeller ? (profile.fssaiCode || profile.fssaicode || '') : '';
                     updateFssaiFeedback();
                 }
                 if (darpanTypeSelect) {
@@ -7021,7 +7039,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (darpanInput) darpanInput.placeholder = NGO_PLACEHOLDERS[darpanTypeSelect.value] || 'Registration Code';
                 }
                 if (darpanInput) {
-                    darpanInput.value = profile.darpanId || profile.darpanid || '';
+                    darpanInput.value = !isSeller ? (profile.darpanId || profile.darpanid || '') : '';
                     updateDarpanFeedback();
                 }
                 if (pickupWindowInput) pickupWindowInput.value = profile.pickupWindow || '';
@@ -7054,8 +7072,14 @@ document.addEventListener('DOMContentLoaded', () => {
                                         if (contactPersonInput && freshUser.contactPerson) contactPersonInput.value = freshUser.contactPerson;
                                         if (publicPhoneInput && (freshUser.publicPhone || freshUser.phone)) publicPhoneInput.value = freshUser.publicPhone || freshUser.phone;
                                         if (websiteInput && freshUser.website) websiteInput.value = freshUser.website;
-                                        if (fssaiInput && freshUser.fssaiCode) { fssaiInput.value = freshUser.fssaiCode; updateFssaiFeedback(); }
-                                        if (darpanInput && freshUser.darpanId) { darpanInput.value = freshUser.darpanId; updateDarpanFeedback(); }
+                                        if (fssaiInput) {
+                                            fssaiInput.value = isSeller ? (freshUser.fssaiCode || '') : '';
+                                            updateFssaiFeedback();
+                                        }
+                                        if (darpanInput) {
+                                            darpanInput.value = !isSeller ? (freshUser.darpanId || '') : '';
+                                            updateDarpanFeedback();
+                                        }
                                         if (pickupWindowInput && freshUser.pickupWindow) pickupWindowInput.value = freshUser.pickupWindow;
                                         if (pickupInstructionsInput && freshUser.pickupInstructions) pickupInstructionsInput.value = freshUser.pickupInstructions;
                                         if (freshUser.avatarUrl && avatarPreview) avatarPreview.src = freshUser.avatarUrl;
@@ -7080,16 +7104,16 @@ document.addEventListener('DOMContentLoaded', () => {
                                 if (contactPersonInput && liveProfile.contactPerson) contactPersonInput.value = liveProfile.contactPerson;
                                 if (publicPhoneInput && (liveProfile.publicPhone || liveProfile.phone)) publicPhoneInput.value = liveProfile.publicPhone || liveProfile.phone;
                                 if (websiteInput && liveProfile.website) websiteInput.value = liveProfile.website;
-                                if (fssaiInput && (liveProfile.fssaiCode || liveProfile.fssaicode)) {
-                                    fssaiInput.value = liveProfile.fssaiCode || liveProfile.fssaicode;
+                                if (fssaiInput) {
+                                    fssaiInput.value = isSeller ? (liveProfile.fssaiCode || liveProfile.fssaicode || '') : '';
                                     updateFssaiFeedback();
                                 }
                                 if (darpanTypeSelect && (liveProfile.ngoRegType || liveProfile.ngoregtype)) {
                                     darpanTypeSelect.value = liveProfile.ngoRegType || liveProfile.ngoregtype;
                                     if (darpanInput) darpanInput.placeholder = NGO_PLACEHOLDERS[darpanTypeSelect.value] || 'Registration Code';
                                 }
-                                if (darpanInput && (liveProfile.darpanId || liveProfile.darpanid)) {
-                                    darpanInput.value = liveProfile.darpanId || liveProfile.darpanid;
+                                if (darpanInput) {
+                                    darpanInput.value = !isSeller ? (liveProfile.darpanId || liveProfile.darpanid || '') : '';
                                     updateDarpanFeedback();
                                 }
                                 if (pickupWindowInput && liveProfile.pickupWindow) pickupWindowInput.value = liveProfile.pickupWindow;
@@ -7104,9 +7128,9 @@ document.addEventListener('DOMContentLoaded', () => {
                                     ...sessionUser, 
                                     ...liveProfile,
                                     address: liveProfile.address || sessionUser.address || '',
-                                    fssaiCode: liveProfile.fssaiCode || liveProfile.fssaicode || sessionUser.fssaiCode || sessionUser.fssaicode || '',
-                                    darpanId: liveProfile.darpanId || liveProfile.darpanid || sessionUser.darpanId || sessionUser.darpanid || '',
-                                    ngoRegType: liveProfile.ngoRegType || liveProfile.ngoregtype || sessionUser.ngoRegType || sessionUser.ngoregtype || ''
+                                    fssaiCode: isSeller ? (liveProfile.fssaiCode || liveProfile.fssaicode || sessionUser.fssaiCode || sessionUser.fssaicode || '') : '',
+                                    darpanId: !isSeller ? (liveProfile.darpanId || liveProfile.darpanid || sessionUser.darpanId || sessionUser.darpanid || '') : '',
+                                    ngoRegType: !isSeller ? (liveProfile.ngoRegType || liveProfile.ngoregtype || sessionUser.ngoRegType || sessionUser.ngoregtype || '') : ''
                                 };
                                 sessionStorage.setItem('nourishUser', JSON.stringify(merged));
                                 localStorage.setItem('nourishUser', JSON.stringify(merged));
@@ -7179,31 +7203,50 @@ document.addEventListener('DOMContentLoaded', () => {
             settingsForm.addEventListener('submit', async (e) => {
                 e.preventDefault();
 
-                const fssaiCode = fssaiInput ? fssaiInput.value.trim() : '';
-                if (fssaiCode) {
-                    const validation = window.validateFSSAI(fssaiCode);
-                    if (!validation.valid) {
-                        showToast(`Invalid FSSAI License: ${validation.message}`, "error");
-                        if (fssaiInput) {
-                            fssaiInput.focus();
-                            fssaiInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                const isAdmin = typeof checkIsAdminUser === 'function' && checkIsAdminUser();
+                const isInspecting = isAdmin && state.adminInspectedUser;
+                const activeUser = isInspecting ? state.adminInspectedUser : JSON.parse(sessionStorage.getItem('nourishUser') || localStorage.getItem('nourishUser') || '{}');
+                const roleStr = (activeUser.accountType || activeUser.type || activeUser.role || state.activePortal || '').toLowerCase();
+                const isSeller = roleStr.includes('restaurant') || roleStr.includes('vendor') || roleStr.includes('seller') || state.activePortal === 'seller';
+
+                let fssaiCode = '';
+                if (isSeller) {
+                    fssaiCode = fssaiInput ? fssaiInput.value.trim() : '';
+                    if (fssaiCode) {
+                        const validation = window.validateFSSAI(fssaiCode);
+                        if (!validation.valid) {
+                            showToast(`Invalid FSSAI License: ${validation.message}`, "error");
+                            if (fssaiInput) {
+                                fssaiInput.focus();
+                                fssaiInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                            }
+                            return;
                         }
-                        return;
                     }
+                } else {
+                    // For buyers / NGOs, FSSAI is not applicable — clean any residual input value
+                    if (fssaiInput) fssaiInput.value = '';
                 }
 
-                const darpanCode = darpanInput ? darpanInput.value.trim().toUpperCase() : '';
-                const ngoType = darpanTypeSelect ? darpanTypeSelect.value : 'darpan';
-                if (darpanCode) {
-                    const validation = window.validateNGOCompliance(ngoType, darpanCode);
-                    if (!validation.valid) {
-                        showToast(`Invalid Registration Credential: ${validation.message}`, "error");
-                        if (darpanInput) {
-                            darpanInput.focus();
-                            darpanInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                let darpanCode = '';
+                let ngoType = 'darpan';
+                if (!isSeller) {
+                    darpanCode = darpanInput ? darpanInput.value.trim().toUpperCase() : '';
+                    ngoType = darpanTypeSelect ? darpanTypeSelect.value : 'darpan';
+                    if (darpanCode) {
+                        const validation = window.validateNGOCompliance(ngoType, darpanCode);
+                        if (!validation.valid) {
+                            showToast(`Invalid Registration Credential: ${validation.message}`, "error");
+                            if (darpanInput) {
+                                darpanInput.focus();
+                                darpanInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                            }
+                            return;
                         }
-                        return;
                     }
+                } else {
+                    // For sellers, NGO registration is not applicable — clean any residual input value
+                    if (darpanInput) darpanInput.value = '';
                 }
 
                 const saveBtn = document.getElementById('saveSettingsBtn');
@@ -7227,8 +7270,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 try {
                     const token = sessionStorage.getItem('nourishToken') || localStorage.getItem('nourishToken');
-                    const isAdmin = typeof checkIsAdminUser === 'function' && checkIsAdminUser();
-                    const isInspecting = isAdmin && state.adminInspectedUser;
 
                     const endpoint = isInspecting
                         ? `${API_BASE}/admin/users/${state.adminInspectedUser.id}`
@@ -7244,8 +7285,10 @@ document.addEventListener('DOMContentLoaded', () => {
                             organizationName: orgName,
                             name: orgName,
                             bio, address, avatarUrl, contactPerson,
-                            publicPhone, website, fssaiCode, darpanId: darpanCode,
-                            ngoRegType: ngoType,
+                            publicPhone, website,
+                            fssaiCode: isSeller ? fssaiCode : '',
+                            darpanId: !isSeller ? darpanCode : '',
+                            ngoRegType: !isSeller ? ngoType : '',
                             pickupWindow, pickupInstructions
                         })
                     });
@@ -7264,9 +7307,9 @@ document.addEventListener('DOMContentLoaded', () => {
                                 publicPhone,
                                 phone: publicPhone || state.adminInspectedUser.phone,
                                 website,
-                                fssaiCode,
-                                darpanId: darpanCode,
-                                ngoRegType: ngoType,
+                                fssaiCode: isSeller ? fssaiCode : '',
+                                darpanId: !isSeller ? darpanCode : '',
+                                ngoRegType: !isSeller ? ngoType : '',
                                 pickupWindow,
                                 pickupInstructions,
                                 avatarUrl: avatarUrl || state.adminInspectedUser.avatarUrl
@@ -7293,9 +7336,9 @@ document.addEventListener('DOMContentLoaded', () => {
                                 publicPhone,
                                 phone: publicPhone || prevUser.phone,
                                 website,
-                                fssaiCode: fssaiCode || (data.user && (data.user.fssaiCode || data.user.fssaicode)) || prevUser.fssaiCode || prevUser.fssaicode || '',
-                                darpanId: darpanCode || (data.user && (data.user.darpanId || data.user.darpanid)) || prevUser.darpanId || prevUser.darpanid || '',
-                                ngoRegType: ngoType || (data.user && (data.user.ngoRegType || data.user.ngoregtype)) || prevUser.ngoRegType || prevUser.ngoregtype || '',
+                                fssaiCode: isSeller ? (fssaiCode || (data.user && (data.user.fssaiCode || data.user.fssaicode)) || prevUser.fssaiCode || prevUser.fssaicode || '') : '',
+                                darpanId: !isSeller ? (darpanCode || (data.user && (data.user.darpanId || data.user.darpanid)) || prevUser.darpanId || prevUser.darpanid || '') : '',
+                                ngoRegType: !isSeller ? (ngoType || (data.user && (data.user.ngoRegType || data.user.ngoregtype)) || prevUser.ngoRegType || prevUser.ngoregtype || '') : '',
                                 pickupWindow,
                                 pickupInstructions,
                                 avatarUrl: avatarUrl || prevUser.avatarUrl
