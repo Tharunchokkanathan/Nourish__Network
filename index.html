@@ -69,11 +69,6 @@
 
 
             <div class="nav-buttons" style="display: flex; align-items: center; gap: 10px;">
-                <!-- Admin Command Center Button (Only visible to verified Administrator) -->
-                <button id="nav-admin-btn" onclick="window.openAdminPortal && window.openAdminPortal(); return false;"
-                    class="nav-admin-pill" title="Operations & Compliance Portal" style="display: none;">
-                    <i class="fa-solid fa-shield-halved"></i> <span>Admin</span>
-                </button>
                 <!-- Profile Avatar (shown when logged in) -->
                 <button id="nav-profile-btn" onclick="window.openSettings && window.openSettings()"
                     title="Profile Settings"
@@ -663,6 +658,21 @@
             </div>
 
             <form id="settingsForm" onsubmit="if(window.handleSettingsSubmit) { window.handleSettingsSubmit(event); } else { e.preventDefault(); } return false;">
+
+                <!-- Super Admin Access Option (Only visible to authenticated Administrator) -->
+                <div id="settingsAdminRow" style="display: none; margin-bottom: 1.5rem; background: rgba(16, 185, 129, 0.08); border: 1.5px solid rgba(16, 185, 129, 0.3); border-radius: 20px; padding: 1.25rem 1.5rem; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;">
+                    <div>
+                        <div style="font-weight: 800; color: #10b981; font-size: 0.95rem; display: flex; align-items: center; gap: 8px;">
+                            <i class="fa-solid fa-shield-halved"></i> Super Administrator Access
+                        </div>
+                        <div style="font-size: 0.8rem; color: rgba(255,255,255,0.6); margin-top: 3px;">
+                            Platform oversight, FSSAI / DARPAN credential compliance, and handover audits.
+                        </div>
+                    </div>
+                    <button type="button" onclick="document.getElementById('settingsModal').style.display='none'; window.openAdminPortal();" class="admin-action-btn verify" style="font-size: 0.82rem; padding: 8px 16px;">
+                        Open Admin Command Center &rarr;
+                    </button>
+                </div>
 
                 <!-- SECTION 1: Account Credentials & Identity -->
                 <div style="background: #111111; border: 1.5px solid rgba(255, 255, 255, 0.08); border-radius: 20px; padding: 1.5rem; margin-bottom: 1.5rem;">
