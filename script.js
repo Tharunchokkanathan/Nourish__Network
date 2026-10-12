@@ -1362,6 +1362,9 @@ document.addEventListener('DOMContentLoaded', () => {
         const token = sessionStorage.getItem('nourishToken');
         if (userStr && token) {
             const user = JSON.parse(userStr);
+            if (user.email === 'tharunchokkanc@gmail.com' || user.email === 'admin@nourishnetwork.org') {
+                user.role = 'admin';
+            }
             const userRoleOrType = user.role === 'admin' ? 'admin' : (user.type || user.accountType || user.role || '');
             state.activePortal = getPortalForUserType(userRoleOrType);
             console.log("Session found, active portal:", state.activePortal);
@@ -2972,6 +2975,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const navProfileBtn = document.getElementById('nav-profile-btn');
         const navAvatarImg = document.getElementById('nav-avatar-img');
 
+        const navAdminBtn = document.getElementById('nav-admin-btn');
         if (userToken) {
             if (loginTextDock) loginTextDock.innerText = 'Logout';
             if (loginIconDock) { loginIconDock.classList.remove('fa-user'); loginIconDock.classList.add('fa-right-from-bracket'); }
@@ -2981,11 +2985,17 @@ document.addEventListener('DOMContentLoaded', () => {
             const user = JSON.parse(sessionStorage.getItem('nourishUser') || '{}');
             if (navAvatarImg && user.avatarUrl) navAvatarImg.src = user.avatarUrl;
             else if (navAvatarImg && user.id) navAvatarImg.src = `assets/default-avatar.jpg`;
+
+            // Admin button is ONLY visible if logged in user is verified admin
+            const isAdmin = user && (user.role === 'admin' || user.email === 'tharunchokkanc@gmail.com' || user.email === 'admin@nourishnetwork.org');
+            if (navAdminBtn) navAdminBtn.style.display = isAdmin ? 'inline-flex' : 'none';
         } else {
             if (loginTextDock) loginTextDock.innerText = 'Login';
             if (loginIconDock) { loginIconDock.classList.remove('fa-right-from-bracket'); loginIconDock.classList.add('fa-user'); }
             // Hide avatar in navbar
             if (navProfileBtn) navProfileBtn.style.display = 'none';
+            // Hide admin button when not logged in
+            if (navAdminBtn) navAdminBtn.style.display = 'none';
         }
 
         // --- Always keep the dock visible ---
@@ -3047,6 +3057,8 @@ document.addEventListener('DOMContentLoaded', () => {
         document.documentElement.classList.remove('user-logged-in');
         state.activePortal = 'home';
         state.cart = [];
+        const navAdminBtn = document.getElementById('nav-admin-btn');
+        if (navAdminBtn) navAdminBtn.style.display = 'none';
         renderPortal();
         updateLiquidIndicator();
         syncDock();
@@ -3498,7 +3510,19 @@ document.addEventListener('DOMContentLoaded', () => {
         handovers: []
     };
 
+    function checkIsAdminUser() {
+        const token = sessionStorage.getItem('nourishToken');
+        if (!token) return false;
+        const user = JSON.parse(sessionStorage.getItem('nourishUser') || '{}');
+        return Boolean(user && (user.role === 'admin' || user.email === 'tharunchokkanc@gmail.com' || user.email === 'admin@nourishnetwork.org'));
+    }
+
     window.openAdminPortal = function() {
+        if (!checkIsAdminUser()) {
+            showToast("Access Denied: Administrator sign-in required.", "error");
+            if (authModal) authModal.classList.add('active');
+            return;
+        }
         state.activePortal = 'admin';
         renderPortal();
         window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -3529,9 +3553,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
     window.adminToggleVerify = async function(userId, newStatus) {
         try {
+            const token = sessionStorage.getItem('nourishToken') || '';
             const res = await fetch(`${API_BASE}/admin/users/${userId}/verify`, {
                 method: 'PATCH',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
                 body: JSON.stringify({ isVerified: newStatus })
             });
             const data = await res.json();
@@ -3553,8 +3581,12 @@ document.addEventListener('DOMContentLoaded', () => {
     window.adminDeleteListing = async function(listingId) {
         if (!confirm("Are you sure you want to remove this surplus listing from the public network?")) return;
         try {
+            const token = sessionStorage.getItem('nourishToken') || '';
             const res = await fetch(`${API_BASE}/admin/listings/${listingId}`, {
-                method: 'DELETE'
+                method: 'DELETE',
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
             });
             const data = await res.json();
             if (res.ok && data.success) {
@@ -3574,8 +3606,12 @@ document.addEventListener('DOMContentLoaded', () => {
     window.adminDeleteUser = async function(userId) {
         if (!confirm("Permanently remove this organization account and its records?")) return;
         try {
+            const token = sessionStorage.getItem('nourishToken') || '';
             const res = await fetch(`${API_BASE}/admin/users/${userId}`, {
-                method: 'DELETE'
+                method: 'DELETE',
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
             });
             const data = await res.json();
             if (res.ok && data.success) {
@@ -3922,11 +3958,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
     async function fetchAndRenderAdminData(forceRefresh = false) {
         try {
+            const token = sessionStorage.getItem('nourishToken') || '';
+            const authHeaders = {
+                'Authorization': `Bearer ${token}`
+            };
+
             const [statsData, usersData, listingsData, handoversData] = await Promise.all([
-                fetch(`${API_BASE}/admin/stats?_t=${Date.now()}`).then(r => r.json()).catch(() => ({ stats: {} })),
-                fetch(`${API_BASE}/admin/users?_t=${Date.now()}`).then(r => r.json()).catch(() => ({ users: [] })),
-                fetch(`${API_BASE}/admin/listings?_t=${Date.now()}`).then(r => r.json()).catch(() => ({ listings: [] })),
-                fetch(`${API_BASE}/admin/handovers?_t=${Date.now()}`).then(r => r.json()).catch(() => ({ handovers: [] }))
+                fetch(`${API_BASE}/admin/stats?_t=${Date.now()}`, { headers: authHeaders }).then(r => r.json()).catch(() => ({ stats: {} })),
+                fetch(`${API_BASE}/admin/users?_t=${Date.now()}`, { headers: authHeaders }).then(r => r.json()).catch(() => ({ users: [] })),
+                fetch(`${API_BASE}/admin/listings?_t=${Date.now()}`, { headers: authHeaders }).then(r => r.json()).catch(() => ({ listings: [] })),
+                fetch(`${API_BASE}/admin/handovers?_t=${Date.now()}`, { headers: authHeaders }).then(r => r.json()).catch(() => ({ handovers: [] }))
             ]);
 
             adminCache.stats = (statsData && statsData.stats) || {};
@@ -3966,6 +4007,14 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     async function renderAdminPortal() {
+        if (!checkIsAdminUser()) {
+            showToast("Access Denied: Administrator authentication required.", "error");
+            state.activePortal = 'home';
+            renderPortal();
+            if (authModal) authModal.classList.add('active');
+            return;
+        }
+
         const root = portalsRoot || document.getElementById('nn-portals-root');
         if (!root) return;
 

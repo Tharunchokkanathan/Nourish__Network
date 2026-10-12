@@ -9,7 +9,7 @@ const fs = require('fs');
 const crypto = require('crypto');
 
 const db = require('./database');
-const { authenticateToken, JWT_SECRET } = require('./middleware/auth');
+const { authenticateToken, requireAdmin, JWT_SECRET } = require('./middleware/auth');
 const { 
     sendVerificationEmail, 
     sendPasswordResetEmail, 
@@ -63,12 +63,14 @@ app.use(express.static(path.join(__dirname)));
 const SALT_ROUNDS = 10;
 
 function makeToken(user) {
+    const role = (user.role === 'admin' || user.email === 'tharunchokkanc@gmail.com' || user.email === 'admin@nourishnetwork.org') ? 'admin' : (user.role || 'user');
     return jwt.sign(
         {
             id: user.id,
             email: user.email,
             type: user.accountType || user.type,
             name: user.organizationName || user.name,
+            role,
             isVerified: Boolean(user.isVerified)
         },
         JWT_SECRET,
@@ -355,6 +357,7 @@ app.post('/api/login', (req, res) => {
                     ngoRegType: user.ngoRegType || '',
                     pickupInstructions: user.pickupInstructions || '',
                     avatarUrl: user.avatarUrl || '',
+                    role: user.role || ((user.email === 'tharunchokkanc@gmail.com' || user.email === 'admin@nourishnetwork.org') ? 'admin' : 'user'),
                     isVerified: user.isVerified || 1
                 }
             });
@@ -1382,10 +1385,13 @@ app.get('/api/community-voices', (req, res) => {
 // 6. GET MY PROFILE
 // GET /api/user/me
 app.get('/api/user/me', authenticateToken, (req, res) => {
-    db.get(`SELECT id, accountType, organizationName, email, phone, address, bio, avatarUrl, isVerified, contactPerson, publicPhone, website, fssaiCode, darpanId, ngoRegType, pickupWindow, pickupInstructions, createdAt
+    db.get(`SELECT id, accountType, role, organizationName, email, phone, address, bio, avatarUrl, isVerified, contactPerson, publicPhone, website, fssaiCode, darpanId, ngoRegType, pickupWindow, pickupInstructions, createdAt
             FROM users WHERE id = ?`, [req.user.id], (err, user) => {
         if (err) return res.status(500).json({ error: err.message });
         if (!user) return res.status(404).json({ error: 'User not found.' });
+        if (user.email === 'tharunchokkanc@gmail.com' || user.email === 'admin@nourishnetwork.org') {
+            user.role = 'admin';
+        }
         res.status(200).json(user);
     });
 });
@@ -2192,7 +2198,7 @@ app.get('/api/geocode/reverse', async (req, res) => {
 // ─── ADMIN COMMAND CENTER API ROUTES ─────────────────────────────────────────
 
 // 1. Platform Master Stats & KPI Metrics
-app.get('/api/admin/stats', (req, res) => {
+app.get('/api/admin/stats', requireAdmin, (req, res) => {
     try {
         db.all(`SELECT count(*) as totalListings, sum(case when status='available' then 1 else 0 end) as activeListings, sum(case when status='claimed' then 1 else 0 end) as claimedListings, sum(cast(quantity as real)) as totalPortions FROM food_listings`, [], (err, listingStats) => {
             const lStat = (listingStats && listingStats[0]) || {};
@@ -2232,7 +2238,7 @@ app.get('/api/admin/stats', (req, res) => {
 });
 
 // 2. User Directory & Compliance List
-app.get('/api/admin/users', (req, res) => {
+app.get('/api/admin/users', requireAdmin, (req, res) => {
     const sql = `SELECT id, organizationName, email, accountType, role, isVerified, fssaiCode, darpanId, ngoRegType, phone, address, contactPerson, createdAt FROM users ORDER BY id DESC`;
     db.all(sql, [], (err, rows) => {
         if (err) return res.status(500).json({ error: err.message });
@@ -2241,7 +2247,7 @@ app.get('/api/admin/users', (req, res) => {
 });
 
 // 3. 1-Click Compliance Verification Toggle
-app.patch('/api/admin/users/:id/verify', (req, res) => {
+app.patch('/api/admin/users/:id/verify', requireAdmin, (req, res) => {
     const userId = req.params.id;
     const { isVerified } = req.body;
     const newVal = isVerified ? 1 : 0;
@@ -2257,7 +2263,7 @@ app.patch('/api/admin/users/:id/verify', (req, res) => {
 });
 
 // 4. Remove User Account
-app.delete('/api/admin/users/:id', (req, res) => {
+app.delete('/api/admin/users/:id', requireAdmin, (req, res) => {
     const userId = req.params.id;
     db.run(`DELETE FROM users WHERE id = ?`, [userId], function(err) {
         if (err) return res.status(500).json({ error: err.message });
@@ -2266,7 +2272,7 @@ app.delete('/api/admin/users/:id', (req, res) => {
 });
 
 // 5. All Food Listings Moderation Feed
-app.get('/api/admin/listings', (req, res) => {
+app.get('/api/admin/listings', requireAdmin, (req, res) => {
     const sql = `SELECT f.*, u.organizationName as vendorOrg, u.phone as vendorPhone, u.fssaiCode as vendorFssai FROM food_listings f LEFT JOIN users u ON f.vendorId = u.id ORDER BY f.id DESC`;
     db.all(sql, [], (err, rows) => {
         if (err) return res.status(500).json({ error: err.message });
@@ -2275,7 +2281,7 @@ app.get('/api/admin/listings', (req, res) => {
 });
 
 // 6. Delete / Moderate Listing
-app.delete('/api/admin/listings/:id', (req, res) => {
+app.delete('/api/admin/listings/:id', requireAdmin, (req, res) => {
     const listingId = req.params.id;
     db.run(`DELETE FROM food_listings WHERE id = ?`, [listingId], function(err) {
         if (err) return res.status(500).json({ error: err.message });
@@ -2284,7 +2290,7 @@ app.delete('/api/admin/listings/:id', (req, res) => {
 });
 
 // 7. Master Handover Verification Audit Trail
-app.get('/api/admin/handovers', (req, res) => {
+app.get('/api/admin/handovers', requireAdmin, (req, res) => {
     const sql = `
         SELECT o.id, o.quantity, o.totalPrice, o.status, o.handoverOtp, o.handoverAt, o.createdAt,
                f.name as foodName, v.organizationName as sellerName, b.organizationName as buyerName,
