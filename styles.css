@@ -1922,14 +1922,11 @@ button.btn-primary {
 }
 
 /* =========================================
-   FIGMA GLASS PILL TOAST NOTIFICATIONS (LEFT OF WEBSITE)
-   Exact Figma "Glass" Plugin Settings:
-   - Light: -70°, 80% (top specular refraction gradient)
-   - Refraction: 100 (high-index edge bevel caustics)
-   - Depth: 74 (deep 3D layered glass elevation)
-   - Dispersion: 0
-   - Frost: 4 (clean crystal blur: 16px saturate 190%)
-   - Pill Capsule Radius: 108px
+   LIQUID PILL TOAST NOTIFICATIONS (LEFT OF WEBSITE)
+   - Organic Liquid Pop-Up Animation (Elastic bounce)
+   - Glossy Liquid Obsidian Capsule (Zero cloudy frosted haze)
+   - Specular Meniscus Surface Tension Highlight
+   - Clean Optical Hierarchy (Zero blue light / neon auras)
    ========================================= */
 .toast-container {
     position: fixed;
@@ -1949,178 +1946,162 @@ button.btn-primary {
     width: 100%;
     min-width: 320px;
     max-width: 540px;
-    min-height: 68px;
-    border-radius: 108px; /* Figma Pill border-radius */
+    min-height: 66px;
+    border-radius: 108px; /* Smooth liquid capsule curvature */
     
-    /* Figma Glass Base Fill (rgba 0,0,0,0.2) + Light: -70deg @ 80% intensity */
+    /* High-Gloss Liquid Obsidian Surface */
     background: linear-gradient(
-        110deg,
-        rgba(255, 255, 255, 0.22) 0%,
-        rgba(255, 255, 255, 0.06) 30%,
-        rgba(15, 20, 18, 0.35) 65%,
-        rgba(0, 0, 0, 0.52) 100%
+        180deg,
+        rgba(255, 255, 255, 0.16) 0%,
+        rgba(255, 255, 255, 0.03) 38%,
+        rgba(10, 12, 11, 0.88) 70%,
+        rgba(6, 8, 7, 0.96) 100%
     ) !important;
     
-    /* Frost: 4 (Crystal glass blur) */
-    backdrop-filter: blur(16px) saturate(190%) !important;
-    -webkit-backdrop-filter: blur(16px) saturate(190%) !important;
+    /* Crystal optical clarity - not cloudy/milky frosted haze */
+    backdrop-filter: blur(8px) saturate(180%) !important;
+    -webkit-backdrop-filter: blur(8px) saturate(180%) !important;
     
     color: #ffffff !important;
     padding: 12px 20px 12px 14px;
     
-    /* Refraction: 100 (Crystalline border) */
-    border: 1px solid rgba(255, 255, 255, 0.25) !important;
+    /* Ultra-fine liquid boundary rim */
+    border: 1px solid rgba(255, 255, 255, 0.16) !important;
     
-    /* Depth: 74 + Refraction: 100 (Deep 3D glass elevation & internal bevel) */
+    /* Liquid specular meniscus highlight on top + deep obsidian elevation */
     box-shadow: 
-        0 28px 60px -12px rgba(0, 0, 0, 0.7),
-        0 14px 28px -6px rgba(0, 0, 0, 0.45),
-        0 2px 6px rgba(0, 0, 0, 0.35),
-        inset 1.5px 2px 3px rgba(255, 255, 255, 0.45),   /* Incident light -70deg bevel */
-        inset -1.5px -2px 3px rgba(0, 0, 0, 0.35) !important; /* Shadow edge bevel */
+        0 24px 50px rgba(0, 0, 0, 0.8),
+        0 8px 18px rgba(0, 0, 0, 0.55),
+        inset 0 1.5px 0.5px rgba(255, 255, 255, 0.38),   /* Liquid top surface meniscus */
+        inset 0 -1px 1px rgba(0, 0, 0, 0.5) !important;
         
     display: flex;
     align-items: center;
     gap: 14px;
     
-    /* Smooth slide-in from the LEFT of the website */
-    transform: translateX(-140%) scale(0.92);
     opacity: 0;
-    transition: transform 0.45s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.35s ease;
+    transform: translateX(-40px) scale(0.7);
     overflow: hidden;
     pointer-events: auto;
 }
 
+/* Liquid Pop-Up Bouncy Entrance */
+@keyframes liquidPopIn {
+    0% {
+        transform: translateX(-45px) scale(0.7, 0.85);
+        opacity: 0;
+    }
+    45% {
+        transform: translateX(10px) scale(1.06, 0.96);
+        opacity: 1;
+    }
+    75% {
+        transform: translateX(-3px) scale(0.98, 1.02);
+    }
+    100% {
+        transform: translateX(0) scale(1, 1);
+        opacity: 1;
+    }
+}
+
+/* Liquid Elastic Exit */
+@keyframes liquidPopOut {
+    0% {
+        transform: translateX(0) scale(1, 1);
+        opacity: 1;
+    }
+    30% {
+        transform: translateX(6px) scale(1.03, 0.98);
+        opacity: 0.95;
+    }
+    100% {
+        transform: translateX(-50px) scale(0.65, 0.8);
+        opacity: 0;
+    }
+}
+
 .toast.show {
-    transform: translateX(0) scale(1);
-    opacity: 1;
+    animation: liquidPopIn 0.48s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 .toast.hide {
-    transform: translateX(-130%) scale(0.95);
-    opacity: 0;
+    animation: liquidPopOut 0.32s cubic-bezier(0.4, 0, 0.2, 1) forwards;
     pointer-events: none;
 }
 
+/* Liquid Droplet Icon Container - Zero Blue Light Glow */
 .toast-icon {
-    width: 42px;
-    height: 42px;
-    background: rgba(255, 255, 255, 0.1);
-    border: 1px solid rgba(255, 255, 255, 0.2);
+    width: 40px;
+    height: 40px;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.15);
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 1.15rem;
+    font-size: 1.1rem;
     flex-shrink: 0;
-    box-shadow: inset 1px 1px 2px rgba(255, 255, 255, 0.35);
-    transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-.toast.show .toast-icon {
-    transform: scale(1);
+    color: #ffffff;
+    box-shadow: inset 0 1px 1.5px rgba(255, 255, 255, 0.3), 0 2px 6px rgba(0, 0, 0, 0.4);
+    transition: transform 0.25s ease;
 }
 
 .toast-message {
     flex: 1;
     font-family: 'Outfit', sans-serif;
-    font-size: 0.95rem;
-    font-weight: 500;
+    font-size: 0.96rem;
+    font-weight: 600;
     line-height: 1.45;
-    letter-spacing: 0.2px;
-    color: #f9fafb;
-    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+    letter-spacing: 0.15px;
+    color: #ffffff;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6);
     word-break: break-word;
 }
 
-/* Close / Dismiss Glass Pill Button */
+/* Close / Dismiss Liquid Button */
 .toast-close-btn {
     width: 32px;
     height: 32px;
     border-radius: 50%;
     background: rgba(255, 255, 255, 0.08);
-    border: 1px solid rgba(255, 255, 255, 0.16);
-    color: rgba(255, 255, 255, 0.65);
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    color: rgba(255, 255, 255, 0.7);
     display: flex;
     align-items: center;
     justify-content: center;
     font-size: 0.85rem;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
     flex-shrink: 0;
     padding: 0;
     outline: none;
-    box-shadow: inset 0.5px 0.5px 1px rgba(255, 255, 255, 0.25);
+    box-shadow: inset 0 0.5px 1px rgba(255, 255, 255, 0.25);
 }
 
 .toast-close-btn:hover {
-    background: rgba(255, 255, 255, 0.2);
+    background: rgba(255, 255, 255, 0.18);
     color: #ffffff;
-    transform: scale(1.08);
+    transform: scale(1.1);
 }
 
-/* Status Type Accents (Glass Refraction Infused) */
-.toast-success { 
-    border-color: rgba(16, 185, 129, 0.45) !important; 
-    box-shadow: 
-        0 28px 60px -12px rgba(0, 0, 0, 0.7),
-        0 0 35px rgba(16, 185, 129, 0.22),
-        inset 1.5px 2px 3px rgba(255, 255, 255, 0.5),
-        inset -1.5px -2px 3px rgba(16, 185, 129, 0.25) !important;
-}
-.toast-success .toast-icon { 
-    background: rgba(16, 185, 129, 0.2); 
-    color: #10b981; 
-    border-color: rgba(16, 185, 129, 0.5);
-    box-shadow: 0 0 20px rgba(16, 185, 129, 0.4), inset 1px 1px 2px rgba(255, 255, 255, 0.4); 
-}
-
-.toast-error { 
-    border-color: rgba(239, 68, 68, 0.45) !important; 
-    box-shadow: 
-        0 28px 60px -12px rgba(0, 0, 0, 0.7),
-        0 0 35px rgba(239, 68, 68, 0.22),
-        inset 1.5px 2px 3px rgba(255, 255, 255, 0.5),
-        inset -1.5px -2px 3px rgba(239, 68, 68, 0.25) !important;
-}
-.toast-error .toast-icon { 
-    background: rgba(239, 68, 68, 0.2); 
-    color: #ef4444; 
-    border-color: rgba(239, 68, 68, 0.5);
-    box-shadow: 0 0 20px rgba(239, 68, 68, 0.4), inset 1px 1px 2px rgba(255, 255, 255, 0.4); 
-}
-
-.toast-warning { 
-    border-color: rgba(245, 158, 11, 0.45) !important; 
-    box-shadow: 
-        0 28px 60px -12px rgba(0, 0, 0, 0.7),
-        0 0 35px rgba(245, 158, 11, 0.22),
-        inset 1.5px 2px 3px rgba(255, 255, 255, 0.5),
-        inset -1.5px -2px 3px rgba(245, 158, 11, 0.25) !important;
-}
-.toast-warning .toast-icon { 
-    background: rgba(245, 158, 11, 0.2); 
-    color: #f59e0b; 
-    border-color: rgba(245, 158, 11, 0.5);
-    box-shadow: 0 0 20px rgba(245, 158, 11, 0.4), inset 1px 1px 2px rgba(255, 255, 255, 0.4); 
-}
-
-.toast-info { 
-    border-color: rgba(56, 189, 248, 0.45) !important; 
-    box-shadow: 
-        0 28px 60px -12px rgba(0, 0, 0, 0.7),
-        0 0 35px rgba(56, 189, 248, 0.22),
-        inset 1.5px 2px 3px rgba(255, 255, 255, 0.5),
-        inset -1.5px -2px 3px rgba(56, 189, 248, 0.25) !important;
-}
+/* Clean Type Accents - NO external neon auras or blue light spills */
 .toast-info .toast-icon { 
-    background: rgba(56, 189, 248, 0.2); 
-    color: #38bdf8; 
-    border-color: rgba(56, 189, 248, 0.5);
-    box-shadow: 0 0 20px rgba(56, 189, 248, 0.4), inset 1px 1px 2px rgba(255, 255, 255, 0.4); 
+    color: #ffffff; /* Clean neutral white - no blue glow! */
 }
 
-/* Elegant Sub-Pill Timer Indicator */
+.toast-success .toast-icon { 
+    color: #34d399; /* Crisp clean emerald glyph */
+}
+
+.toast-error .toast-icon { 
+    color: #f87171; /* Crisp clean rose glyph */
+}
+
+.toast-warning .toast-icon { 
+    color: #fbbf24; /* Crisp clean amber glyph */
+}
+
+/* Subtle Liquid Meniscus Timer Line - Neutral & Clean */
 .toast::after {
     content: '';
     position: absolute;
@@ -2129,19 +2110,14 @@ button.btn-primary {
     right: 36px;
     height: 2px;
     border-radius: 999px;
-    background: rgba(255, 255, 255, 0.15);
+    background: rgba(255, 255, 255, 0.16);
     transform-origin: left;
     animation: toastPillProgress var(--toast-duration, 3.8s) linear forwards;
 }
 
-.toast-success::after { background: linear-gradient(90deg, #10b981, #34d399); }
-.toast-error::after { background: linear-gradient(90deg, #ef4444, #f87171); }
-.toast-warning::after { background: linear-gradient(90deg, #f59e0b, #fbbf24); }
-.toast-info::after { background: linear-gradient(90deg, #38bdf8, #60a5fa); }
-
 @keyframes toastPillProgress {
-    from { transform: scaleX(1); opacity: 0.9; }
-    to { transform: scaleX(0); opacity: 0.15; }
+    from { transform: scaleX(1); opacity: 0.8; }
+    to { transform: scaleX(0); opacity: 0.1; }
 }
 
 @media (max-width: 640px) {
@@ -2157,13 +2133,6 @@ button.btn-primary {
         border-radius: 54px;
         padding: 9px 14px 9px 10px;
         gap: 10px;
-        transform: translateY(40px) scale(0.94);
-    }
-    .toast.show {
-        transform: translateY(0) scale(1);
-    }
-    .toast.hide {
-        transform: translateY(30px) scale(0.96);
     }
     .toast-icon {
         width: 36px;
@@ -2178,6 +2147,7 @@ button.btn-primary {
         right: 20px;
     }
 }
+
 
 /* =========================================
    RESPONSIVE DESIGN
