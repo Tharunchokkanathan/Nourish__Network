@@ -1340,6 +1340,15 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    // --- PORTAL ROUTING HELPER ---
+    function getPortalForUserType(t) {
+        if (!t) return 'home';
+        const s = String(t).toLowerCase();
+        if (s === 'admin' || s.includes('admin')) return 'admin';
+        if (s.includes('restaurant') || s.includes('vendor') || s.includes('seller')) return 'seller';
+        return 'buyer';
+    }
+
     // --- SESSION PERSISTENCE ---
     function checkSession() {
         console.log("Checking session...");
@@ -1353,8 +1362,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const token = sessionStorage.getItem('nourishToken');
         if (userStr && token) {
             const user = JSON.parse(userStr);
-            const type = (user.type || user.accountType || user.role || '').toLowerCase();
-            state.activePortal = (type === 'restaurant' || type === 'vendor' || type === 'seller') ? 'seller' : 'buyer';
+            const userRoleOrType = user.role === 'admin' ? 'admin' : (user.type || user.accountType || user.role || '');
+            state.activePortal = getPortalForUserType(userRoleOrType);
             console.log("Session found, active portal:", state.activePortal);
             sessionStorage.setItem('nourishUser', JSON.stringify(user));
             sessionStorage.setItem('nourishToken', token);
@@ -1733,6 +1742,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const registerForm = document.getElementById('registerForm');
     const btnDemoSeller = document.getElementById('btn-demo-seller');
     const btnDemoBuyer = document.getElementById('btn-demo-buyer');
+    const btnDemoAdmin = document.getElementById('btn-demo-admin');
 
     // Open Modal from ALL "Join" / "Donate" buttons
     const joinButtons = document.querySelectorAll('a[href="#join"]');
@@ -2027,6 +2037,47 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    if (btnDemoAdmin) {
+        btnDemoAdmin.addEventListener('click', async () => {
+            btnDemoAdmin.disabled = true;
+            btnDemoAdmin.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Logging in...';
+            try {
+                const res = await fetch(`${API_BASE}/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email: 'admin@nourishnetwork.org', password: 'admin123' })
+                });
+                const data = await res.json();
+                if (res.ok && data.token) {
+                    const demoAdmin = {
+                        ...data.user,
+                        name: data.user.name || 'Nourish HQ Operations',
+                        type: 'admin',
+                        accountType: 'admin',
+                        role: 'admin',
+                        isVerified: true
+                    };
+                    sessionStorage.setItem('nourishUser', JSON.stringify(demoAdmin));
+                    sessionStorage.setItem('nourishToken', data.token);
+                    document.documentElement.classList.add('user-logged-in');
+                    state.activePortal = 'admin';
+                    if (authModal) authModal.classList.remove('active');
+                    showToast("🛡️ Admin Command Center unlocked! Welcome, Operations Lead.");
+                    renderPortal();
+                    syncDock();
+                    refreshState();
+                } else {
+                    showToast(data.error || "Admin demo login failed", "error");
+                }
+            } catch (e) {
+                showToast("Network error. Please try again.", "error");
+            } finally {
+                btnDemoAdmin.disabled = false;
+                btnDemoAdmin.innerHTML = '🛡️ Admin Command Center';
+            }
+        });
+    }
+
     // --- Password Visibility Toggle ---
     const togglePasswordIcons = document.querySelectorAll('.toggle-password-icon');
     togglePasswordIcons.forEach(icon => {
@@ -2141,8 +2192,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 setTimeout(() => {
                     authModal.classList.remove('active');
                     if (data.user) {
-                        const t = (data.user.type || data.user.accountType || data.user.role || '').toLowerCase();
-                        state.activePortal = (t === 'restaurant' || t === 'vendor' || t === 'seller') ? 'seller' : 'buyer';
+                        const t = (data.user.role === 'admin' ? 'admin' : (data.user.type || data.user.accountType || data.user.role || '')).toLowerCase();
+                        state.activePortal = getPortalForUserType(t);
                     }
                     renderPortal();
                     syncDock();
@@ -2210,8 +2261,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     document.documentElement.classList.add('user-logged-in');
 
                     if (data.user) {
-                        const t = (data.user.type || data.user.accountType || data.user.role || '').toLowerCase();
-                        state.activePortal = (t === 'restaurant' || t === 'vendor' || t === 'seller') ? 'seller' : 'buyer';
+                        const t = (data.user.role === 'admin' ? 'admin' : (data.user.type || data.user.accountType || data.user.role || '')).toLowerCase();
+                        state.activePortal = getPortalForUserType(t);
                     }
 
                     showToast(`✨ Account verified via mobile! Welcome, ${data.user.name || email}! 🎉`, "success");
@@ -2907,6 +2958,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 renderSellerPortal();
             } else if (state.activePortal === 'buyer') {
                 renderBuyerPortal();
+            } else if (state.activePortal === 'admin') {
+                renderAdminPortal();
             }
         }
     }
@@ -2964,6 +3017,13 @@ document.addEventListener('DOMContentLoaded', () => {
             if (addDockItem) addDockItem.style.setProperty('display', 'flex', 'important');
             if (historyDockItem) historyDockItem.style.setProperty('display', 'flex', 'important');
             if (settingsDockItem) settingsDockItem.style.setProperty('display', 'flex', 'important');
+            if (loginDockItem) loginDockItem.style.setProperty('display', 'flex', 'important');
+        } else if (state.activePortal === 'admin') {
+            landingItems.forEach(el => el.style.setProperty('display', 'none', 'important'));
+            if (cartDockItem) cartDockItem.style.setProperty('display', 'none', 'important');
+            if (addDockItem) addDockItem.style.setProperty('display', 'none', 'important');
+            if (historyDockItem) historyDockItem.style.setProperty('display', 'none', 'important');
+            if (settingsDockItem) settingsDockItem.style.setProperty('display', 'none', 'important');
             if (loginDockItem) loginDockItem.style.setProperty('display', 'flex', 'important');
         } else {
             landingItems.forEach(el => el.style.setProperty('display', 'flex', 'important'));
@@ -3426,6 +3486,604 @@ document.addEventListener('DOMContentLoaded', () => {
         `;
         renderExchangeGrid();
         attachPortalCommentTab();
+    }
+
+    // ═════════════════════════════════════════════════════════════════════════
+    // ADMIN COMMAND CENTER & OPERATIONS DASHBOARD
+    // ═════════════════════════════════════════════════════════════════════════
+    let adminCache = {
+        stats: null,
+        users: [],
+        listings: [],
+        handovers: []
+    };
+
+    window.openAdminPortal = function() {
+        state.activePortal = 'admin';
+        renderPortal();
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
+
+    window.adminSwitchPortal = function(portal) {
+        state.activePortal = portal;
+        renderPortal();
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
+
+    window.adminSwitchTab = function(tabName) {
+        document.querySelectorAll('.admin-tab-btn').forEach(btn => btn.classList.remove('active'));
+        document.querySelectorAll('.admin-tab-view').forEach(view => view.style.display = 'none');
+
+        const activeBtn = document.getElementById(`adm-tab-btn-${tabName}`);
+        if (activeBtn) activeBtn.classList.add('active');
+
+        const activeView = document.getElementById(`admin-view-${tabName}`);
+        if (activeView) activeView.style.display = 'block';
+    };
+
+    window.adminRefreshData = async function() {
+        showToast("Fetching real-time platform telemetry...", "info");
+        await fetchAndRenderAdminData(true);
+        showToast("Data refreshed successfully!", "success");
+    };
+
+    window.adminToggleVerify = async function(userId, newStatus) {
+        try {
+            const res = await fetch(`${API_BASE}/admin/users/${userId}/verify`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ isVerified: newStatus })
+            });
+            const data = await res.json();
+            if (res.ok && data.success) {
+                showToast(data.message || "Compliance verification updated!", "success");
+                const user = adminCache.users.find(u => u.id == userId);
+                if (user) user.isVerified = newStatus ? 1 : 0;
+                renderAdminComplianceTable();
+                renderAdminUsersTable();
+                updateAdminBadgeCounts();
+            } else {
+                showToast(data.error || "Failed to update status", "error");
+            }
+        } catch (err) {
+            showToast("Network error updating verification status.", "error");
+        }
+    };
+
+    window.adminDeleteListing = async function(listingId) {
+        if (!confirm("Are you sure you want to remove this surplus listing from the public network?")) return;
+        try {
+            const res = await fetch(`${API_BASE}/admin/listings/${listingId}`, {
+                method: 'DELETE'
+            });
+            const data = await res.json();
+            if (res.ok && data.success) {
+                showToast("Listing moderated and removed.", "info");
+                adminCache.listings = adminCache.listings.filter(l => l.id != listingId);
+                state.listings = state.listings.filter(l => l.id != listingId);
+                renderAdminListingsTable();
+                updateAdminBadgeCounts();
+            } else {
+                showToast(data.error || "Failed to delete listing", "error");
+            }
+        } catch (err) {
+            showToast("Network error deleting listing.", "error");
+        }
+    };
+
+    window.adminDeleteUser = async function(userId) {
+        if (!confirm("Permanently remove this organization account and its records?")) return;
+        try {
+            const res = await fetch(`${API_BASE}/admin/users/${userId}`, {
+                method: 'DELETE'
+            });
+            const data = await res.json();
+            if (res.ok && data.success) {
+                showToast("User account permanently removed.", "info");
+                adminCache.users = adminCache.users.filter(u => u.id != userId);
+                renderAdminComplianceTable();
+                renderAdminUsersTable();
+                updateAdminBadgeCounts();
+            } else {
+                showToast(data.error || "Failed to delete user", "error");
+            }
+        } catch (err) {
+            showToast("Network error removing user.", "error");
+        }
+    };
+
+    function updateAdminBadgeCounts() {
+        const pendingCount = adminCache.users.filter(u => !u.isVerified && u.role !== 'admin').length;
+        const compBadge = document.getElementById('adm-badge-compliance');
+        if (compBadge) compBadge.textContent = pendingCount;
+
+        const listBadge = document.getElementById('adm-badge-listings');
+        if (listBadge) listBadge.textContent = adminCache.listings.length;
+
+        const handBadge = document.getElementById('adm-badge-handovers');
+        if (handBadge) handBadge.textContent = adminCache.handovers.length;
+
+        const userBadge = document.getElementById('adm-badge-users');
+        if (userBadge) userBadge.textContent = adminCache.users.length;
+    }
+
+    function renderAdminComplianceTable() {
+        const container = document.getElementById('admin-view-compliance');
+        if (!container) return;
+
+        const orgs = adminCache.users.filter(u => u.role !== 'admin');
+        if (!orgs.length) {
+            container.innerHTML = `<div style="text-align:center; padding: 3rem; color: rgba(255,255,255,0.4);"><i class="fa-solid fa-clipboard-check" style="font-size:2rem; margin-bottom:1rem; display:block;"></i>No partner organizations registered yet.</div>`;
+            return;
+        }
+
+        let html = `
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem; flex-wrap:wrap; gap:10px;">
+                <p style="color:rgba(255,255,255,0.7); font-size:0.88rem; margin:0;">
+                    Review statutory accreditations (14-digit FSSAI licenses for Food Vendors, NITI Aayog DARPAN / Society Deeds for NGOs).
+                </p>
+                <div style="font-size:0.82rem; color: #10b981; font-weight:700;">
+                    ${orgs.filter(o => o.isVerified).length} Verified / ${orgs.length} Total Partners
+                </div>
+            </div>
+            <div class="admin-table-container">
+                <table class="admin-table">
+                    <thead>
+                        <tr>
+                            <th>Organization</th>
+                            <th>Entity Type</th>
+                            <th>Statutory Accreditation</th>
+                            <th>Contact / Location</th>
+                            <th>Status</th>
+                            <th style="text-align:right;">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+        `;
+
+        orgs.forEach(o => {
+            const isSeller = ['restaurant', 'vendor', 'seller'].includes((o.accountType || '').toLowerCase());
+            const typeBadge = isSeller 
+                ? `<span style="background:rgba(16,185,129,0.15); color:#34d399; padding:3px 8px; border-radius:6px; font-weight:700; font-size:0.75rem;"><i class="fa-solid fa-shop"></i> Food Vendor</span>`
+                : `<span style="background:rgba(56,189,248,0.15); color:#38bdf8; padding:3px 8px; border-radius:6px; font-weight:700; font-size:0.75rem;"><i class="fa-solid fa-hands-holding-child"></i> NGO / Shelter</span>`;
+
+            let licenseInfo = '';
+            if (isSeller) {
+                if (o.fssaiCode) {
+                    licenseInfo = `<div style="font-family:monospace; color:#34d399; font-weight:700; letter-spacing:0.5px;"><i class="fa-solid fa-shield-halved"></i> FSSAI: ${o.fssaiCode}</div><div style="font-size:0.72rem; color:rgba(255,255,255,0.5);">14-Digit Food Safety Code</div>`;
+                } else {
+                    licenseInfo = `<div style="color:#f59e0b; font-size:0.78rem;"><i class="fa-solid fa-triangle-exclamation"></i> FSSAI Not Provided</div>`;
+                }
+            } else {
+                if (o.darpanId) {
+                    licenseInfo = `<div style="font-family:monospace; color:#38bdf8; font-weight:700; letter-spacing:0.5px;"><i class="fa-solid fa-building-columns"></i> ${o.darpanId}</div><div style="font-size:0.72rem; color:rgba(255,255,255,0.5);">${o.ngoRegType === 'trust' ? 'State Society / Trust' : 'NITI Aayog DARPAN ID'}</div>`;
+                } else {
+                    licenseInfo = `<div style="color:#f59e0b; font-size:0.78rem;"><i class="fa-solid fa-triangle-exclamation"></i> DARPAN Not Provided</div>`;
+                }
+            }
+
+            const statusBadge = o.isVerified
+                ? `<span style="background:rgba(16,185,129,0.15); color:#34d399; border:1px solid rgba(16,185,129,0.3); padding:3px 10px; border-radius:100px; font-weight:700; font-size:0.75rem; display:inline-flex; align-items:center; gap:5px;"><i class="fa-solid fa-circle-check"></i> Verified</span>`
+                : `<span style="background:rgba(245,158,11,0.15); color:#fbbf24; border:1px solid rgba(245,158,11,0.3); padding:3px 10px; border-radius:100px; font-weight:700; font-size:0.75rem; display:inline-flex; align-items:center; gap:5px;"><i class="fa-solid fa-clock"></i> Pending Review</span>`;
+
+            const actionBtn = o.isVerified
+                ? `<button onclick="window.adminToggleVerify(${o.id}, false)" class="admin-action-btn delete" title="Suspend partner compliance status"><i class="fa-solid fa-ban"></i> Revoke</button>`
+                : `<button onclick="window.adminToggleVerify(${o.id}, true)" class="admin-action-btn verify" title="Approve and activate verified badge"><i class="fa-solid fa-circle-check"></i> 1-Click Approve</button>`;
+
+            html += `
+                <tr>
+                    <td>
+                        <div style="font-weight:700; color:#fff;">${o.organizationName || 'Unnamed Org'}</div>
+                        <div style="font-size:0.78rem; color:rgba(255,255,255,0.5);">${o.email}</div>
+                    </td>
+                    <td>${typeBadge}</td>
+                    <td>${licenseInfo}</td>
+                    <td style="font-size:0.8rem; color:rgba(255,255,255,0.7);">
+                        ${o.contactPerson ? `<div><i class="fa-solid fa-user" style="font-size:0.7rem; color:var(--text-muted);"></i> ${o.contactPerson}</div>` : ''}
+                        ${o.phone ? `<div><i class="fa-solid fa-phone" style="font-size:0.7rem; color:var(--text-muted);"></i> ${o.phone}</div>` : ''}
+                        ${o.address ? `<div style="max-width:200px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;"><i class="fa-solid fa-location-dot" style="font-size:0.7rem; color:var(--text-muted);"></i> ${o.address}</div>` : ''}
+                    </td>
+                    <td>${statusBadge}</td>
+                    <td style="text-align:right;">${actionBtn}</td>
+                </tr>
+            `;
+        });
+
+        html += `</tbody></table></div>`;
+        container.innerHTML = html;
+    }
+
+    function renderAdminListingsTable() {
+        const container = document.getElementById('admin-view-listings');
+        if (!container) return;
+
+        if (!adminCache.listings.length) {
+            container.innerHTML = `<div style="text-align:center; padding: 3rem; color: rgba(255,255,255,0.4);"><i class="fa-solid fa-utensils" style="font-size:2rem; margin-bottom:1rem; display:block;"></i>No food listings currently in database.</div>`;
+            return;
+        }
+
+        let html = `
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem; flex-wrap:wrap; gap:10px;">
+                <p style="color:rgba(255,255,255,0.7); font-size:0.88rem; margin:0;">
+                    Live surplus inventory across all vendors. 1-click removal for quality or safety moderation.
+                </p>
+                <div style="font-size:0.82rem; color: #10b981; font-weight:700;">
+                    ${adminCache.listings.length} Active Platform Listings
+                </div>
+            </div>
+            <div class="admin-table-container">
+                <table class="admin-table">
+                    <thead>
+                        <tr>
+                            <th>Item Name</th>
+                            <th>Donor / Vendor</th>
+                            <th>Quantity</th>
+                            <th>Dietary / Freshness</th>
+                            <th>Status</th>
+                            <th style="text-align:right;">Moderation</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+        `;
+
+        adminCache.listings.forEach(l => {
+            const statusColor = (l.status === 'claimed') ? '#38bdf8' : '#10b981';
+            const statusLabel = (l.status === 'claimed') ? 'Claimed' : 'Available';
+
+            html += `
+                <tr>
+                    <td>
+                        <div style="font-weight:700; color:#fff;">${l.name}</div>
+                        <div style="font-size:0.75rem; color:rgba(255,255,255,0.5);">ID: #${l.id} • Added: ${l.createdAt ? new Date(l.createdAt).toLocaleDateString() : 'Recent'}</div>
+                    </td>
+                    <td>
+                        <div style="font-weight:600; color:#e5e5e5;">${l.vendorOrg || ('Vendor #' + l.vendorId)}</div>
+                        ${l.vendorFssai ? `<div style="font-size:0.72rem; color:#34d399; font-family:monospace;">FSSAI: ${l.vendorFssai}</div>` : ''}
+                    </td>
+                    <td>
+                        <span style="font-weight:700; color:#fff;">${l.quantity || l.qty} ${l.unit || 'portions'}</span>
+                    </td>
+                    <td style="font-size:0.8rem; color:rgba(255,255,255,0.7);">
+                        <div><i class="fa-solid fa-leaf" style="color:#10b981;"></i> ${l.dietary || 'Standard'}</div>
+                        ${l.expiry ? `<div style="font-size:0.72rem; color:#f59e0b;"><i class="fa-solid fa-clock"></i> Exp: ${l.expiry}</div>` : ''}
+                    </td>
+                    <td>
+                        <span style="color:${statusColor}; font-weight:700; font-size:0.78rem; background:rgba(255,255,255,0.06); padding:3px 8px; border-radius:6px;">
+                            ● ${statusLabel}
+                        </span>
+                    </td>
+                    <td style="text-align:right;">
+                        <button onclick="window.adminDeleteListing(${l.id})" class="admin-action-btn delete" title="Remove listing from network">
+                            <i class="fa-solid fa-trash-can"></i> Remove
+                        </button>
+                    </td>
+                </tr>
+            `;
+        });
+
+        html += `</tbody></table></div>`;
+        container.innerHTML = html;
+    }
+
+    function renderAdminHandoversTable() {
+        const container = document.getElementById('admin-view-handovers');
+        if (!container) return;
+
+        if (!adminCache.handovers.length) {
+            container.innerHTML = `<div style="text-align:center; padding: 3rem; color: rgba(255,255,255,0.4);"><i class="fa-solid fa-handshake-angle" style="font-size:2rem; margin-bottom:1rem; display:block;"></i>No orders or handovers recorded yet.</div>`;
+            return;
+        }
+
+        let html = `
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem; flex-wrap:wrap; gap:10px;">
+                <p style="color:rgba(255,255,255,0.7); font-size:0.88rem; margin:0;">
+                    Complete custody audit log: OTP PIN verification, timestamps, donor vendor and recipient NGO.
+                </p>
+                <div style="font-size:0.82rem; color: #38bdf8; font-weight:700;">
+                    ${adminCache.handovers.length} Total Chain-of-Custody Records
+                </div>
+            </div>
+            <div class="admin-table-container">
+                <table class="admin-table">
+                    <thead>
+                        <tr>
+                            <th>Order ID</th>
+                            <th>Food Item</th>
+                            <th>Donor (Vendor)</th>
+                            <th>Recipient (NGO)</th>
+                            <th>Handover OTP</th>
+                            <th>Custody Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+        `;
+
+        adminCache.handovers.forEach(h => {
+            const isCompleted = (h.status === 'completed');
+            const statusHtml = isCompleted
+                ? `<span style="color:#10b981; font-weight:700; font-size:0.8rem; background:rgba(16,185,129,0.12); padding:4px 10px; border-radius:100px; display:inline-flex; align-items:center; gap:5px;"><i class="fa-solid fa-circle-check"></i> Verified Pickup</span>`
+                : `<span style="color:#f59e0b; font-weight:700; font-size:0.8rem; background:rgba(245,158,11,0.12); padding:4px 10px; border-radius:100px; display:inline-flex; align-items:center; gap:5px;"><i class="fa-solid fa-clock"></i> In Transit (Awaiting PIN)</span>`;
+
+            html += `
+                <tr>
+                    <td>
+                        <div style="font-weight:700; color:#fff; font-family:monospace;">#ORD-${h.id}</div>
+                        <div style="font-size:0.72rem; color:rgba(255,255,255,0.4);">${h.createdAt ? new Date(h.createdAt).toLocaleDateString() : ''}</div>
+                    </td>
+                    <td>
+                        <div style="font-weight:600; color:#fff;">${h.foodName || 'Surplus Meal Package'}</div>
+                        <div style="font-size:0.75rem; color:#10b981;">Qty: ${h.quantity || 1} portions</div>
+                    </td>
+                    <td>
+                        <div style="font-weight:600; color:#e5e5e5;">${h.sellerName || 'Vendor Partner'}</div>
+                        ${h.sellerFssai ? `<div style="font-size:0.72rem; color:rgba(255,255,255,0.4); font-family:monospace;">FSSAI: ${h.sellerFssai}</div>` : ''}
+                    </td>
+                    <td>
+                        <div style="font-weight:600; color:#38bdf8;">${h.buyerName || 'Community Partner'}</div>
+                        ${h.buyerDarpan ? `<div style="font-size:0.72rem; color:rgba(255,255,255,0.4); font-family:monospace;">DARPAN: ${h.buyerDarpan}</div>` : ''}
+                    </td>
+                    <td>
+                        <span style="font-family:monospace; font-weight:800; font-size:0.9rem; background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.15); padding:3px 8px; border-radius:6px; color:#fbbf24; letter-spacing:1px;">
+                            ${h.handoverOtp || '----'}
+                        </span>
+                    </td>
+                    <td>${statusHtml}</td>
+                </tr>
+            `;
+        });
+
+        html += `</tbody></table></div>`;
+        container.innerHTML = html;
+    }
+
+    function renderAdminUsersTable() {
+        const container = document.getElementById('admin-view-users');
+        if (!container) return;
+
+        if (!adminCache.users.length) {
+            container.innerHTML = `<div style="text-align:center; padding: 3rem; color: rgba(255,255,255,0.4);"><i class="fa-solid fa-users" style="font-size:2rem; margin-bottom:1rem; display:block;"></i>No users registered yet.</div>`;
+            return;
+        }
+
+        let html = `
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem; flex-wrap:wrap; gap:10px;">
+                <p style="color:rgba(255,255,255,0.7); font-size:0.88rem; margin:0;">
+                    Master directory of all registered organization leads, account credentials, and platform roles.
+                </p>
+                <div style="font-size:0.82rem; color: #10b981; font-weight:700;">
+                    ${adminCache.users.length} Total Registered Users
+                </div>
+            </div>
+            <div class="admin-table-container">
+                <table class="admin-table">
+                    <thead>
+                        <tr>
+                            <th>User / Org</th>
+                            <th>Role / Permission</th>
+                            <th>Email Address</th>
+                            <th>Contact Phone</th>
+                            <th>Accreditation</th>
+                            <th>Verification</th>
+                            <th style="text-align:right;">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+        `;
+
+        adminCache.users.forEach(u => {
+            const isAdmin = u.role === 'admin';
+            const isSeller = ['restaurant', 'vendor', 'seller'].includes((u.accountType || '').toLowerCase());
+            
+            let roleBadge = '';
+            if (isAdmin) {
+                roleBadge = `<span style="background:rgba(245,158,11,0.15); color:#fbbf24; padding:3px 8px; border-radius:6px; font-weight:800; font-size:0.75rem;"><i class="fa-solid fa-shield-halved"></i> Admin</span>`;
+            } else if (isSeller) {
+                roleBadge = `<span style="background:rgba(16,185,129,0.15); color:#34d399; padding:3px 8px; border-radius:6px; font-weight:700; font-size:0.75rem;"><i class="fa-solid fa-shop"></i> Vendor</span>`;
+            } else {
+                roleBadge = `<span style="background:rgba(56,189,248,0.15); color:#38bdf8; padding:3px 8px; border-radius:6px; font-weight:700; font-size:0.75rem;"><i class="fa-solid fa-hands-holding-child"></i> NGO</span>`;
+            }
+
+            const accreditation = u.fssaiCode 
+                ? `<span style="font-family:monospace; font-size:0.78rem; color:#34d399;">FSSAI: ${u.fssaiCode}</span>` 
+                : (u.darpanId ? `<span style="font-family:monospace; font-size:0.78rem; color:#38bdf8;">DARPAN: ${u.darpanId}</span>` : `<span style="color:rgba(255,255,255,0.3); font-size:0.75rem;">None</span>`);
+
+            html += `
+                <tr>
+                    <td>
+                        <div style="font-weight:700; color:#fff;">${u.organizationName || 'Unnamed User'}</div>
+                        <div style="font-size:0.72rem; color:rgba(255,255,255,0.4);">User ID: #${u.id}</div>
+                    </td>
+                    <td>${roleBadge}</td>
+                    <td style="color:rgba(255,255,255,0.8);">${u.email}</td>
+                    <td style="color:rgba(255,255,255,0.7);">${u.phone || '—'}</td>
+                    <td>${accreditation}</td>
+                    <td>
+                        ${u.isVerified 
+                            ? `<span style="color:#10b981; font-weight:700; font-size:0.78rem;"><i class="fa-solid fa-circle-check"></i> Verified</span>` 
+                            : `<span style="color:#f59e0b; font-weight:700; font-size:0.78rem;"><i class="fa-solid fa-clock"></i> Unverified</span>`}
+                    </td>
+                    <td style="text-align:right;">
+                        ${!isAdmin ? `
+                            <button onclick="window.adminToggleVerify(${u.id}, ${!u.isVerified})" class="admin-action-btn ${u.isVerified ? 'delete' : 'verify'}" style="margin-right:6px;" title="${u.isVerified ? 'Revoke verification' : 'Approve verification'}">
+                                ${u.isVerified ? '<i class="fa-solid fa-ban"></i>' : '<i class="fa-solid fa-check"></i>'}
+                            </button>
+                            <button onclick="window.adminDeleteUser(${u.id})" class="admin-action-btn delete" title="Delete user">
+                                <i class="fa-solid fa-trash"></i>
+                            </button>
+                        ` : `<span style="font-size:0.72rem; color:rgba(255,255,255,0.4);">System Root</span>`}
+                    </td>
+                </tr>
+            `;
+        });
+
+        html += `</tbody></table></div>`;
+        container.innerHTML = html;
+    }
+
+    async function fetchAndRenderAdminData(forceRefresh = false) {
+        try {
+            const [statsData, usersData, listingsData, handoversData] = await Promise.all([
+                fetch(`${API_BASE}/admin/stats?_t=${Date.now()}`).then(r => r.json()).catch(() => ({ stats: {} })),
+                fetch(`${API_BASE}/admin/users?_t=${Date.now()}`).then(r => r.json()).catch(() => ({ users: [] })),
+                fetch(`${API_BASE}/admin/listings?_t=${Date.now()}`).then(r => r.json()).catch(() => ({ listings: [] })),
+                fetch(`${API_BASE}/admin/handovers?_t=${Date.now()}`).then(r => r.json()).catch(() => ({ handovers: [] }))
+            ]);
+
+            adminCache.stats = (statsData && statsData.stats) || {};
+            adminCache.users = (usersData && usersData.users) || [];
+            adminCache.listings = (listingsData && listingsData.listings) || [];
+            adminCache.handovers = (handoversData && handoversData.handovers) || [];
+
+            // Populate KPI metrics
+            const elMeals = document.getElementById('kpi-meals');
+            if (elMeals) elMeals.textContent = (adminCache.stats.totalPortions || 0).toLocaleString();
+
+            const elMealsSub = document.getElementById('kpi-meals-sub');
+            if (elMealsSub) elMealsSub.textContent = `${adminCache.stats.completedHandovers || 0} handovers fulfilled`;
+
+            const elListings = document.getElementById('kpi-listings');
+            if (elListings) elListings.textContent = `${adminCache.stats.activeListings || 0} / ${adminCache.stats.totalListings || 0}`;
+
+            const elHandovers = document.getElementById('kpi-handovers');
+            if (elHandovers) elHandovers.textContent = (adminCache.stats.completedHandovers || 0).toLocaleString();
+
+            const elHandoversSub = document.getElementById('kpi-handovers-sub');
+            if (elHandoversSub) elHandoversSub.textContent = `${adminCache.stats.pendingHandovers || 0} pickups in progress`;
+
+            const elCo2 = document.getElementById('kpi-co2');
+            if (elCo2) elCo2.textContent = `${(adminCache.stats.co2SavedKg || 0).toLocaleString()} kg`;
+
+            // Update badge counts and render subtab tables
+            updateAdminBadgeCounts();
+            renderAdminComplianceTable();
+            renderAdminListingsTable();
+            renderAdminHandoversTable();
+            renderAdminUsersTable();
+        } catch (err) {
+            console.error("Failed to load admin data:", err);
+            showToast("Failed to load platform data.", "error");
+        }
+    }
+
+    async function renderAdminPortal() {
+        const root = portalsRoot || document.getElementById('nn-portals-root');
+        if (!root) return;
+
+        root.innerHTML = `
+            <div class="portal-wrapper admin-portal-wrapper animate-reveal" style="padding-top: 90px; min-height: 100vh; background: #0a0a0a;">
+                <div class="container" style="max-width: 1300px; margin: 0 auto; padding: 1.5rem 2rem 4rem;">
+                    <!-- Top Header -->
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 1.25rem; margin-bottom: 2rem;">
+                        <div>
+                            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 6px;">
+                                <span class="admin-badge-pill"><i class="fa-solid fa-shield-halved"></i> Nourish HQ Operations</span>
+                                <span style="font-size: 0.72rem; color: #10b981; background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.25); padding: 3px 8px; border-radius: 100px; font-weight: 700;">● Active Command Cluster</span>
+                            </div>
+                            <h1 style="font-size: 2rem; font-weight: 800; letter-spacing: -0.02em; margin: 0; color: #ffffff;">
+                                Operations & Compliance Command Center
+                            </h1>
+                            <p style="color: rgba(255, 255, 255, 0.6); font-size: 0.95rem; margin: 6px 0 0;">
+                                Unified platform governance, FSSAI / DARPAN credential verification, real-time donation moderation, and physical handover audit logs.
+                            </p>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+                            <button onclick="window.adminRefreshData && window.adminRefreshData()" class="admin-action-btn" style="background: rgba(255,255,255,0.06); color: #fff; border: 1px solid rgba(255,255,255,0.15);">
+                                <i class="fa-solid fa-rotate"></i> Refresh
+                            </button>
+                            <button onclick="window.adminSwitchPortal && window.adminSwitchPortal('seller')" class="admin-action-btn" style="background: rgba(16,185,129,0.12); color: #34d399; border: 1px solid rgba(16,185,129,0.3);">
+                                <i class="fa-solid fa-shop"></i> Vendor Portal
+                            </button>
+                            <button onclick="window.adminSwitchPortal && window.adminSwitchPortal('buyer')" class="admin-action-btn" style="background: rgba(56,189,248,0.12); color: #38bdf8; border: 1px solid rgba(56,189,248,0.3);">
+                                <i class="fa-solid fa-hands-holding-child"></i> NGO Portal
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Master KPI Analytics Cards -->
+                    <div id="admin-kpi-container" class="admin-kpi-grid">
+                        <div class="admin-kpi-card">
+                            <div class="admin-kpi-icon" style="background: rgba(16, 185, 129, 0.15); color: #10b981;">
+                                <i class="fa-solid fa-bowl-food"></i>
+                            </div>
+                            <div>
+                                <div style="font-size: 1.75rem; font-weight: 800; color: #ffffff;" id="kpi-meals">--</div>
+                                <div style="font-size: 0.8rem; font-weight: 700; color: rgba(255,255,255,0.7); text-transform: uppercase; letter-spacing: 0.5px;">Meals Rescued</div>
+                                <div style="font-size: 0.75rem; color: #10b981; margin-top: 2px;" id="kpi-meals-sub">Portions allocated</div>
+                            </div>
+                        </div>
+
+                        <div class="admin-kpi-card">
+                            <div class="admin-kpi-icon" style="background: rgba(245, 158, 11, 0.15); color: #fbbf24;">
+                                <i class="fa-solid fa-box-open"></i>
+                            </div>
+                            <div>
+                                <div style="font-size: 1.75rem; font-weight: 800; color: #ffffff;" id="kpi-listings">--</div>
+                                <div style="font-size: 0.8rem; font-weight: 700; color: rgba(255,255,255,0.7); text-transform: uppercase; letter-spacing: 0.5px;">Surplus Listings</div>
+                                <div style="font-size: 0.75rem; color: #fbbf24; margin-top: 2px;" id="kpi-listings-sub">Live across network</div>
+                            </div>
+                        </div>
+
+                        <div class="admin-kpi-card">
+                            <div class="admin-kpi-icon" style="background: rgba(56, 189, 248, 0.15); color: #38bdf8;">
+                                <i class="fa-solid fa-qrcode"></i>
+                            </div>
+                            <div>
+                                <div style="font-size: 1.75rem; font-weight: 800; color: #ffffff;" id="kpi-handovers">--</div>
+                                <div style="font-size: 0.8rem; font-weight: 700; color: rgba(255,255,255,0.7); text-transform: uppercase; letter-spacing: 0.5px;">Verified Pickups</div>
+                                <div style="font-size: 0.75rem; color: #38bdf8; margin-top: 2px;" id="kpi-handovers-sub">Physical handovers</div>
+                            </div>
+                        </div>
+
+                        <div class="admin-kpi-card">
+                            <div class="admin-kpi-icon" style="background: rgba(168, 85, 247, 0.15); color: #c084fc;">
+                                <i class="fa-solid fa-earth-americas"></i>
+                            </div>
+                            <div>
+                                <div style="font-size: 1.75rem; font-weight: 800; color: #ffffff;" id="kpi-co2">--</div>
+                                <div style="font-size: 0.8rem; font-weight: 700; color: rgba(255,255,255,0.7); text-transform: uppercase; letter-spacing: 0.5px;">CO₂ Offset</div>
+                                <div style="font-size: 0.75rem; color: #c084fc; margin-top: 2px;">Greenhouse emissions saved</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Subtabs Navigation -->
+                    <div class="admin-tabs-nav">
+                        <button class="admin-tab-btn active" id="adm-tab-btn-compliance" onclick="window.adminSwitchTab && window.adminSwitchTab('compliance')">
+                            <i class="fa-solid fa-id-card"></i> Compliance & Accreditation Queue
+                            <span class="admin-count-pill" id="adm-badge-compliance">0</span>
+                        </button>
+                        <button class="admin-tab-btn" id="adm-tab-btn-listings" onclick="window.adminSwitchTab && window.adminSwitchTab('listings')">
+                            <i class="fa-solid fa-utensils"></i> Food Donation Moderation
+                            <span class="admin-count-pill" id="adm-badge-listings">0</span>
+                        </button>
+                        <button class="admin-tab-btn" id="adm-tab-btn-handovers" onclick="window.adminSwitchTab && window.adminSwitchTab('handovers')">
+                            <i class="fa-solid fa-handshake-angle"></i> Handover Audit Trail
+                            <span class="admin-count-pill" id="adm-badge-handovers">0</span>
+                        </button>
+                        <button class="admin-tab-btn" id="adm-tab-btn-users" onclick="window.adminSwitchTab && window.adminSwitchTab('users')">
+                            <i class="fa-solid fa-users-gear"></i> Master User Directory
+                            <span class="admin-count-pill" id="adm-badge-users">0</span>
+                        </button>
+                    </div>
+
+                    <!-- Views Container -->
+                    <div id="admin-view-compliance" class="admin-tab-view" style="display: block;">
+                        <div style="text-align:center; padding: 2.5rem; color: rgba(255,255,255,0.4);"><i class="fa-solid fa-circle-notch fa-spin"></i> Loading compliance data...</div>
+                    </div>
+                    <div id="admin-view-listings" class="admin-tab-view" style="display: none;">
+                        <div style="text-align:center; padding: 2.5rem; color: rgba(255,255,255,0.4);"><i class="fa-solid fa-circle-notch fa-spin"></i> Loading listings...</div>
+                    </div>
+                    <div id="admin-view-handovers" class="admin-tab-view" style="display: none;">
+                        <div style="text-align:center; padding: 2.5rem; color: rgba(255,255,255,0.4);"><i class="fa-solid fa-circle-notch fa-spin"></i> Loading handovers...</div>
+                    </div>
+                    <div id="admin-view-users" class="admin-tab-view" style="display: none;">
+                        <div style="text-align:center; padding: 2.5rem; color: rgba(255,255,255,0.4);"><i class="fa-solid fa-circle-notch fa-spin"></i> Loading user directory...</div>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        await fetchAndRenderAdminData();
     }
 
     function renderExchangeGrid() {

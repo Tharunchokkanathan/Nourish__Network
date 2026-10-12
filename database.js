@@ -58,7 +58,8 @@ function normalizeRow(row) {
         sellerpickupwindow: 'sellerPickupWindow',
         selleravatar: 'sellerAvatar',
         handoverotp: 'handoverOtp',
-        handoverat: 'handoverAt'
+        handoverat: 'handoverAt',
+        role: 'role'
     };
     for (const [lower, camel] of Object.entries(keyMap)) {
         if (lower in normalized && !(camel in normalized)) {
@@ -198,6 +199,7 @@ if (dbUrl) {
                 -- Safe migration: ensure darpanid and ngoregtype exist
                 ALTER TABLE users ADD COLUMN IF NOT EXISTS darpanid TEXT;
                 ALTER TABLE users ADD COLUMN IF NOT EXISTS ngoregtype TEXT;
+                ALTER TABLE users ADD COLUMN IF NOT EXISTS role TEXT DEFAULT 'user';
 
                 CREATE TABLE IF NOT EXISTS contacts (
                     id SERIAL PRIMARY KEY,
@@ -250,14 +252,16 @@ if (dbUrl) {
 
             // Ensure demo users exist so foreign keys in orders table succeed for demo workflows
             await pool.query(`
-                INSERT INTO users (id, accounttype, organizationname, email, password, isverified, darpanid, ngoregtype, fssaicode)
+                INSERT INTO users (id, accounttype, organizationname, email, password, isverified, darpanid, ngoregtype, fssaicode, role)
                 VALUES 
-                (888, 'restaurant', 'Elite Catering Services', 'serverdemo@gmail.com', '$2a$10$demoHashedPasswordPlaceHolder888', 1, '', '', '12345678901234'),
-                (999, 'ngo', 'Global Outreach Foundation', 'ngodemo@gmail.com', '$2a$10$demoHashedPasswordPlaceHolder999', 1, 'TN/2023/0345678', 'darpan', '')
+                (777, 'restaurant', 'Nourish HQ Operations', 'admin@nourishnetwork.org', '$2a$10$demoHashedPasswordPlaceHolder777', 1, '', '', '', 'admin'),
+                (888, 'restaurant', 'Elite Catering Services', 'serverdemo@gmail.com', '$2a$10$demoHashedPasswordPlaceHolder888', 1, '', '', '12345678901234', 'user'),
+                (999, 'ngo', 'Global Outreach Foundation', 'ngodemo@gmail.com', '$2a$10$demoHashedPasswordPlaceHolder999', 1, 'TN/2023/0345678', 'darpan', '', 'user')
                 ON CONFLICT (id) DO UPDATE SET 
                     organizationname = EXCLUDED.organizationname,
                     accounttype = EXCLUDED.accounttype,
-                    email = EXCLUDED.email;
+                    email = EXCLUDED.email,
+                    role = EXCLUDED.role;
             `);
             console.log('✅ Supabase PostgreSQL: All 4 cloud tables initialized and ready!');
         } catch (err) {
@@ -370,6 +374,7 @@ if (dbUrl) {
         `, logErr('orders'));
 
         // SQLite migration for existing database
+        db.run(`ALTER TABLE users ADD COLUMN role TEXT DEFAULT 'user';`, () => {});
         db.run(`ALTER TABLE orders ADD COLUMN handoverOtp TEXT;`, () => {});
         db.run(`ALTER TABLE orders ADD COLUMN handoverAt TEXT;`, () => {});
     });
