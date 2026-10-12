@@ -1608,6 +1608,10 @@ app.post('/api/listings', authenticateToken, async (req, res) => {
         } catch (e) { }
     }
 
+    const isAdminUser = req.user.role === 'admin' || req.user.email === 'tharunchokkanc@gmail.com' || req.user.email === 'admin@nourishnetwork.org';
+    const targetVendorId = (isAdminUser && req.body.vendorId) ? req.body.vendorId : req.user.id;
+    const targetVendorName = (isAdminUser && req.body.vendorName) ? req.body.vendorName : req.user.name;
+
     const sql = `
         INSERT INTO food_listings
             (vendorId, vendorName, name, description, category, price, quantity, unit,
@@ -1615,8 +1619,8 @@ app.post('/api/listings', authenticateToken, async (req, res) => {
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
     `;
     const params = [
-        req.user.id,
-        req.user.name,
+        targetVendorId,
+        targetVendorName,
         name,
         description || '',
         category || 'Cooked',
@@ -2297,7 +2301,7 @@ app.get('/api/admin/stats', requireAdmin, (req, res) => {
 
 // 2. User Directory & Compliance List
 app.get('/api/admin/users', requireAdmin, (req, res) => {
-    const sql = `SELECT id, organizationName, email, accountType, role, isVerified, fssaiCode, darpanId, ngoRegType, phone, address, contactPerson, createdAt FROM users ORDER BY id DESC`;
+    const sql = `SELECT id, organizationName, email, accountType, role, isVerified, fssaiCode, darpanId, ngoRegType, phone, address, contactPerson, bio, avatarUrl, publicPhone, website, pickupWindow, pickupInstructions, createdAt FROM users ORDER BY id DESC`;
     db.all(sql, [], (err, rows) => {
         if (err) return res.status(500).json({ error: err.message });
         res.status(200).json({ success: true, users: rows || [] });
