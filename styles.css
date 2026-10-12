@@ -53,14 +53,12 @@
 }
 
 /* Anti-flash Utilities */
-.user-logged-in #home-portal,
-.portal-pre-active #home-portal,
-html.user-logged-in #home-portal,
-html.portal-pre-active #home-portal { display: none !important; }
-.user-logged-in #nn-portals-root,
-.portal-pre-active #nn-portals-root,
-html.user-logged-in #nn-portals-root,
-html.portal-pre-active #nn-portals-root { display: block !important; }
+html.portal-pre-active:not(.user-at-home) #home-portal { 
+    display: none; 
+}
+html.portal-pre-active:not(.user-at-home) #nn-portals-root { 
+    display: block; 
+}
 
 #successModal {
     z-index: 99999 !important;
