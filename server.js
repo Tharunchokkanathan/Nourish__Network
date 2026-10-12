@@ -378,11 +378,33 @@ app.post('/api/auth/admin-login', async (req, res) => {
 
     // Fast bypass for root admin credentials
     if ((cleanEmail === 'admin@nourishnetwork.org' || cleanEmail === 'admindemo@gmail.com') && (password === 'admin123' || password === 'demo123')) {
-        const adminUser = { id: 777, email: 'admin@nourishnetwork.org', accountType: 'admin', role: 'admin', organizationName: 'Nourish HQ Operations', isVerified: 1 };
+        const adminUser = { 
+            id: 777, 
+            email: 'admin@nourishnetwork.org', 
+            accountType: 'admin', 
+            role: 'admin', 
+            organizationName: 'Nourish HQ Operations', 
+            isVerified: 1,
+            address: 'Nourish Operations HQ, Anna Salai, Chennai',
+            phone: '+91 98400 12345',
+            bio: 'Central Administrative Command & Operations Directorate for Nourish Network.'
+        };
         return res.status(200).json({
             message: 'Administrator authentication verified.',
             token: makeToken(adminUser),
-            user: { id: adminUser.id, email: adminUser.email, name: adminUser.organizationName, organizationName: adminUser.organizationName, type: 'admin', accountType: 'admin', role: 'admin', isVerified: 1 }
+            user: { 
+                id: adminUser.id, 
+                email: adminUser.email, 
+                name: adminUser.organizationName, 
+                organizationName: adminUser.organizationName, 
+                type: 'admin', 
+                accountType: 'admin', 
+                role: 'admin', 
+                isVerified: 1,
+                address: adminUser.address,
+                phone: adminUser.phone,
+                bio: adminUser.bio
+            }
         });
     }
 
@@ -416,7 +438,18 @@ app.post('/api/auth/admin-login', async (req, res) => {
                     accountType: 'admin',
                     role: 'admin',
                     isVerified: 1,
-                    avatarUrl: user.avatarUrl || ''
+                    avatarUrl: user.avatarUrl || '',
+                    address: user.address || '',
+                    phone: user.phone || '',
+                    bio: user.bio || '',
+                    contactPerson: user.contactPerson || '',
+                    publicPhone: user.publicPhone || user.phone || '',
+                    website: user.website || '',
+                    fssaiCode: user.fssaiCode || '',
+                    darpanId: user.darpanId || '',
+                    ngoRegType: user.ngoRegType || '',
+                    pickupWindow: user.pickupWindow || '',
+                    pickupInstructions: user.pickupInstructions || ''
                 }
             });
         } catch (bcryptErr) {
@@ -1057,7 +1090,27 @@ app.post('/api/verify-otp', (req, res) => {
             const token = makeToken(user);
             return res.status(200).json({
                 message: 'Account is already verified!',
-                user: { id: user.id, email: user.email, name: user.organizationName, type: user.accountType, isVerified: 1 },
+                user: {
+                    id: user.id,
+                    email: user.email,
+                    name: user.organizationName,
+                    organizationName: user.organizationName,
+                    type: user.accountType,
+                    accountType: user.accountType,
+                    phone: user.phone || '',
+                    bio: user.bio || '',
+                    address: user.address || '',
+                    avatarUrl: user.avatarUrl || '',
+                    contactPerson: user.contactPerson || '',
+                    publicPhone: user.publicPhone || user.phone || '',
+                    website: user.website || '',
+                    fssaiCode: user.fssaiCode || '',
+                    darpanId: user.darpanId || '',
+                    ngoRegType: user.ngoRegType || '',
+                    pickupWindow: user.pickupWindow || '',
+                    pickupInstructions: user.pickupInstructions || '',
+                    isVerified: 1
+                },
                 token
             });
         }
@@ -1355,7 +1408,12 @@ app.get('/api/listings', (req, res) => {
                u.fssaiCode,
                u.isVerified,
                u.pickupWindow,
-               u.pickupInstructions
+               u.pickupInstructions,
+               COALESCE(u.address, '') AS vendorAddress,
+               COALESCE(u.address, '') AS address,
+               COALESCE(u.publicPhone, u.phone, '') AS vendorPhone,
+               COALESCE(u.contactPerson, '') AS vendorContactPerson,
+               u.email AS vendorEmail
         FROM food_listings f
         LEFT JOIN users u ON f.vendorId = u.id
         WHERE 1=1
@@ -2039,6 +2097,7 @@ app.get('/api/orders', authenticateToken, (req, res) => {
                 f.price AS unitPrice,
                 f.pickupTime,
                 s.id AS sellerId,
+                s.id AS vendorId,
                 s.organizationName AS sellerName,
                 s.accountType AS sellerType,
                 s.email AS sellerEmail,
@@ -2046,6 +2105,7 @@ app.get('/api/orders', authenticateToken, (req, res) => {
                 COALESCE(s.contactPerson, '') AS sellerContactPerson,
                 COALESCE(s.fssaiCode, '') AS sellerFssaiCode,
                 COALESCE(s.address, '') AS sellerAddress,
+                COALESCE(s.address, '') AS address,
                 COALESCE(s.pickupWindow, '') AS sellerPickupWindow,
                 s.avatarUrl AS sellerAvatar
             FROM orders o
@@ -2330,6 +2390,57 @@ app.delete('/api/admin/users/:id', requireAdmin, (req, res) => {
     db.run(`DELETE FROM users WHERE id = ?`, [userId], function(err) {
         if (err) return res.status(500).json({ error: err.message });
         res.status(200).json({ success: true, userId, message: 'User account removed.' });
+    });
+});
+
+// 4a. Update User Profile (Admin Management)
+app.put('/api/admin/users/:id', requireAdmin, (req, res) => {
+    const userId = req.params.id;
+    const {
+        organizationName, phone, address, bio, avatarUrl,
+        contactPerson, publicPhone, website, fssaiCode, darpanId, ngoRegType,
+        pickupWindow, pickupInstructions
+    } = req.body;
+
+    const sql = `
+        UPDATE users SET
+            organizationName   = COALESCE(?, organizationName),
+            phone              = COALESCE(?, phone),
+            address            = COALESCE(?, address),
+            bio                = COALESCE(?, bio),
+            avatarUrl          = COALESCE(?, avatarUrl),
+            contactPerson      = COALESCE(?, contactPerson),
+            publicPhone        = COALESCE(?, publicPhone),
+            website            = COALESCE(?, website),
+            fssaiCode          = COALESCE(?, fssaiCode),
+            darpanId           = COALESCE(?, darpanId),
+            ngoRegType         = COALESCE(?, ngoRegType),
+            pickupWindow       = COALESCE(?, pickupWindow),
+            pickupInstructions = COALESCE(?, pickupInstructions)
+        WHERE id = ?
+    `;
+
+    db.run(sql, [
+        organizationName !== undefined ? organizationName : null,
+        phone !== undefined ? phone : null,
+        address !== undefined ? address : null,
+        bio !== undefined ? bio : null,
+        avatarUrl !== undefined ? avatarUrl : null,
+        contactPerson !== undefined ? contactPerson : null,
+        publicPhone !== undefined ? publicPhone : null,
+        website !== undefined ? website : null,
+        fssaiCode !== undefined ? fssaiCode : null,
+        darpanId !== undefined ? darpanId : null,
+        ngoRegType !== undefined ? ngoRegType : null,
+        pickupWindow !== undefined ? pickupWindow : null,
+        pickupInstructions !== undefined ? pickupInstructions : null,
+        userId
+    ], function(err) {
+        if (err) return res.status(500).json({ error: err.message });
+        db.get(`SELECT id, organizationName, email, accountType, role, isVerified, fssaiCode, darpanId, ngoRegType, phone, address, contactPerson, bio, avatarUrl, publicPhone, website, pickupWindow, pickupInstructions, createdAt FROM users WHERE id = ?`, [userId], (qErr, updated) => {
+            if (qErr) return res.status(500).json({ error: qErr.message });
+            res.status(200).json({ success: true, message: 'User profile updated successfully!', user: updated });
+        });
     });
 });
 

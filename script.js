@@ -990,6 +990,56 @@ document.addEventListener('DOMContentLoaded', () => {
             const newOrders = state.cart.map(c => {
                 const qty = parseInt(c.qty, 10) || 1;
                 const unitPrice = parseFloat(c.item.price) || 0;
+                const targetVendorId = c.item.vendorId || c.item.vendorid || 888;
+
+                // Dynamically resolve the true seller's published location and contact details
+                let resolvedSellerAddress = c.item.vendorAddress || c.item.address || '';
+                let resolvedSellerPhone = c.item.vendorPhone || '';
+                let resolvedSellerName = c.item.vendorName || c.item.vendorname || '';
+                let resolvedContactPerson = c.item.vendorContactPerson || c.item.contactPerson || '';
+                let resolvedFssai = c.item.fssaiCode || c.item.fssaicode || '';
+                let resolvedPickupWindow = c.item.pickupWindow || '';
+                let resolvedAvatar = c.item.vendorAvatar || c.item.avatarUrl || 'assets/default-avatar.jpg';
+
+                // Look up in state.listings
+                if (!resolvedSellerAddress && state.listings) {
+                    const matchedL = state.listings.find(l => Number(l.id) === Number(c.item.id) || Number(l.vendorId) === Number(targetVendorId));
+                    if (matchedL) {
+                        resolvedSellerAddress = matchedL.vendorAddress || matchedL.address || '';
+                        if (!resolvedSellerPhone) resolvedSellerPhone = matchedL.vendorPhone || '';
+                        if (!resolvedSellerName) resolvedSellerName = matchedL.vendorName || '';
+                        if (!resolvedContactPerson) resolvedContactPerson = matchedL.vendorContactPerson || '';
+                        if (!resolvedFssai) resolvedFssai = matchedL.fssaiCode || '';
+                        if (!resolvedPickupWindow) resolvedPickupWindow = matchedL.pickupWindow || '';
+                        if (!resolvedAvatar || resolvedAvatar.includes('default-avatar')) resolvedAvatar = matchedL.vendorAvatar || resolvedAvatar;
+                    }
+                }
+
+                // Look up in adminCache.users
+                if ((!resolvedSellerAddress || !resolvedSellerPhone) && adminCache && adminCache.users) {
+                    const matchedVendor = adminCache.users.find(u => Number(u.id) === Number(targetVendorId));
+                    if (matchedVendor) {
+                        if (!resolvedSellerAddress) resolvedSellerAddress = matchedVendor.address || '';
+                        if (!resolvedSellerPhone) resolvedSellerPhone = matchedVendor.publicPhone || matchedVendor.phone || '';
+                        if (!resolvedSellerName) resolvedSellerName = matchedVendor.organizationName || matchedVendor.name || '';
+                        if (!resolvedContactPerson) resolvedContactPerson = matchedVendor.contactPerson || '';
+                        if (!resolvedFssai) resolvedFssai = matchedVendor.fssaiCode || '';
+                        if (!resolvedPickupWindow) resolvedPickupWindow = matchedVendor.pickupWindow || '';
+                        if (matchedVendor.avatarUrl) resolvedAvatar = matchedVendor.avatarUrl;
+                    }
+                }
+
+                // Fallback if current logged-in user is the donor
+                if (!resolvedSellerAddress && user && Number(user.id) === Number(targetVendorId)) {
+                    resolvedSellerAddress = user.address || '';
+                    if (!resolvedSellerPhone) resolvedSellerPhone = user.publicPhone || user.phone || '';
+                    if (!resolvedSellerName) resolvedSellerName = user.organizationName || user.name || '';
+                }
+
+                if (!resolvedSellerAddress) {
+                    resolvedSellerAddress = 'Location provided by donor kitchen';
+                }
+
                 return {
                     orderId: 'ORD-' + Date.now() + '-' + Math.floor(Math.random() * 1000),
                     listingId: c.item.id,
@@ -1007,17 +1057,17 @@ document.addEventListener('DOMContentLoaded', () => {
                     pickupTime: c.item.pickupTime || c.item.pickup || 'Ready for Pickup',
 
                     // Seller information (viewed in Buyer history)
-                    vendorId: c.item.vendorId || c.item.vendorid || 888,
-                    sellerId: c.item.vendorId || c.item.vendorid || 888,
-                    sellerName: c.item.vendorName || c.item.vendorname || 'Elite Catering Services',
+                    vendorId: targetVendorId,
+                    sellerId: targetVendorId,
+                    sellerName: resolvedSellerName || 'Verified Donor Kitchen',
                     sellerType: 'restaurant',
-                    sellerEmail: c.item.vendorEmail || 'serverdemo@gmail.com',
-                    sellerPhone: c.item.vendorPhone || '+91 98400 12345',
-                    sellerContactPerson: c.item.contactPerson || 'Verified Seller Lead',
-                    sellerFssaiCode: c.item.fssaiCode || '12345678901234',
-                    sellerAddress: c.item.address || '45, Sterling Road, Nungambakkam, Chennai',
-                    sellerPickupWindow: c.item.pickupWindow || '9:00 PM - 11:00 PM',
-                    sellerAvatar: c.item.vendorAvatar || 'assets/default-avatar.jpg',
+                    sellerEmail: c.item.vendorEmail || 'donor@nourishnetwork.org',
+                    sellerPhone: resolvedSellerPhone || '+91 98400 12345',
+                    sellerContactPerson: resolvedContactPerson || 'Kitchen Coordinator',
+                    sellerFssaiCode: resolvedFssai || '',
+                    sellerAddress: resolvedSellerAddress,
+                    sellerPickupWindow: resolvedPickupWindow || '9:00 PM - 11:00 PM',
+                    sellerAvatar: resolvedAvatar,
 
                     // Buyer information (viewed in Seller history)
                     buyerId: user.id || 999,
@@ -1028,7 +1078,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     buyerContactPerson: user.contactPerson || 'Verified NGO Lead',
                     buyerDarpanId: user.darpanId || 'TN/2023/0345678',
                     buyerNgoRegType: user.ngoRegType || 'darpan',
-                    buyerAddress: user.address || '12, Besant Nagar, Chennai',
+                    buyerAddress: user.address || 'Besant Nagar, Chennai',
                     buyerAvatar: user.avatarUrl || 'assets/default-avatar.jpg'
                 };
             });
@@ -5627,10 +5677,29 @@ document.addEventListener('DOMContentLoaded', () => {
                 console.warn("Orders fetch network fallback to local:", netErr);
             }
 
-            // Retrieve locally tracked live orders
+            // Retrieve locally tracked live orders and sanitize stale placeholder addresses
             let localOrders = [];
             try {
                 localOrders = JSON.parse(localStorage.getItem('nn_local_orders') || '[]');
+                let ordersModified = false;
+                localOrders.forEach(o => {
+                    if (o.sellerAddress && (o.sellerAddress.includes('Sterling Road') || o.sellerAddress.includes('donor kitchen'))) {
+                        const matchedL = (state.listings || []).find(l => Number(l.id) === Number(o.listingId));
+                        if (matchedL && (matchedL.vendorAddress || matchedL.address)) {
+                            o.sellerAddress = matchedL.vendorAddress || matchedL.address;
+                            ordersModified = true;
+                        } else if (adminCache && adminCache.users) {
+                            const v = adminCache.users.find(u => Number(u.id) === Number(o.vendorId || o.sellerId));
+                            if (v && v.address) {
+                                o.sellerAddress = v.address;
+                                ordersModified = true;
+                            }
+                        }
+                    }
+                });
+                if (ordersModified) {
+                    localStorage.setItem('nn_local_orders', JSON.stringify(localOrders));
+                }
             } catch (e) { localOrders = []; }
 
             const user = JSON.parse(sessionStorage.getItem('nourishUser') || localStorage.getItem('nourishUser') || '{}');
@@ -5787,6 +5856,25 @@ document.addEventListener('DOMContentLoaded', () => {
                     const foodImg = o.imageUrl || (window.getSmartFoodImage ? window.getSmartFoodImage(o.foodName, o.category, null) : 'assets/default-food.jpg');
                     const pin = o.handoverOtp || String(o.orderId).padStart(4, '0').slice(-4);
 
+                    // Dynamically resolve true seller's address and info
+                    const targetListing = (state.listings || []).find(l => Number(l.id) === Number(o.listingId));
+                    let resolvedSellerAddr = o.sellerAddress || o.address || '';
+                    if (!resolvedSellerAddr || resolvedSellerAddr.includes('Sterling Road') || resolvedSellerAddr.includes('donor kitchen')) {
+                        if (targetListing && (targetListing.vendorAddress || targetListing.address)) {
+                            resolvedSellerAddr = targetListing.vendorAddress || targetListing.address;
+                        } else if (adminCache && adminCache.users) {
+                            const vendorObj = adminCache.users.find(u => Number(u.id) === Number(o.vendorId || o.sellerId || (targetListing && targetListing.vendorId)));
+                            if (vendorObj && vendorObj.address) resolvedSellerAddr = vendorObj.address;
+                        }
+                    }
+                    if (!resolvedSellerAddr) resolvedSellerAddr = 'Location provided by donor kitchen';
+
+                    let resolvedSellerName = o.sellerName;
+                    if ((!resolvedSellerName || resolvedSellerName === 'Elite Catering Services') && targetListing && targetListing.vendorName) {
+                        resolvedSellerName = targetListing.vendorName;
+                    }
+                    let resolvedSellerPhone = o.sellerPhone || (targetListing && targetListing.vendorPhone) || '';
+
                     return `
                         <div class="history-card" id="order-card-${o.orderId}">
                             <div class="history-top-row">
@@ -5818,14 +5906,14 @@ document.addEventListener('DOMContentLoaded', () => {
                                     <img src="${o.sellerAvatar || 'assets/default-avatar.jpg'}" style="width: 44px; height: 44px; border-radius: 50%; object-fit: cover; border: 1.5px solid rgba(255, 255, 255, 0.15);">
                                     <div>
                                         <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                                            <strong style="font-size: 0.95rem; color: var(--text-primary);">${o.sellerName || 'Donor Restaurant / Kitchen'}</strong>
+                                            <strong style="font-size: 0.95rem; color: var(--text-primary);">${resolvedSellerName || 'Donor Restaurant / Kitchen'}</strong>
                                             ${o.sellerFssaiCode ? `<span class="fssai-trust-badge" title="FSSAI Verified Food Establishment"><i class="fa-solid fa-shield-halved"></i> FSSAI Certified</span>` : ''}
                                         </div>
                                         <div style="font-size: 0.82rem; color: var(--text-muted); margin-top: 3px;">
                                             ${o.sellerContactPerson ? `<span><i class="fa-solid fa-user-tie" style="color:#9ca3af;"></i> ${o.sellerContactPerson}</span> · ` : ''}
-                                            ${o.sellerPhone ? `<a href="tel:${o.sellerPhone}" style="color:#d1d5db; text-decoration: none;"><i class="fa-solid fa-phone"></i> ${o.sellerPhone}</a>` : ''}
+                                            ${resolvedSellerPhone ? `<a href="tel:${resolvedSellerPhone}" style="color:#d1d5db; text-decoration: none;"><i class="fa-solid fa-phone"></i> ${resolvedSellerPhone}</a>` : ''}
                                         </div>
-                                        ${o.sellerAddress ? `<div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;"><i class="fa-solid fa-location-dot" style="color:#9ca3af;"></i> Pickup: ${o.sellerAddress}</div>` : ''}
+                                        ${resolvedSellerAddr ? `<div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;"><i class="fa-solid fa-location-dot" style="color:#9ca3af;"></i> Pickup: ${resolvedSellerAddr}</div>` : ''}
                                         ${o.sellerPickupWindow ? `<div style="font-size: 0.8rem; color: #9ca3af; margin-top: 2px;"><i class="fa-regular fa-clock"></i> Pickup Window: ${o.sellerPickupWindow}</div>` : ''}
                                     </div>
                                 </div>
@@ -5843,10 +5931,10 @@ document.addEventListener('DOMContentLoaded', () => {
                                                 </div>
                                             </div>
                                             <div style="display: flex; align-items: center; gap: 8px;">
-                                                <button class="btn-open-qr-pass" data-pin="${pin}" data-order-id="${o.orderId}" data-food-name="${encodeURIComponent(o.foodName || 'Surplus Meal')}" data-qty="${o.quantity} portions" data-seller-name="${encodeURIComponent(o.sellerName || 'Donor Kitchen')}" data-seller-address="${encodeURIComponent(o.sellerAddress || '')}" data-seller-phone="${encodeURIComponent(o.sellerPhone || '')}">
+                                                <button class="btn-open-qr-pass" data-pin="${pin}" data-order-id="${o.orderId}" data-listing-id="${o.listingId || ''}" data-vendor-id="${o.vendorId || o.sellerId || ''}" data-food-name="${encodeURIComponent(o.foodName || 'Surplus Meal')}" data-qty="${o.quantity} portions" data-seller-name="${encodeURIComponent(resolvedSellerName || 'Donor Kitchen')}" data-seller-address="${encodeURIComponent(resolvedSellerAddr || '')}" data-seller-phone="${encodeURIComponent(resolvedSellerPhone || '')}">
                                                     <i class="fa-solid fa-qrcode"></i> Show QR
                                                 </button>
-                                                <button class="btn-whatsapp-dispatch" data-pin="${pin}" data-order-id="${o.orderId}" data-food-name="${encodeURIComponent(o.foodName || 'Surplus Meal')}" data-qty="${o.quantity} portions" data-seller-name="${encodeURIComponent(o.sellerName || 'Donor Kitchen')}" data-seller-address="${encodeURIComponent(o.sellerAddress || '')}" data-seller-phone="${encodeURIComponent(o.sellerPhone || '')}" title="Dispatch Pickup Pass to Driver via WhatsApp">
+                                                <button class="btn-whatsapp-dispatch" data-pin="${pin}" data-order-id="${o.orderId}" data-listing-id="${o.listingId || ''}" data-vendor-id="${o.vendorId || o.sellerId || ''}" data-food-name="${encodeURIComponent(o.foodName || 'Surplus Meal')}" data-qty="${o.quantity} portions" data-seller-name="${encodeURIComponent(resolvedSellerName || 'Donor Kitchen')}" data-seller-address="${encodeURIComponent(resolvedSellerAddr || '')}" data-seller-phone="${encodeURIComponent(resolvedSellerPhone || '')}" title="Dispatch Pickup Pass to Driver via WhatsApp">
                                                     <i class="fa-brands fa-whatsapp"></i> Share
                                                 </button>
                                             </div>
@@ -5881,6 +5969,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     const pin = btn.dataset.pin;
                     const foodName = decodeURIComponent(btn.dataset.foodName || 'Surplus Meal');
                     const meta = {
+                        orderId: btn.dataset.orderId,
+                        listingId: btn.dataset.listingId,
+                        vendorId: btn.dataset.vendorId,
+                        sellerId: btn.dataset.vendorId,
                         qty: btn.dataset.qty || '',
                         sellerName: decodeURIComponent(btn.dataset.sellerName || 'Donor Kitchen'),
                         sellerAddress: decodeURIComponent(btn.dataset.sellerAddress || ''),
@@ -5896,6 +5988,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     e.stopPropagation();
                     const orderInfo = {
                         orderId: btn.dataset.orderId,
+                        listingId: btn.dataset.listingId,
+                        vendorId: btn.dataset.vendorId,
+                        sellerId: btn.dataset.vendorId,
                         foodName: decodeURIComponent(btn.dataset.foodName || 'Surplus Meal'),
                         pin: btn.dataset.pin,
                         qty: btn.dataset.qty || '',
@@ -6105,8 +6200,43 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function dispatchWhatsAppPass(orderInfo) {
         if (!orderInfo) return;
-        const { orderId, foodName, pin, qty, sellerName, sellerAddress, sellerPhone } = orderInfo;
-        const mapsQuery = sellerAddress ? encodeURIComponent(sellerAddress) : '';
+        let { orderId, foodName, pin, qty, sellerName, sellerAddress, sellerPhone, listingId, vendorId, sellerId } = orderInfo;
+
+        // Dynamically resolve seller details if missing or containing legacy placeholder
+        const targetListing = (state.listings || []).find(l => Number(l.id) === Number(listingId));
+        const effectiveVendorId = vendorId || sellerId || (targetListing && targetListing.vendorId);
+
+        if (!sellerAddress || sellerAddress.includes('Sterling Road') || sellerAddress.toLowerCase().includes('donor kitchen') || sellerAddress.trim() === '') {
+            if (targetListing && (targetListing.vendorAddress || targetListing.address)) {
+                sellerAddress = targetListing.vendorAddress || targetListing.address;
+            } else if (adminCache && adminCache.users) {
+                const vendorObj = adminCache.users.find(u => Number(u.id) === Number(effectiveVendorId));
+                if (vendorObj && vendorObj.address) sellerAddress = vendorObj.address;
+            }
+        }
+
+        if ((!sellerName || sellerName === 'Elite Catering Services' || sellerName === 'Donor Kitchen') && targetListing && targetListing.vendorName) {
+            sellerName = targetListing.vendorName;
+        } else if ((!sellerName || sellerName === 'Elite Catering Services' || sellerName === 'Donor Kitchen') && adminCache && adminCache.users) {
+            const vendorObj = adminCache.users.find(u => Number(u.id) === Number(effectiveVendorId));
+            if (vendorObj && vendorObj.name) sellerName = vendorObj.name;
+        }
+
+        if (!sellerPhone) {
+            if (targetListing && (targetListing.vendorPhone || targetListing.publicPhone)) {
+                sellerPhone = targetListing.vendorPhone || targetListing.publicPhone;
+            } else if (adminCache && adminCache.users) {
+                const vendorObj = adminCache.users.find(u => Number(u.id) === Number(effectiveVendorId));
+                if (vendorObj) sellerPhone = vendorObj.publicPhone || vendorObj.phone || '';
+            }
+        }
+
+        const isRealAddress = sellerAddress && 
+            !sellerAddress.includes('Sterling Road') && 
+            !sellerAddress.toLowerCase().includes('donor kitchen') &&
+            sellerAddress.trim().length > 3;
+
+        const mapsQuery = isRealAddress ? encodeURIComponent(sellerAddress) : '';
         const mapsLink = mapsQuery ? `https://www.google.com/maps/search/?api=1&query=${mapsQuery}` : '';
 
         const lines = [
@@ -6115,7 +6245,7 @@ document.addEventListener('DOMContentLoaded', () => {
             `📦 *Order:* #NN-${String(orderId).padStart(4, '0')}`,
             `🍲 *Food:* ${foodName || 'Surplus Meal'}${qty ? ` · ${qty}` : ''}`,
             `🏢 *Donor Kitchen:* ${sellerName || 'Verified Partner'}`,
-            sellerAddress ? `📍 *Pickup Location:* ${sellerAddress}` : null,
+            isRealAddress ? `📍 *Pickup Location:* ${sellerAddress}` : null,
             sellerPhone ? `📞 *Kitchen Contact:* ${sellerPhone}` : null,
             `🔑 *HANDOVER PIN:* *${pin || '----'}*`,
             mapsLink ? `🗺️ *Directions:* ${mapsLink}` : null,
@@ -6712,22 +6842,37 @@ document.addEventListener('DOMContentLoaded', () => {
 
         async function loadProfile() {
             try {
-                const user = JSON.parse(sessionStorage.getItem('nourishUser') || '{}');
-                const profile = user;
+                const isAdmin = typeof checkIsAdminUser === 'function' && checkIsAdminUser();
+                const isInspecting = isAdmin && state.adminInspectedUser;
+                const sessionUser = JSON.parse(sessionStorage.getItem('nourishUser') || localStorage.getItem('nourishUser') || '{}');
+                const profile = isInspecting ? state.adminInspectedUser : sessionUser;
+
+                // Update settings modal header subtitle to clarify inspected account vs logged-in account
+                const subtitle = settingsModal ? settingsModal.querySelector('p') : null;
+                const isSeller = (profile.accountType || profile.role || profile.type || '').toLowerCase().includes('restaurant') ||
+                                 (profile.accountType || profile.role || profile.type || '').toLowerCase().includes('vendor') ||
+                                 (profile.accountType || profile.role || profile.type || '').toLowerCase().includes('seller') ||
+                                 state.activePortal === 'seller';
+
+                if (subtitle) {
+                    if (isInspecting) {
+                        subtitle.innerHTML = `<span style="color:#10b981; font-weight:700;"><i class="fa-solid fa-shield-halved"></i> Admin Inspection Mode:</span> Editing Profile for <strong>${profile.organizationName || profile.name || profile.email}</strong> (ID #${profile.id})`;
+                    } else {
+                        subtitle.textContent = isSeller
+                            ? "Manage your restaurant's profile, compliance & pickup details"
+                            : "Manage your NGO's profile, compliance & pickup details";
+                    }
+                }
 
                 // 1. Account & Identity Fields
                 if (orgNameInput) orgNameInput.value = profile.organizationName || profile.name || '';
                 if (emailInput) emailInput.value = profile.email || '';
                 if (accountTypeInput) {
-                    const role = profile.accountType || profile.type || profile.role || (state.activePortal === 'seller' ? 'Vendor' : 'NGO');
+                    const role = profile.accountType || profile.type || profile.role || (isSeller ? 'Vendor' : 'NGO');
                     accountTypeInput.value = role.toUpperCase();
                 }
 
                 // Show FSSAI field for food vendors, DARPAN for NGOs
-                const isSeller = (profile.accountType || profile.role || profile.type || '').toLowerCase().includes('restaurant') ||
-                                 (profile.accountType || profile.role || profile.type || '').toLowerCase().includes('vendor') ||
-                                 (profile.accountType || profile.role || profile.type || '').toLowerCase().includes('seller') ||
-                                 state.activePortal === 'seller';
                 if (fssaiFieldWrap) fssaiFieldWrap.style.display = isSeller ? 'block' : 'none';
                 if (darpanFieldWrap) darpanFieldWrap.style.display = isSeller ? 'none' : 'block';
 
@@ -6759,52 +6904,84 @@ document.addEventListener('DOMContentLoaded', () => {
                 // 3. Fetch latest live data from database
                 const token = sessionStorage.getItem('nourishToken') || localStorage.getItem('nourishToken');
                 if (token) {
-                    const res = await fetch(`${API_BASE}/user/me`, {
-                        headers: { 'Authorization': `Bearer ${token}` }
-                    });
-                    if (res.ok) {
-                        const liveProfile = await res.json();
-                        if (liveProfile) {
-                            if (orgNameInput && liveProfile.organizationName) orgNameInput.value = liveProfile.organizationName;
-                            if (emailInput && liveProfile.email) emailInput.value = liveProfile.email;
-                            if (accountTypeInput && (liveProfile.accountType || liveProfile.type)) {
-                                accountTypeInput.value = (liveProfile.accountType || liveProfile.type).toUpperCase();
+                    if (isInspecting) {
+                        try {
+                            const res = await fetch(`${API_BASE}/admin/users?_t=${Date.now()}`, {
+                                headers: { 'Authorization': `Bearer ${token}` }
+                            });
+                            if (res.ok) {
+                                const data = await res.json();
+                                if (data && data.users) {
+                                    adminCache.users = data.users;
+                                    const freshUser = data.users.find(u => Number(u.id) === Number(profile.id));
+                                    if (freshUser) {
+                                        state.adminInspectedUser = freshUser;
+                                        sessionStorage.setItem('nn_admin_inspected_user', JSON.stringify(freshUser));
+                                        if (orgNameInput && freshUser.organizationName) orgNameInput.value = freshUser.organizationName;
+                                        if (emailInput && freshUser.email) emailInput.value = freshUser.email;
+                                        if (bioInput && freshUser.bio) bioInput.value = freshUser.bio;
+                                        if (locationInput && freshUser.address) locationInput.value = freshUser.address;
+                                        if (contactPersonInput && freshUser.contactPerson) contactPersonInput.value = freshUser.contactPerson;
+                                        if (publicPhoneInput && (freshUser.publicPhone || freshUser.phone)) publicPhoneInput.value = freshUser.publicPhone || freshUser.phone;
+                                        if (websiteInput && freshUser.website) websiteInput.value = freshUser.website;
+                                        if (fssaiInput && freshUser.fssaiCode) { fssaiInput.value = freshUser.fssaiCode; updateFssaiFeedback(); }
+                                        if (darpanInput && freshUser.darpanId) { darpanInput.value = freshUser.darpanId; updateDarpanFeedback(); }
+                                        if (pickupWindowInput && freshUser.pickupWindow) pickupWindowInput.value = freshUser.pickupWindow;
+                                        if (pickupInstructionsInput && freshUser.pickupInstructions) pickupInstructionsInput.value = freshUser.pickupInstructions;
+                                        if (freshUser.avatarUrl && avatarPreview) avatarPreview.src = freshUser.avatarUrl;
+                                    }
+                                }
                             }
-                            if (bioInput) bioInput.value = liveProfile.bio || '';
-                            if (locationInput) locationInput.value = liveProfile.address || '';
-                            if (contactPersonInput) contactPersonInput.value = liveProfile.contactPerson || '';
-                            if (publicPhoneInput) publicPhoneInput.value = liveProfile.publicPhone || liveProfile.phone || '';
-                            if (websiteInput) websiteInput.value = liveProfile.website || '';
-                            if (fssaiInput) {
-                                fssaiInput.value = liveProfile.fssaiCode || liveProfile.fssaicode || '';
-                                updateFssaiFeedback();
-                            }
-                            if (darpanTypeSelect && (liveProfile.ngoRegType || liveProfile.ngoregtype)) {
-                                darpanTypeSelect.value = liveProfile.ngoRegType || liveProfile.ngoregtype;
-                                if (darpanInput) darpanInput.placeholder = NGO_PLACEHOLDERS[darpanTypeSelect.value] || 'Registration Code';
-                            }
-                            if (darpanInput) {
-                                darpanInput.value = liveProfile.darpanId || liveProfile.darpanid || '';
-                                updateDarpanFeedback();
-                            }
-                            if (pickupWindowInput) pickupWindowInput.value = liveProfile.pickupWindow || '';
-                            if (pickupInstructionsInput) pickupInstructionsInput.value = liveProfile.pickupInstructions || '';
+                        } catch (e) {}
+                    } else {
+                        const res = await fetch(`${API_BASE}/user/me`, {
+                            headers: { 'Authorization': `Bearer ${token}` }
+                        });
+                        if (res.ok) {
+                            const liveProfile = await res.json();
+                            if (liveProfile) {
+                                if (orgNameInput && liveProfile.organizationName) orgNameInput.value = liveProfile.organizationName;
+                                if (emailInput && liveProfile.email) emailInput.value = liveProfile.email;
+                                if (accountTypeInput && (liveProfile.accountType || liveProfile.type)) {
+                                    accountTypeInput.value = (liveProfile.accountType || liveProfile.type).toUpperCase();
+                                }
+                                if (bioInput && liveProfile.bio) bioInput.value = liveProfile.bio;
+                                if (locationInput && liveProfile.address) locationInput.value = liveProfile.address;
+                                if (contactPersonInput && liveProfile.contactPerson) contactPersonInput.value = liveProfile.contactPerson;
+                                if (publicPhoneInput && (liveProfile.publicPhone || liveProfile.phone)) publicPhoneInput.value = liveProfile.publicPhone || liveProfile.phone;
+                                if (websiteInput && liveProfile.website) websiteInput.value = liveProfile.website;
+                                if (fssaiInput && (liveProfile.fssaiCode || liveProfile.fssaicode)) {
+                                    fssaiInput.value = liveProfile.fssaiCode || liveProfile.fssaicode;
+                                    updateFssaiFeedback();
+                                }
+                                if (darpanTypeSelect && (liveProfile.ngoRegType || liveProfile.ngoregtype)) {
+                                    darpanTypeSelect.value = liveProfile.ngoRegType || liveProfile.ngoregtype;
+                                    if (darpanInput) darpanInput.placeholder = NGO_PLACEHOLDERS[darpanTypeSelect.value] || 'Registration Code';
+                                }
+                                if (darpanInput && (liveProfile.darpanId || liveProfile.darpanid)) {
+                                    darpanInput.value = liveProfile.darpanId || liveProfile.darpanid;
+                                    updateDarpanFeedback();
+                                }
+                                if (pickupWindowInput && liveProfile.pickupWindow) pickupWindowInput.value = liveProfile.pickupWindow;
+                                if (pickupInstructionsInput && liveProfile.pickupInstructions) pickupInstructionsInput.value = liveProfile.pickupInstructions;
 
-                            if (liveProfile.avatarUrl && avatarPreview) {
-                                avatarPreview.src = liveProfile.avatarUrl;
-                            }
+                                if (liveProfile.avatarUrl && avatarPreview) {
+                                    avatarPreview.src = liveProfile.avatarUrl;
+                                }
 
-                            // Cache latest liveProfile in storage so it persists
-                            const merged = { 
-                                ...user, 
-                                ...liveProfile,
-                                fssaiCode: liveProfile.fssaiCode || liveProfile.fssaicode || user.fssaiCode || user.fssaicode || '',
-                                darpanId: liveProfile.darpanId || liveProfile.darpanid || user.darpanId || user.darpanid || '',
-                                ngoRegType: liveProfile.ngoRegType || liveProfile.ngoregtype || user.ngoRegType || user.ngoregtype || ''
-                            };
-                            sessionStorage.setItem('nourishUser', JSON.stringify(merged));
-                            localStorage.setItem('nourishUser', JSON.stringify(merged));
-                            renderPortal();
+                                // Cache latest liveProfile in storage so it persists across reloads
+                                const merged = { 
+                                    ...sessionUser, 
+                                    ...liveProfile,
+                                    address: liveProfile.address || sessionUser.address || '',
+                                    fssaiCode: liveProfile.fssaiCode || liveProfile.fssaicode || sessionUser.fssaiCode || sessionUser.fssaicode || '',
+                                    darpanId: liveProfile.darpanId || liveProfile.darpanid || sessionUser.darpanId || sessionUser.darpanid || '',
+                                    ngoRegType: liveProfile.ngoRegType || liveProfile.ngoregtype || sessionUser.ngoRegType || sessionUser.ngoregtype || ''
+                                };
+                                sessionStorage.setItem('nourishUser', JSON.stringify(merged));
+                                localStorage.setItem('nourishUser', JSON.stringify(merged));
+                                renderPortal();
+                            }
                         }
                     }
                 }
@@ -6920,7 +7097,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 try {
                     const token = sessionStorage.getItem('nourishToken') || localStorage.getItem('nourishToken');
-                    const res = await fetch(`${API_BASE}/user/me`, {
+                    const isAdmin = typeof checkIsAdminUser === 'function' && checkIsAdminUser();
+                    const isInspecting = isAdmin && state.adminInspectedUser;
+
+                    const endpoint = isInspecting
+                        ? `${API_BASE}/admin/users/${state.adminInspectedUser.id}`
+                        : `${API_BASE}/user/me`;
+
+                    const res = await fetch(endpoint, {
                         method: 'PUT',
                         headers: {
                             'Content-Type': 'application/json',
@@ -6938,36 +7122,67 @@ document.addEventListener('DOMContentLoaded', () => {
 
                     if (res.ok) {
                         const data = await res.json();
-                        const prevUser = JSON.parse(sessionStorage.getItem('nourishUser') || '{}');
-                        const updatedUser = {
-                            ...prevUser,
-                            ...(data.user || {}),
-                            organizationName: orgName || prevUser.organizationName || prevUser.name,
-                            name: orgName || prevUser.name,
-                            bio,
-                            address,
-                            contactPerson,
-                            publicPhone,
-                            phone: publicPhone || prevUser.phone,
-                            website,
-                            fssaiCode: fssaiCode || (data.user && (data.user.fssaiCode || data.user.fssaicode)) || prevUser.fssaiCode || prevUser.fssaicode || '',
-                            darpanId: darpanCode || (data.user && (data.user.darpanId || data.user.darpanid)) || prevUser.darpanId || prevUser.darpanid || '',
-                            ngoRegType: ngoType || (data.user && (data.user.ngoRegType || data.user.ngoregtype)) || prevUser.ngoRegType || prevUser.ngoregtype || '',
-                            pickupWindow,
-                            pickupInstructions,
-                            avatarUrl: avatarUrl || prevUser.avatarUrl
-                        };
-                        sessionStorage.setItem('nourishUser', JSON.stringify(updatedUser));
-                        localStorage.setItem('nourishUser', JSON.stringify(updatedUser));
+                        if (isInspecting) {
+                            const updatedUser = {
+                                ...state.adminInspectedUser,
+                                ...(data.user || {}),
+                                organizationName: orgName || state.adminInspectedUser.organizationName,
+                                name: orgName || state.adminInspectedUser.name,
+                                bio,
+                                address,
+                                contactPerson,
+                                publicPhone,
+                                phone: publicPhone || state.adminInspectedUser.phone,
+                                website,
+                                fssaiCode,
+                                darpanId: darpanCode,
+                                ngoRegType: ngoType,
+                                pickupWindow,
+                                pickupInstructions,
+                                avatarUrl: avatarUrl || state.adminInspectedUser.avatarUrl
+                            };
+                            state.adminInspectedUser = updatedUser;
+                            sessionStorage.setItem('nn_admin_inspected_user', JSON.stringify(updatedUser));
 
-                        showToast("Profile updated successfully! ✨", "success");
+                            if (adminCache && adminCache.users) {
+                                const idx = adminCache.users.findIndex(u => Number(u.id) === Number(updatedUser.id));
+                                if (idx !== -1) adminCache.users[idx] = updatedUser;
+                            }
+
+                            showToast(`Profile updated for ${updatedUser.organizationName || 'User'}! 🛡️`, "success");
+                        } else {
+                            const prevUser = JSON.parse(sessionStorage.getItem('nourishUser') || '{}');
+                            const updatedUser = {
+                                ...prevUser,
+                                ...(data.user || {}),
+                                organizationName: orgName || prevUser.organizationName || prevUser.name,
+                                name: orgName || prevUser.name,
+                                bio,
+                                address,
+                                contactPerson,
+                                publicPhone,
+                                phone: publicPhone || prevUser.phone,
+                                website,
+                                fssaiCode: fssaiCode || (data.user && (data.user.fssaiCode || data.user.fssaicode)) || prevUser.fssaiCode || prevUser.fssaicode || '',
+                                darpanId: darpanCode || (data.user && (data.user.darpanId || data.user.darpanid)) || prevUser.darpanId || prevUser.darpanid || '',
+                                ngoRegType: ngoType || (data.user && (data.user.ngoRegType || data.user.ngoregtype)) || prevUser.ngoRegType || prevUser.ngoregtype || '',
+                                pickupWindow,
+                                pickupInstructions,
+                                avatarUrl: avatarUrl || prevUser.avatarUrl
+                            };
+                            sessionStorage.setItem('nourishUser', JSON.stringify(updatedUser));
+                            localStorage.setItem('nourishUser', JSON.stringify(updatedUser));
+
+                            showToast("Profile updated successfully! ✨", "success");
+                        }
+
                         settingsModal.style.display = 'none';
 
                         // Update navbar avatar immediately
                         const navImg = document.getElementById('nav-avatar-img');
                         if (navImg && avatarUrl) navImg.src = avatarUrl;
 
-                        // Re-render portal to immediately show FSSAI or DARPAN badge!
+                        // Re-render portal to immediately show updated location, details, and trust badges!
                         renderPortal();
                     } else {
                         showToast("Failed to update profile.", "error");

@@ -27,6 +27,12 @@ function normalizeRow(row) {
         createdat: 'createdAt',
         vendorid: 'vendorId',
         vendorname: 'vendorName',
+        vendorbio: 'vendorBio',
+        vendoravatar: 'vendorAvatar',
+        vendoraddress: 'vendorAddress',
+        vendorphone: 'vendorPhone',
+        vendorcontactperson: 'vendorContactPerson',
+        vendoremail: 'vendorEmail',
         expirytime: 'expiryTime',
         pickuptime: 'pickupTime',
         imageurl: 'imageUrl',
@@ -252,19 +258,22 @@ if (dbUrl) {
 
             // Ensure demo users exist so foreign keys in orders table succeed for demo workflows
             await pool.query(`
-                INSERT INTO users (id, accounttype, organizationname, email, password, isverified, darpanid, ngoregtype, fssaicode, role)
+                INSERT INTO users (id, accounttype, organizationname, email, password, isverified, darpanid, ngoregtype, fssaicode, role, address)
                 VALUES 
-                (777, 'restaurant', 'Nourish HQ Operations', 'admin@nourishnetwork.org', '$2a$10$demoHashedPasswordPlaceHolder777', 1, '', '', '', 'admin'),
-                (888, 'restaurant', 'Elite Catering Services', 'serverdemo@gmail.com', '$2a$10$demoHashedPasswordPlaceHolder888', 1, '', '', '12345678901234', 'user'),
-                (999, 'ngo', 'Global Outreach Foundation', 'ngodemo@gmail.com', '$2a$10$demoHashedPasswordPlaceHolder999', 1, 'TN/2023/0345678', 'darpan', '', 'user')
+                (777, 'restaurant', 'Nourish HQ Operations', 'admin@nourishnetwork.org', '$2a$10$demoHashedPasswordPlaceHolder777', 1, '', '', '', 'admin', 'Nourish Operations HQ, Anna Salai, Chennai'),
+                (888, 'restaurant', 'Elite Catering Services', 'serverdemo@gmail.com', '$2a$10$demoHashedPasswordPlaceHolder888', 1, '', '', '12345678901234', 'user', '45, MG Road, Indiranagar, Bengaluru'),
+                (999, 'ngo', 'Global Outreach Foundation', 'ngodemo@gmail.com', '$2a$10$demoHashedPasswordPlaceHolder999', 1, 'TN/2023/0345678', 'darpan', '', 'user', '12, Besant Nagar, Chennai')
                 ON CONFLICT (id) DO UPDATE SET 
                     organizationname = EXCLUDED.organizationname,
                     accounttype = EXCLUDED.accounttype,
                     email = EXCLUDED.email,
-                    role = EXCLUDED.role;
+                    role = EXCLUDED.role,
+                    address = COALESCE(users.address, EXCLUDED.address);
 
                 -- Promote personal administrator account
                 UPDATE users SET role = 'admin' WHERE email = 'tharunchokkanc@gmail.com';
+                -- Ensure buyer account has a default location if empty
+                UPDATE users SET address = 'Besant Nagar, Chennai, Tamil Nadu' WHERE email = 'trails.maxxingg@gmail.com' AND (address IS NULL OR address = '');
             `);
             console.log('✅ Supabase PostgreSQL: All 4 cloud tables initialized and ready!');
         } catch (err) {
