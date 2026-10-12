@@ -1835,19 +1835,37 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
     // =========================================
-    // TOAST NOTIFICATIONS LOGIC
+    // FIGMA DYNAMIC PILL TOAST NOTIFICATIONS
     // =========================================
-    const toastContainer = document.getElementById('toastContainer');
+    let toastContainer = document.getElementById('toastContainer');
+    if (!toastContainer) {
+        toastContainer = document.createElement('div');
+        toastContainer.id = 'toastContainer';
+        toastContainer.className = 'toast-container';
+        document.body.appendChild(toastContainer);
+    }
 
+    function showToast(message, type = 'success', duration = 3800) {
+        if (!toastContainer) {
+            toastContainer = document.getElementById('toastContainer');
+            if (!toastContainer) {
+                toastContainer = document.createElement('div');
+                toastContainer.id = 'toastContainer';
+                toastContainer.className = 'toast-container';
+                document.body.appendChild(toastContainer);
+            }
+        }
 
-    function showToast(message, type = 'success') {
         const toast = document.createElement('div');
         toast.className = `toast toast-${type}`;
+        toast.style.setProperty('--toast-duration', `${duration}ms`);
 
-        // Define Icon based on type
+        // Icons matching status types
         let iconMarkup = '<i class="fa-solid fa-circle-check"></i>';
         if (type === 'error') {
-            iconMarkup = '<i class="fa-solid fa-circle-exclamation"></i>';
+            iconMarkup = '<i class="fa-solid fa-circle-xmark"></i>';
+        } else if (type === 'warning') {
+            iconMarkup = '<i class="fa-solid fa-triangle-exclamation"></i>';
         } else if (type === 'info') {
             iconMarkup = '<i class="fa-solid fa-circle-info"></i>';
         }
@@ -1855,21 +1873,43 @@ document.addEventListener('DOMContentLoaded', () => {
         toast.innerHTML = `
             <div class="toast-icon">${iconMarkup}</div>
             <div class="toast-message">${message}</div>
+            <button class="toast-close-btn" type="button" aria-label="Dismiss notification" title="Dismiss">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
         `;
+
+        const closeBtn = toast.querySelector('.toast-close-btn');
+        let removeTimeout = null;
+
+        const dismiss = () => {
+            if (removeTimeout) clearTimeout(removeTimeout);
+            toast.classList.remove('show');
+            toast.classList.add('hide');
+            setTimeout(() => {
+                if (toast.parentElement) toast.remove();
+            }, 350);
+        };
+
+        if (closeBtn) {
+            closeBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                dismiss();
+            });
+        }
 
         toastContainer.appendChild(toast);
 
-        // Trigger Animation
-        setTimeout(() => toast.classList.add('show'), 10);
+        // Trigger entrance animation smoothly
+        requestAnimationFrame(() => {
+            toast.classList.add('show');
+        });
 
-        // Remove after 3 seconds
-        setTimeout(() => {
-            toast.classList.remove('show');
-            setTimeout(() => toast.remove(), 400); // wait for exit animation
-        }, 3000);
+        // Auto-dismiss after duration
+        removeTimeout = setTimeout(dismiss, duration);
     }
     // Expose for global deleteComment handler
     window.__showToast = showToast;
+    window.showToast = showToast;
     window.__renderCommunityWall = () => renderCommunityWall();
     window.__renderPortalCommentList = () => renderPortalCommentList();
     window.__renderReviewsSlider = () => renderReviewsSlider();
