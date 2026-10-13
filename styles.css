@@ -6611,6 +6611,68 @@ button:active,
     color: #ffffff !important;
     transform: translateY(-1px);
     box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3) !important;
+/* ─────────────────────────────────────────────────────────────
+   ADMIN COMMAND CENTER & GOVERNANCE STYLES
+   ───────────────────────────────────────────────────────────── */
+
+.admin-portal-wrapper {
+    background: #0a0a0a;
+    color: #ffffff;
+    min-height: 100vh;
+    transition: background 0.3s ease, color 0.3s ease;
+}
+
+.admin-header-title {
+    color: #ffffff;
+    transition: color 0.3s ease;
+}
+
+.admin-header-subtitle {
+    color: rgba(255, 255, 255, 0.6);
+    transition: color 0.3s ease;
+}
+
+.admin-kpi-num {
+    font-size: 1.75rem;
+    font-weight: 800;
+    color: #ffffff;
+    transition: color 0.3s ease;
+}
+
+.admin-kpi-label {
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: rgba(255, 255, 255, 0.7);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    transition: color 0.3s ease;
+}
+
+.admin-cell-title {
+    font-weight: 700;
+    color: #ffffff;
+}
+
+.admin-cell-sub {
+    font-size: 0.78rem;
+    color: rgba(255, 255, 255, 0.5);
+}
+
+.admin-table-desc {
+    color: rgba(255, 255, 255, 0.7);
+}
+
+.admin-theme-toggle-btn {
+    background: rgba(255, 255, 255, 0.08) !important;
+    color: #ffffff !important;
+    border: 1px solid rgba(255, 255, 255, 0.2) !important;
+    cursor: pointer;
+}
+
+.admin-theme-toggle-btn:hover {
+    background: rgba(255, 255, 255, 0.16) !important;
+    border-color: rgba(255, 255, 255, 0.35) !important;
+    transform: translateY(-1px);
 }
 
 .admin-badge-pill {
@@ -7035,4 +7097,266 @@ button:active,
     background: #38bdf8 !important;
     color: #000000 !important;
     transform: translateY(-1px) !important;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   ADMIN COMMAND CENTER — LIGHT MODE ADAPTATION
+   ───────────────────────────────────────────────────────────── */
+
+[data-theme='light'] .admin-portal-wrapper {
+    background: #f4f8f5 !important;
+    color: #0f172a !important;
+}
+
+[data-theme='light'] .admin-header-title {
+    color: #0f172a !important;
+}
+
+[data-theme='light'] .admin-header-subtitle {
+    color: #475569 !important;
+}
+
+[data-theme='light'] .admin-theme-toggle-btn {
+    background: rgba(0, 0, 0, 0.05) !important;
+    color: #0f172a !important;
+    border: 1.5px solid rgba(0, 0, 0, 0.12) !important;
+}
+
+[data-theme='light'] .admin-theme-toggle-btn:hover {
+    background: rgba(0, 0, 0, 0.1) !important;
+    border-color: rgba(0, 0, 0, 0.25) !important;
+    color: #000000 !important;
+}
+
+[data-theme='light'] .admin-action-btn.admin-btn-secondary,
+[data-theme='light'] .admin-portal-wrapper .admin-action-btn[style*="background: rgba(255,255,255"] {
+    background: #ffffff !important;
+    color: #1e293b !important;
+    border: 1px solid #cbd5e1 !important;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05) !important;
+}
+
+[data-theme='light'] .admin-action-btn.admin-btn-secondary:hover,
+[data-theme='light'] .admin-portal-wrapper .admin-action-btn[style*="background: rgba(255,255,255"]:hover {
+    background: #f1f5f9 !important;
+    border-color: #94a3b8 !important;
+    color: #0f172a !important;
+}
+
+[data-theme='light'] .admin-kpi-card {
+    background: #ffffff !important;
+    border: 1.5px solid rgba(16, 185, 129, 0.18) !important;
+    box-shadow: 0 10px 25px rgba(6, 78, 59, 0.06), 0 2px 6px rgba(0, 0, 0, 0.04) !important;
+}
+
+[data-theme='light'] .admin-kpi-card:hover {
+    border-color: #10b981 !important;
+    box-shadow: 0 16px 35px rgba(16, 185, 129, 0.14), 0 4px 12px rgba(0, 0, 0, 0.05) !important;
+}
+
+[data-theme='light'] .admin-kpi-num {
+    color: #0f172a !important;
+}
+
+[data-theme='light'] .admin-kpi-label {
+    color: #64748b !important;
+}
+
+[data-theme='light'] .admin-tabs-nav {
+    border-bottom: 1px solid rgba(0, 0, 0, 0.1) !important;
+}
+
+[data-theme='light'] .admin-tab-btn {
+    color: #64748b !important;
+}
+
+[data-theme='light'] .admin-tab-btn:hover {
+    color: #0f172a !important;
+    background: rgba(0, 0, 0, 0.04) !important;
+}
+
+[data-theme='light'] .admin-tab-btn.active {
+    color: #059669 !important;
+    border-bottom: 2px solid #059669 !important;
+    background: rgba(16, 185, 129, 0.08) !important;
+}
+
+[data-theme='light'] .admin-count-pill {
+    background: rgba(0, 0, 0, 0.08) !important;
+    color: #334155 !important;
+}
+
+[data-theme='light'] .admin-tab-btn.active .admin-count-pill {
+    background: #10b981 !important;
+    color: #ffffff !important;
+}
+
+[data-theme='light'] .admin-table-container {
+    background: #ffffff !important;
+    border: 1.5px solid rgba(0, 0, 0, 0.08) !important;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05) !important;
+}
+
+[data-theme='light'] .admin-table {
+    color: #1e293b !important;
+}
+
+[data-theme='light'] .admin-table th {
+    background: #f8fafc !important;
+    color: #475569 !important;
+    border-bottom: 1.5px solid #e2e8f0 !important;
+}
+
+[data-theme='light'] .admin-table td {
+    border-bottom: 1px solid #f1f5f9 !important;
+}
+
+[data-theme='light'] .admin-table tr:hover td {
+    background: rgba(16, 185, 129, 0.03) !important;
+}
+
+[data-theme='light'] .admin-cell-title {
+    color: #0f172a !important;
+}
+
+[data-theme='light'] .admin-cell-sub {
+    color: #64748b !important;
+}
+
+[data-theme='light'] .admin-table-desc {
+    color: #475569 !important;
+}
+
+/* Dynamic cell inline style safety overrides for light mode */
+[data-theme='light'] .admin-table td div[style*="color:#fff"],
+[data-theme='light'] .admin-table td div[style*="color: #fff"],
+[data-theme='light'] .admin-table td span[style*="color:#fff"],
+[data-theme='light'] .admin-table td span[style*="color: #fff"] {
+    color: #0f172a !important;
+}
+
+[data-theme='light'] .admin-table td div[style*="color:#e5e5e5"],
+[data-theme='light'] .admin-table td div[style*="color: #e5e5e5"] {
+    color: #1e293b !important;
+}
+
+[data-theme='light'] .admin-table td div[style*="color:rgba(255,255,255,0.5)"],
+[data-theme='light'] .admin-table td div[style*="color: rgba(255,255,255,0.5)"],
+[data-theme='light'] .admin-table td div[style*="color:rgba(255,255,255,0.4)"],
+[data-theme='light'] .admin-table td div[style*="color: rgba(255,255,255,0.4)"],
+[data-theme='light'] .admin-table td span[style*="color:rgba(255,255,255,0.3)"],
+[data-theme='light'] .admin-table td span[style*="color: rgba(255,255,255,0.3)"] {
+    color: #64748b !important;
+}
+
+[data-theme='light'] .admin-table td div[style*="color:rgba(255,255,255,0.7)"],
+[data-theme='light'] .admin-table td div[style*="color: rgba(255,255,255,0.7)"],
+[data-theme='light'] .admin-table td[style*="color:rgba(255,255,255,0.7)"],
+[data-theme='light'] .admin-table td[style*="color: rgba(255,255,255,0.7)"] {
+    color: #475569 !important;
+}
+
+[data-theme='light'] .admin-table td span[style*="background:rgba(255,255,255,0.06)"],
+[data-theme='light'] .admin-table td span[style*="background: rgba(255, 255, 255, 0.06)"] {
+    background: #f1f5f9 !important;
+}
+
+[data-theme='light'] .admin-table td span[style*="background:rgba(255,255,255,0.08)"],
+[data-theme='light'] .admin-table td span[style*="background: rgba(255, 255, 255, 0.08)"] {
+    background: #f8fafc !important;
+    border-color: #cbd5e1 !important;
+    color: #b45309 !important;
+}
+
+/* Inspection banner light mode */
+[data-theme='light'] .admin-inspect-banner {
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.12), rgba(56, 189, 248, 0.12)) !important;
+    border: 1.5px solid rgba(56, 189, 248, 0.4) !important;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.06) !important;
+}
+
+[data-theme='light'] .admin-inspect-details {
+    color: #0f172a !important;
+}
+
+[data-theme='light'] .admin-inspect-meta {
+    color: #475569 !important;
+}
+
+[data-theme='light'] .admin-inspect-pill-btn {
+    background: rgba(0, 0, 0, 0.06) !important;
+    color: #1e293b !important;
+    border: 1px solid rgba(0, 0, 0, 0.15) !important;
+}
+
+[data-theme='light'] .admin-inspect-pill-btn:hover {
+    background: rgba(0, 0, 0, 0.12) !important;
+    border-color: rgba(0, 0, 0, 0.3) !important;
+    color: #0f172a !important;
+}
+
+/* Admin modals in light mode */
+[data-theme='light'] #adminAuthModal .modal-content,
+[data-theme='light'] #adminAddModal .modal-content,
+[data-theme='light'] #adminUserPickerModal .modal-content {
+    background: #ffffff !important;
+    border: 1.5px solid rgba(0, 0, 0, 0.1) !important;
+    box-shadow: 0 25px 70px rgba(0, 0, 0, 0.15) !important;
+    color: #0f172a !important;
+}
+
+[data-theme='light'] #adminAuthModal h2,
+[data-theme='light'] #adminAddModal h2,
+[data-theme='light'] #adminUserPickerModal h2,
+[data-theme='light'] #adminPickerTitle {
+    color: #0f172a !important;
+}
+
+[data-theme='light'] #adminAuthModal p,
+[data-theme='light'] #adminAddModal p,
+[data-theme='light'] #adminUserPickerModal p,
+[data-theme='light'] #adminPickerSubtitle,
+[data-theme='light'] #adminPickerCountBadge {
+    color: #64748b !important;
+}
+
+[data-theme='light'] #adminAddModal .minimal-pill-btn[type="button"] {
+    background: #f1f5f9 !important;
+    border-color: #cbd5e1 !important;
+    color: #334155 !important;
+}
+
+[data-theme='light'] .admin-picker-user-card {
+    background: #ffffff !important;
+    border-color: rgba(0, 0, 0, 0.08) !important;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.04) !important;
+}
+
+[data-theme='light'] .admin-picker-user-card:hover {
+    background: #f8fafc !important;
+    border-color: #38bdf8 !important;
+}
+
+[data-theme='light'] .admin-picker-user-card.is-current-active {
+    border-color: #10b981 !important;
+    background: rgba(16, 185, 129, 0.08) !important;
+}
+
+[data-theme='light'] .admin-picker-avatar-wrap {
+    background: #f1f5f9 !important;
+    color: #0f172a !important;
+    border-color: #e2e8f0 !important;
+}
+
+[data-theme='light'] .admin-picker-name {
+    color: #0f172a !important;
+}
+
+[data-theme='light'] .admin-picker-id-tag {
+    background: #f1f5f9 !important;
+    color: #475569 !important;
+}
+
+[data-theme='light'] .admin-picker-sub-row {
+    color: #64748b !important;
 }
