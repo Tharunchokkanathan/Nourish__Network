@@ -4785,7 +4785,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         root.innerHTML = `
             <div class="portal-wrapper admin-portal-wrapper animate-reveal" style="padding-top: 90px; min-height: 100vh;">
-                <div class="container" style="max-width: 1300px; margin: 0 auto; padding: 1.5rem 2rem 4rem;">
+                <div class="container" style="max-width: 1300px; margin: 0 auto; padding: 1.5rem 2rem 7rem;">
                     <!-- Top Header -->
                     <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 1.25rem; margin-bottom: 2rem;">
                         <div>

@@ -6611,6 +6611,8 @@ button:active,
     color: #ffffff !important;
     transform: translateY(-1px);
     box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3) !important;
+}
+
 /* ─────────────────────────────────────────────────────────────
    ADMIN COMMAND CENTER & GOVERNANCE STYLES
    ───────────────────────────────────────────────────────────── */
