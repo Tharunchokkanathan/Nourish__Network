@@ -2890,24 +2890,42 @@ document.addEventListener('DOMContentLoaded', () => {
     const themeToggle = document.getElementById('theme-toggle');
     const htmlElement = document.documentElement;
 
-    if (themeToggle) {
-        const themeIcon = themeToggle.querySelector('i');
+    function applyNourishTheme(theme, notify = false) {
+        htmlElement.setAttribute('data-theme', theme);
+        localStorage.setItem('nourishTheme', theme);
 
-        // Check for saved theme or default to dark
+        const themeIcon = themeToggle ? themeToggle.querySelector('i') : null;
+        updateThemeIcon(theme, themeIcon);
+
+        const adminThemeBtn = document.getElementById('admin-theme-toggle-btn');
+        if (adminThemeBtn) {
+            const adminIcon = adminThemeBtn.querySelector('i');
+            if (adminIcon) {
+                if (theme === 'dark') {
+                    adminIcon.className = 'fa-solid fa-sun';
+                } else {
+                    adminIcon.className = 'fa-solid fa-moon';
+                }
+            }
+        }
+
+        if (notify) {
+            showToast(`Switched to ${theme.charAt(0).toUpperCase() + theme.slice(1)} Mode`, 'info');
+        }
+    }
+
+    window.toggleNourishTheme = function() {
+        const currentTheme = htmlElement.getAttribute('data-theme') || 'dark';
+        const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+        applyNourishTheme(newTheme, true);
+    };
+
+    if (themeToggle) {
         const savedTheme = localStorage.getItem('nourishTheme') || 'dark';
-        htmlElement.setAttribute('data-theme', savedTheme);
-        updateThemeIcon(savedTheme, themeIcon);
+        applyNourishTheme(savedTheme, false);
 
         themeToggle.addEventListener('click', () => {
-            const currentTheme = htmlElement.getAttribute('data-theme');
-            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
-
-            htmlElement.setAttribute('data-theme', newTheme);
-            localStorage.setItem('nourishTheme', newTheme);
-            updateThemeIcon(newTheme, themeIcon);
-
-            // Visual feedback
-            showToast(`Switched to ${newTheme.charAt(0).toUpperCase() + newTheme.slice(1)} Mode`, 'info');
+            window.toggleNourishTheme();
         });
     }
 
@@ -4300,7 +4318,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         let html = `
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem; flex-wrap:wrap; gap:10px;">
-                <p style="color:rgba(255,255,255,0.7); font-size:0.88rem; margin:0;">
+                <p class="admin-table-desc" style="font-size:0.88rem; margin:0;">
                     Review statutory accreditations (14-digit FSSAI licenses for Food Vendors, NITI Aayog DARPAN / Society Deeds for NGOs).
                 </p>
                 <div style="font-size:0.82rem; color: #10b981; font-weight:700;">
@@ -4331,13 +4349,13 @@ document.addEventListener('DOMContentLoaded', () => {
             let licenseInfo = '';
             if (isSeller) {
                 if (o.fssaiCode) {
-                    licenseInfo = `<div style="font-family:monospace; color:#34d399; font-weight:700; letter-spacing:0.5px;"><i class="fa-solid fa-shield-halved"></i> FSSAI: ${o.fssaiCode}</div><div style="font-size:0.72rem; color:rgba(255,255,255,0.5);">14-Digit Food Safety Code</div>`;
+                    licenseInfo = `<div style="font-family:monospace; color:#34d399; font-weight:700; letter-spacing:0.5px;"><i class="fa-solid fa-shield-halved"></i> FSSAI: ${o.fssaiCode}</div><div class="admin-cell-sub" style="font-size:0.72rem;">14-Digit Food Safety Code</div>`;
                 } else {
                     licenseInfo = `<div style="color:#f59e0b; font-size:0.78rem;"><i class="fa-solid fa-triangle-exclamation"></i> FSSAI Not Provided</div>`;
                 }
             } else {
                 if (o.darpanId) {
-                    licenseInfo = `<div style="font-family:monospace; color:#38bdf8; font-weight:700; letter-spacing:0.5px;"><i class="fa-solid fa-building-columns"></i> ${o.darpanId}</div><div style="font-size:0.72rem; color:rgba(255,255,255,0.5);">${o.ngoRegType === 'trust' ? 'State Society / Trust' : 'NITI Aayog DARPAN ID'}</div>`;
+                    licenseInfo = `<div style="font-family:monospace; color:#38bdf8; font-weight:700; letter-spacing:0.5px;"><i class="fa-solid fa-building-columns"></i> ${o.darpanId}</div><div class="admin-cell-sub" style="font-size:0.72rem;">${o.ngoRegType === 'trust' ? 'State Society / Trust' : 'NITI Aayog DARPAN ID'}</div>`;
                 } else {
                     licenseInfo = `<div style="color:#f59e0b; font-size:0.78rem;"><i class="fa-solid fa-triangle-exclamation"></i> DARPAN Not Provided</div>`;
                 }
@@ -4354,12 +4372,12 @@ document.addEventListener('DOMContentLoaded', () => {
             html += `
                 <tr>
                     <td>
-                        <div style="font-weight:700; color:#fff;">${o.organizationName || 'Unnamed Org'}</div>
-                        <div style="font-size:0.78rem; color:rgba(255,255,255,0.5);">${o.email}</div>
+                        <div class="admin-cell-title">${o.organizationName || 'Unnamed Org'}</div>
+                        <div class="admin-cell-sub">${o.email}</div>
                     </td>
                     <td>${typeBadge}</td>
                     <td>${licenseInfo}</td>
-                    <td style="font-size:0.8rem; color:rgba(255,255,255,0.7);">
+                    <td class="admin-table-desc" style="font-size:0.8rem;">
                         ${o.contactPerson ? `<div><i class="fa-solid fa-user" style="font-size:0.7rem; color:var(--text-muted);"></i> ${o.contactPerson}</div>` : ''}
                         ${o.phone ? `<div><i class="fa-solid fa-phone" style="font-size:0.7rem; color:var(--text-muted);"></i> ${o.phone}</div>` : ''}
                         ${o.address ? `<div style="max-width:200px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;"><i class="fa-solid fa-location-dot" style="font-size:0.7rem; color:var(--text-muted);"></i> ${o.address}</div>` : ''}
@@ -4385,7 +4403,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         let html = `
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem; flex-wrap:wrap; gap:10px;">
-                <p style="color:rgba(255,255,255,0.7); font-size:0.88rem; margin:0;">
+                <p class="admin-table-desc" style="font-size:0.88rem; margin:0;">
                     Live surplus inventory across all vendors. 1-click removal for quality or safety moderation.
                 </p>
                 <div style="font-size:0.82rem; color: #10b981; font-weight:700;">
@@ -4414,17 +4432,17 @@ document.addEventListener('DOMContentLoaded', () => {
             html += `
                 <tr>
                     <td>
-                        <div style="font-weight:700; color:#fff;">${l.name}</div>
-                        <div style="font-size:0.75rem; color:rgba(255,255,255,0.5);">ID: #${l.id} • Added: ${l.createdAt ? new Date(l.createdAt).toLocaleDateString() : 'Recent'}</div>
+                        <div class="admin-cell-title">${l.name}</div>
+                        <div class="admin-cell-sub">ID: #${l.id} • Added: ${l.createdAt ? new Date(l.createdAt).toLocaleDateString() : 'Recent'}</div>
                     </td>
                     <td>
-                        <div style="font-weight:600; color:#e5e5e5;">${l.vendorOrg || ('Vendor #' + l.vendorId)}</div>
+                        <div class="admin-cell-title" style="font-weight:600;">${l.vendorOrg || ('Vendor #' + l.vendorId)}</div>
                         ${l.vendorFssai ? `<div style="font-size:0.72rem; color:#34d399; font-family:monospace;">FSSAI: ${l.vendorFssai}</div>` : ''}
                     </td>
                     <td>
-                        <span style="font-weight:700; color:#fff;">${l.quantity || l.qty} ${l.unit || 'portions'}</span>
+                        <span class="admin-cell-title">${l.quantity || l.qty} ${l.unit || 'portions'}</span>
                     </td>
-                    <td style="font-size:0.8rem; color:rgba(255,255,255,0.7);">
+                    <td class="admin-table-desc" style="font-size:0.8rem;">
                         <div><i class="fa-solid fa-leaf" style="color:#10b981;"></i> ${l.dietary || 'Standard'}</div>
                         ${l.expiry ? `<div style="font-size:0.72rem; color:#f59e0b;"><i class="fa-solid fa-clock"></i> Exp: ${l.expiry}</div>` : ''}
                     </td>
@@ -4457,7 +4475,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         let html = `
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem; flex-wrap:wrap; gap:10px;">
-                <p style="color:rgba(255,255,255,0.7); font-size:0.88rem; margin:0;">
+                <p class="admin-table-desc" style="font-size:0.88rem; margin:0;">
                     Complete custody audit log: OTP PIN verification, timestamps, donor vendor and recipient NGO.
                 </p>
                 <div style="font-size:0.82rem; color: #38bdf8; font-weight:700;">
@@ -4488,20 +4506,20 @@ document.addEventListener('DOMContentLoaded', () => {
             html += `
                 <tr>
                     <td>
-                        <div style="font-weight:700; color:#fff; font-family:monospace;">#ORD-${h.id}</div>
-                        <div style="font-size:0.72rem; color:rgba(255,255,255,0.4);">${h.createdAt ? new Date(h.createdAt).toLocaleDateString() : ''}</div>
+                        <div class="admin-cell-title" style="font-family:monospace;">#ORD-${h.id}</div>
+                        <div class="admin-cell-sub">${h.createdAt ? new Date(h.createdAt).toLocaleDateString() : ''}</div>
                     </td>
                     <td>
-                        <div style="font-weight:600; color:#fff;">${h.foodName || 'Surplus Meal Package'}</div>
+                        <div class="admin-cell-title" style="font-weight:600;">${h.foodName || 'Surplus Meal Package'}</div>
                         <div style="font-size:0.75rem; color:#10b981;">Qty: ${h.quantity || 1} portions</div>
                     </td>
                     <td>
-                        <div style="font-weight:600; color:#e5e5e5;">${h.sellerName || 'Vendor Partner'}</div>
-                        ${h.sellerFssai ? `<div style="font-size:0.72rem; color:rgba(255,255,255,0.4); font-family:monospace;">FSSAI: ${h.sellerFssai}</div>` : ''}
+                        <div class="admin-cell-title" style="font-weight:600;">${h.sellerName || 'Vendor Partner'}</div>
+                        ${h.sellerFssai ? `<div class="admin-cell-sub" style="font-family:monospace;">FSSAI: ${h.sellerFssai}</div>` : ''}
                     </td>
                     <td>
-                        <div style="font-weight:600; color:#38bdf8;">${h.buyerName || 'Community Partner'}</div>
-                        ${h.buyerDarpan ? `<div style="font-size:0.72rem; color:rgba(255,255,255,0.4); font-family:monospace;">DARPAN: ${h.buyerDarpan}</div>` : ''}
+                        <div class="admin-cell-title" style="font-weight:600; color:#38bdf8;">${h.buyerName || 'Community Partner'}</div>
+                        ${h.buyerDarpan ? `<div class="admin-cell-sub" style="font-family:monospace;">DARPAN: ${h.buyerDarpan}</div>` : ''}
                     </td>
                     <td>
                         <span style="font-family:monospace; font-weight:800; font-size:0.9rem; background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.15); padding:3px 8px; border-radius:6px; color:#fbbf24; letter-spacing:1px;">
@@ -4529,7 +4547,7 @@ document.addEventListener('DOMContentLoaded', () => {
         let html = `
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem; flex-wrap:wrap; gap:12px;">
                 <div>
-                    <p style="color:rgba(255,255,255,0.7); font-size:0.88rem; margin:0;">
+                    <p class="admin-table-desc" style="font-size:0.88rem; margin:0;">
                         Master directory of registered organization leads, account credentials, and platform roles.
                     </p>
                     <div style="font-size:0.82rem; color: #10b981; font-weight:700; margin-top:3px;">
@@ -4576,12 +4594,12 @@ document.addEventListener('DOMContentLoaded', () => {
             html += `
                 <tr>
                     <td>
-                        <div style="font-weight:700; color:#fff;">${u.organizationName || 'Unnamed User'}</div>
-                        <div style="font-size:0.72rem; color:rgba(255,255,255,0.4);">User ID: #${u.id}</div>
+                        <div class="admin-cell-title">${u.organizationName || 'Unnamed User'}</div>
+                        <div class="admin-cell-sub">User ID: #${u.id}</div>
                     </td>
                     <td>${roleBadge}</td>
-                    <td style="color:rgba(255,255,255,0.8);">${u.email}</td>
-                    <td style="color:rgba(255,255,255,0.7);">${u.phone || '—'}</td>
+                    <td class="admin-table-desc">${u.email}</td>
+                    <td class="admin-table-desc">${u.phone || '—'}</td>
                     <td>${accreditation}</td>
                     <td>
                         ${u.isVerified 
@@ -4642,7 +4660,7 @@ document.addEventListener('DOMContentLoaded', () => {
             setTimeout(() => {
                 el.textContent = newValue;
                 el.style.transform = 'scale(1)';
-                el.style.color = '#ffffff';
+                el.style.color = '';
             }, 180);
         } else {
             el.textContent = newValue;
@@ -4766,7 +4784,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!root) return;
 
         root.innerHTML = `
-            <div class="portal-wrapper admin-portal-wrapper animate-reveal" style="padding-top: 90px; min-height: 100vh; background: #0a0a0a;">
+            <div class="portal-wrapper admin-portal-wrapper animate-reveal" style="padding-top: 90px; min-height: 100vh;">
                 <div class="container" style="max-width: 1300px; margin: 0 auto; padding: 1.5rem 2rem 4rem;">
                     <!-- Top Header -->
                     <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 1.25rem; margin-bottom: 2rem;">
@@ -4775,15 +4793,18 @@ document.addEventListener('DOMContentLoaded', () => {
                                 <span class="admin-badge-pill"><i class="fa-solid fa-shield-halved"></i> Nourish HQ Operations</span>
                                 <span style="font-size: 0.72rem; color: #10b981; background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.25); padding: 3px 8px; border-radius: 100px; font-weight: 700;">● Active Command Cluster</span>
                             </div>
-                            <h1 style="font-size: 2rem; font-weight: 800; letter-spacing: -0.02em; margin: 0; color: #ffffff;">
+                            <h1 class="admin-header-title" style="font-size: 2rem; font-weight: 800; letter-spacing: -0.02em; margin: 0;">
                                 Operations & Compliance Command Center
                             </h1>
-                            <p style="color: rgba(255, 255, 255, 0.6); font-size: 0.95rem; margin: 6px 0 0;">
+                            <p class="admin-header-subtitle" style="font-size: 0.95rem; margin: 6px 0 0;">
                                 Unified platform governance, FSSAI / DARPAN credential verification, real-time donation moderation, and physical handover audit logs.
                             </p>
                         </div>
                         <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
-                            <button onclick="window.adminRefreshData && window.adminRefreshData()" class="admin-action-btn" style="background: rgba(255,255,255,0.06); color: #fff; border: 1px solid rgba(255,255,255,0.15);">
+                            <button onclick="window.toggleNourishTheme && window.toggleNourishTheme()" class="admin-action-btn admin-theme-toggle-btn" id="admin-theme-toggle-btn" title="Toggle Light / Dark Mode">
+                                <i class="fa-solid ${document.documentElement.getAttribute('data-theme') === 'light' ? 'fa-moon' : 'fa-sun'}"></i> Theme
+                            </button>
+                            <button onclick="window.adminRefreshData && window.adminRefreshData()" class="admin-action-btn admin-btn-secondary">
                                 <i class="fa-solid fa-rotate"></i> Refresh
                             </button>
                             <button onclick="window.adminSwitchPortal && window.adminSwitchPortal('seller')" class="admin-action-btn" style="background: rgba(16,185,129,0.12); color: #34d399; border: 1px solid rgba(16,185,129,0.3);">
@@ -4802,8 +4823,8 @@ document.addEventListener('DOMContentLoaded', () => {
                                 <i class="fa-solid fa-bowl-food"></i>
                             </div>
                             <div>
-                                <div style="font-size: 1.75rem; font-weight: 800; color: #ffffff;" id="kpi-meals">--</div>
-                                <div style="font-size: 0.8rem; font-weight: 700; color: rgba(255,255,255,0.7); text-transform: uppercase; letter-spacing: 0.5px;">Meals Rescued</div>
+                                <div class="admin-kpi-num" id="kpi-meals">--</div>
+                                <div class="admin-kpi-label">Meals Rescued</div>
                                 <div style="font-size: 0.75rem; color: #10b981; margin-top: 2px;" id="kpi-meals-sub">Portions allocated</div>
                             </div>
                         </div>
@@ -4813,8 +4834,8 @@ document.addEventListener('DOMContentLoaded', () => {
                                 <i class="fa-solid fa-box-open"></i>
                             </div>
                             <div>
-                                <div style="font-size: 1.75rem; font-weight: 800; color: #ffffff;" id="kpi-listings">--</div>
-                                <div style="font-size: 0.8rem; font-weight: 700; color: rgba(255,255,255,0.7); text-transform: uppercase; letter-spacing: 0.5px;">Surplus Listings</div>
+                                <div class="admin-kpi-num" id="kpi-listings">--</div>
+                                <div class="admin-kpi-label">Surplus Listings</div>
                                 <div style="font-size: 0.75rem; color: #fbbf24; margin-top: 2px;" id="kpi-listings-sub">Live across network</div>
                             </div>
                         </div>
@@ -4824,8 +4845,8 @@ document.addEventListener('DOMContentLoaded', () => {
                                 <i class="fa-solid fa-shield-halved"></i>
                             </div>
                             <div>
-                                <div style="font-size: 1.75rem; font-weight: 800; color: #ffffff;" id="kpi-handovers">--</div>
-                                <div style="font-size: 0.8rem; font-weight: 700; color: rgba(255,255,255,0.7); text-transform: uppercase; letter-spacing: 0.5px;">Verified Pickups & Partners</div>
+                                <div class="admin-kpi-num" id="kpi-handovers">--</div>
+                                <div class="admin-kpi-label">Verified Pickups & Partners</div>
                                 <div style="font-size: 0.75rem; color: #38bdf8; margin-top: 2px;" id="kpi-handovers-sub">Accredited partners • pickups</div>
                             </div>
                         </div>
@@ -4835,8 +4856,8 @@ document.addEventListener('DOMContentLoaded', () => {
                                 <i class="fa-solid fa-earth-americas"></i>
                             </div>
                             <div>
-                                <div style="font-size: 1.75rem; font-weight: 800; color: #ffffff;" id="kpi-co2">--</div>
-                                <div style="font-size: 0.8rem; font-weight: 700; color: rgba(255,255,255,0.7); text-transform: uppercase; letter-spacing: 0.5px;">CO₂ Offset</div>
+                                <div class="admin-kpi-num" id="kpi-co2">--</div>
+                                <div class="admin-kpi-label">CO₂ Offset</div>
                                 <div style="font-size: 0.75rem; color: #c084fc; margin-top: 2px;">Greenhouse emissions saved</div>
                             </div>
                         </div>
