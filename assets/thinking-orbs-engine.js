@@ -56,16 +56,14 @@ function inkColor(w, alpha, dark, tint) {
   return `rgba(${ramp(tint.r)},${ramp(tint.g)},${ramp(tint.b)},${alpha})`;
 }
 function paint(ctx, dots, dark, rMin = 0.3, tint) {
-  // Pass 1: Luminous soft aura under front-facing energetic dots (gives intense 3D glow & halation)
+  // Pass 1: Luminous soft white aura under front-facing energetic dots (pure white glow)
   if (dark) {
     for (const d of dots) {
       const alpha = d.a ?? 1;
-      if (d.z > 0.2 && alpha > 0.5 && d.r > 0.7) {
-        const glowR = d.r * 2.2;
-        const glowAlpha = alpha * 0.25;
-        ctx.fillStyle = tint 
-          ? `rgba(${tint.r},${tint.g},${tint.b},${glowAlpha})` 
-          : `rgba(52, 211, 153, ${glowAlpha})`;
+      if (d.z > 0.15 && alpha > 0.45 && d.r > 0.65) {
+        const glowR = d.r * 2.6;
+        const glowAlpha = Math.min(0.55, alpha * 0.38);
+        ctx.fillStyle = `rgba(255, 255, 255, ${glowAlpha})`;
         ctx.beginPath();
         ctx.arc(d.x, d.y, glowR, 0, Math.PI * 2);
         ctx.fill();
@@ -83,10 +81,10 @@ function paint(ctx, dots, dark, rMin = 0.3, tint) {
     ctx.fill();
 
     // Pass 3: Specular bright diamond center on peak incandescent dots
-    if (dark && d.z > 0.35 && alpha > 0.75 && (1 - w) > 0.8) {
-      ctx.fillStyle = `rgba(255, 255, 255, ${Math.min(1, alpha * 0.95)})`;
+    if (dark && d.z > 0.25 && alpha > 0.7 && (1 - w) > 0.75) {
+      ctx.fillStyle = `rgba(255, 255, 255, ${Math.min(1, alpha * 0.98)})`;
       ctx.beginPath();
-      ctx.arc(d.x, d.y, Math.max(0.4, d.r * 0.42), 0, Math.PI * 2);
+      ctx.arc(d.x, d.y, Math.max(0.4, d.r * 0.48), 0, Math.PI * 2);
       ctx.fill();
     }
   }
