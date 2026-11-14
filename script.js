@@ -1000,7 +1000,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             if (window.ThinkingOrbUI) {
-                window.ThinkingOrbUI.showGlobal('Securing Meal Rescue…', 'Reserving surplus meal batch with donor kitchen', 'searching');
+                window.ThinkingOrbUI.showGlobal('Confirming Order…', 'Reserving surplus meal batch with donor kitchen', 'searching');
             }
 
             // Step 1: Call backend checkout API with strict database validation
@@ -1324,6 +1324,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- BACKEND SYNC ENGINE ---
     async function refreshState(silent = false) {
+        if (!silent && window.ThinkingOrbUI) {
+            window.ThinkingOrbUI.showGlobal('Refreshing Exchange…', 'Syncing live inventory and community updates', 'searching');
+        }
         try {
             const user = JSON.parse(sessionStorage.getItem('nourishUser') || '{}');
             let url = `${API_BASE}/listings?_t=${Date.now()}`;
@@ -1458,6 +1461,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 renderSellerListings();
             } else if (state.activePortal === 'buyer' && typeof renderExchangeGrid === 'function') {
                 renderExchangeGrid();
+            }
+        } finally {
+            if (!silent && window.ThinkingOrbUI) {
+                setTimeout(() => window.ThinkingOrbUI.hideGlobal(), 350);
             }
         }
     }
@@ -2337,8 +2344,9 @@ document.addEventListener('DOMContentLoaded', () => {
         const originalText = submitBtn.innerHTML;
 
         setLoading(submitBtn, true, originalText);
-
-
+        if (window.ThinkingOrbUI) {
+            window.ThinkingOrbUI.showGlobal('Authenticating Account…', 'Verifying credentials with secure database', 'searching');
+        }
 
         try {
             const response = await fetch(`${API_BASE}/login`, {
@@ -2367,8 +2375,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     renderPortal();
                     syncDock();
                     refreshState();
-                }, 1000);
+                    if (window.ThinkingOrbUI) window.ThinkingOrbUI.hideGlobal();
+                }, 800);
             } else if (response.status === 403 && data.unverified) {
+                if (window.ThinkingOrbUI) window.ThinkingOrbUI.hideGlobal();
                 showToast(data.error || "Please verify your email address first.", "warning");
                 authModal.classList.remove('active');
                 const sentEmailEl = document.getElementById('verifySentEmail');
@@ -2377,9 +2387,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (emailModal) emailModal.classList.add('active');
                 startVerificationPolling(data.email || email);
             } else {
+                if (window.ThinkingOrbUI) window.ThinkingOrbUI.hideGlobal();
                 showToast(data.error || "Login failed", "error");
             }
         } catch (error) {
+            if (window.ThinkingOrbUI) window.ThinkingOrbUI.hideGlobal();
             showToast("Network error. Is the server running?", "error");
         } finally {
             setLoading(submitBtn, false, originalText);
@@ -2699,6 +2711,9 @@ document.addEventListener('DOMContentLoaded', () => {
         const originalText = submitBtn.innerHTML;
 
         setLoading(submitBtn, true, originalText);
+        if (window.ThinkingOrbUI) {
+            window.ThinkingOrbUI.showGlobal('Creating Account…', 'Validating government compliance & encryption', 'searching');
+        }
 
         try {
             const response = await fetch(`${API_BASE}/register`, {
@@ -2730,6 +2745,7 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch (error) {
             showToast("Network error. Please try again later.", "error");
         } finally {
+            if (window.ThinkingOrbUI) window.ThinkingOrbUI.hideGlobal();
             setLoading(submitBtn, false, originalText);
         }
     });
@@ -3276,6 +3292,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function logout() {
         console.log("logout: Clearing session and switching to homepage");
+        if (window.ThinkingOrbUI) {
+            window.ThinkingOrbUI.showGlobal('Signing Out…', 'Clearing credentials & securing session', 'searching');
+        }
         if (typeof stopAdminLivePolling === 'function') stopAdminLivePolling();
         sessionStorage.removeItem('nourishUser');
         sessionStorage.removeItem('nourishToken');
@@ -3314,6 +3333,10 @@ document.addEventListener('DOMContentLoaded', () => {
         syncDock();
         window.scrollTo({ top: 0, behavior: 'smooth' });
         showToast("Logged out successfully.", "info");
+
+        setTimeout(() => {
+            if (window.ThinkingOrbUI) window.ThinkingOrbUI.hideGlobal();
+        }, 400);
     }
     window.logout = logout;
 
@@ -3664,6 +3687,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 const token = sessionStorage.getItem('nourishToken');
 
+                if (window.ThinkingOrbUI) {
+                    window.ThinkingOrbUI.showGlobal('Removing Listing…', 'Updating inventory ledger', 'searching');
+                }
+
                 // Helper to remove locally
                 const removeLocally = () => {
                     let demoListings = JSON.parse(localStorage.getItem('nn_demo_listings') || '[]');
@@ -3678,6 +3705,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                     updateLiveStats();
                     if (typeof broadcastInventoryChange === 'function') broadcastInventoryChange();
+                    setTimeout(() => {
+                        if (window.ThinkingOrbUI) window.ThinkingOrbUI.hideGlobal();
+                    }, 350);
                 };
 
                 const isDemoToken = !token || token.startsWith('demo-token') || String(id).startsWith('demo-');
@@ -3695,6 +3725,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (response.ok || response.status === 404 || response.status === 403) {
                         removeLocally();
                     } else {
+                        if (window.ThinkingOrbUI) window.ThinkingOrbUI.hideGlobal();
                         const data = await response.json();
                         showToast(data.error || "Delete failed", "error");
                     }
@@ -5421,6 +5452,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     vendorAddress: addressVal
                 };
 
+                if (window.ThinkingOrbUI) {
+                    window.ThinkingOrbUI.showGlobal(pId ? 'Updating Food Listing…' : 'Publishing Surplus Meal…', 'Broadcasting real-time availability across network', 'searching');
+                }
+
                 // ---- DEMO MODE: bypass API for demo tokens ----
                 const isDemoToken = token.startsWith('demo-token');
                 if (isDemoToken) {
@@ -5480,6 +5515,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (pPhoneInput) pPhoneInput.value = phoneVal || targetUser.publicPhone || targetUser.phone || '';
                     if (pAddressInput) pAddressInput.value = addressVal || targetUser.address || '';
                     renderSellerListings();
+                    setTimeout(() => {
+                        if (window.ThinkingOrbUI) window.ThinkingOrbUI.hideGlobal();
+                    }, 400);
                     return;
 
                 }
@@ -5536,6 +5574,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                 } catch (err) {
                     showToast("Network error while publishing.", "error");
+                } finally {
+                    if (window.ThinkingOrbUI) window.ThinkingOrbUI.hideGlobal();
                 }
             });
         }
@@ -5743,6 +5783,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 renderPortalCommentList();
 
                 input.value = '';
+                if (window.ThinkingOrbUI) {
+                    window.ThinkingOrbUI.showGlobal('Publishing Community Review…', 'Broadcasting verified voice to public impact wall', 'searching');
+                    setTimeout(() => {
+                        if (window.ThinkingOrbUI) window.ThinkingOrbUI.hideGlobal();
+                    }, 400);
+                }
                 showToast("Your voice is now live in 'Voices of Impact'! 🌱", "success");
             });
         }
@@ -6964,6 +7010,9 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         isVerifyingHandover = true;
+        if (window.ThinkingOrbUI) {
+            window.ThinkingOrbUI.showGlobal('Verifying Handover PIN…', 'Validating digital release with secure ledger', 'searching');
+        }
         if (confirmBtn) {
             confirmBtn.disabled = true;
             confirmBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Verifying PIN...';
@@ -6977,6 +7026,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const expectedPin = (locOrder && locOrder.handoverOtp) || String(orderId).padStart(4, '0').slice(-4);
 
                 if (locOrder && otp !== expectedPin) {
+                    if (window.ThinkingOrbUI) window.ThinkingOrbUI.hideGlobal();
                     if (errorBox) {
                         errorBox.textContent = 'Invalid Handover PIN! Please ask the NGO driver to show their pass.';
                         errorBox.style.display = 'block';
@@ -7002,6 +7052,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 showToast("Physical handover verified successfully! 🤝", "success");
                 if (typeof loadPortalHistory === 'function') loadPortalHistory();
             } finally {
+                if (window.ThinkingOrbUI) window.ThinkingOrbUI.hideGlobal();
                 isVerifyingHandover = false;
             }
             return;
@@ -7050,6 +7101,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 confirmBtn.innerHTML = '<i class="fa-solid fa-check-double"></i>&nbsp; Verify & Complete Handover';
             }
         } finally {
+            if (window.ThinkingOrbUI) window.ThinkingOrbUI.hideGlobal();
             isVerifyingHandover = false;
         }
     }
@@ -7191,6 +7243,18 @@ document.addEventListener('DOMContentLoaded', () => {
     updateCartBadge();
     wireDockButtons();
     checkSession();
+
+    // Dismiss initial page preloader with smooth iOS fade
+    setTimeout(() => {
+        const preloader = document.getElementById('nn-app-preloader');
+        if (preloader) {
+            preloader.style.transition = 'opacity 0.4s ease, visibility 0.4s ease';
+            preloader.style.opacity = '0';
+            setTimeout(() => {
+                preloader.style.display = 'none';
+            }, 400);
+        }
+    }, 500);
 
 
     // Real-time silent polling every 5 seconds
@@ -7679,6 +7743,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 saveBtn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Saving...';
                 saveBtn.disabled = true;
 
+                if (window.ThinkingOrbUI) {
+                    window.ThinkingOrbUI.showGlobal('Saving Profile Settings…', 'Updating cryptographic credentials & directory listing', 'searching');
+                }
+
                 const orgName = orgNameInput ? orgNameInput.value.trim() : '';
                 const bio = bioInput ? bioInput.value.trim() : '';
                 const address = locationInput ? locationInput.value.trim() : '';
@@ -7789,6 +7857,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     console.error("Save settings error:", err);
                     showToast("Network error. Please try again.", "error");
                 } finally {
+                    if (window.ThinkingOrbUI) window.ThinkingOrbUI.hideGlobal();
                     saveBtn.innerText = originalText;
                     saveBtn.disabled = false;
                 }

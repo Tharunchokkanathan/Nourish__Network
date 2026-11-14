@@ -150,12 +150,27 @@
      * Show global iOS-style modal orb loader
      */
     function showGlobal(title = 'Loading Nourish Network…', subtitle = 'Synchronizing real-time community data', state = 'searching') {
+        if (window._globalOrbHideTimeout) {
+            clearTimeout(window._globalOrbHideTimeout);
+            window._globalOrbHideTimeout = null;
+        }
+
         let overlay = document.getElementById('nn-global-orb-overlay');
         if (!overlay) {
             overlay = document.createElement('div');
             overlay.id = 'nn-global-orb-overlay';
             overlay.className = 'ios-orb-global-overlay';
             document.body.appendChild(overlay);
+        }
+
+        // If overlay is already open, smoothly update text instead of tearing down canvas
+        const existingTitle = document.getElementById('nn-global-orb-title');
+        const existingSub = document.getElementById('nn-global-orb-subtitle');
+        if (existingTitle && existingSub && window._currentGlobalOrbInstance && overlay.style.display === 'flex') {
+            existingTitle.textContent = title;
+            existingSub.textContent = subtitle;
+            overlay.style.opacity = '1';
+            return;
         }
 
         const orbId = 'global-thinking-orb-canvas';
@@ -169,11 +184,15 @@
             </div>
         `;
         overlay.style.display = 'flex';
+        void overlay.offsetWidth; // force reflow
         overlay.style.opacity = '1';
 
         const canvas = document.getElementById(orbId);
         if (canvas) {
             canvas.setAttribute('data-orb-mounted', 'true');
+            if (window._currentGlobalOrbInstance) {
+                window._currentGlobalOrbInstance.destroy();
+            }
             window._currentGlobalOrbInstance = mount(canvas, { size: 72, state });
         }
     }
@@ -182,15 +201,29 @@
      * Hide global orb loader
      */
     function hideGlobal() {
+        if (window._globalOrbHideTimeout) {
+            clearTimeout(window._globalOrbHideTimeout);
+        }
+
         const overlay = document.getElementById('nn-global-orb-overlay');
         if (overlay) {
             overlay.style.opacity = '0';
-            setTimeout(() => {
+            window._globalOrbHideTimeout = setTimeout(() => {
                 overlay.style.display = 'none';
                 if (window._currentGlobalOrbInstance) {
                     window._currentGlobalOrbInstance.destroy();
                     window._currentGlobalOrbInstance = null;
                 }
+                window._globalOrbHideTimeout = null;
+            }, 300);
+        }
+
+        // Also fade out initial preloader if present
+        const preloader = document.getElementById('nn-app-preloader');
+        if (preloader && preloader.style.display !== 'none') {
+            preloader.style.opacity = '0';
+            setTimeout(() => {
+                preloader.style.display = 'none';
             }, 300);
         }
     }
@@ -228,3 +261,4 @@
     }
 
 })(typeof window !== 'undefined' ? window : this);
+
