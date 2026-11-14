@@ -1,5 +1,7 @@
 require('dotenv').config();
 const express = require('express');
+const http = require('http');
+const { Server } = require('socket.io');
 const cors = require('cors');
 const path = require('path');
 const bcrypt = require('bcryptjs');
@@ -24,6 +26,38 @@ const {
 const app = express();
 app.enable('trust proxy');
 const PORT = process.env.PORT || 3000;
+const server = http.createServer(app);
+
+// ─── SOCKET.IO (Real-Time Duplex Communication) ──────────────────────────────
+const io = new Server(server, {
+    cors: {
+        origin: '*',
+        methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE']
+    }
+});
+app.set('io', io);
+
+io.on('connection', (socket) => {
+    // Client connects
+    socket.on('join_user', (userData) => {
+        if (!userData) return;
+        const { userId, role } = userData;
+        if (userId) {
+            socket.join(`user_${userId}`);
+        }
+        if (role) {
+            const cleanRole = String(role).toLowerCase();
+            socket.join(`role_${cleanRole}`);
+            if (cleanRole === 'restaurant' || cleanRole === 'vendor') socket.join('role_seller');
+            if (cleanRole === 'ngo' || cleanRole === 'shelter' || cleanRole === 'buyer') socket.join('role_buyer');
+            if (cleanRole === 'admin') socket.join('role_admin');
+        }
+    });
+
+    socket.on('disconnect', () => {
+        // Client disconnect
+    });
+});
 
 // Ensure uploads directory exists
 const uploadsDir = path.join(__dirname, 'uploads');
@@ -55,6 +89,9 @@ app.use(express.urlencoded({ extended: true }));
 
 // Serve uploaded food images
 app.use('/uploads', express.static(uploadsDir));
+
+// Serve in-app QR scanner library locally from node_modules
+app.use('/vendor/html5-qrcode', express.static(path.join(__dirname, 'node_modules', 'html5-qrcode')));
 
 // Serve static frontend files
 app.use(express.static(path.join(__dirname)));
@@ -1751,6 +1788,23 @@ app.post('/api/listings', authenticateToken, async (req, res) => {
             );
         });
 
+        // Real-Time WebSocket Broadcast: Alert all connected NGOs & clients immediately
+        io.emit('listing:created', {
+            id: listingId,
+            vendorId: targetVendorId,
+            vendorName: req.user.name || (vendorRow && vendorRow.organizationName) || 'Local Food Partner',
+            foodName: name,
+            description,
+            category,
+            price,
+            quantity,
+            unit,
+            expiryTime,
+            pickupTime,
+            imageUrl: finalImageUrl || 'assets/default-food.jpg',
+            address: vAddress
+        });
+
         res.status(201).json({
             message: 'Food listing published successfully! 🌱',
             id: listingId
@@ -1830,6 +1884,7 @@ app.delete('/api/listings/:id', authenticateToken, (req, res) => {
 
         db.run(`DELETE FROM food_listings WHERE id = ?`, [id], function (err) {
             if (err) return res.status(500).json({ error: err.message });
+            io.emit('listing:deleted', { id });
             res.status(200).json({ message: 'Listing deleted successfully.' });
         });
     });
@@ -1925,6 +1980,9 @@ app.post('/api/listings/claim', authenticateToken, (req, res) => {
                 );
             });
 
+            // Broadcast real-time claim event
+            io.emit('listing:claimed', { listingId, claimedBy: ngoId });
+
             res.status(200).json({ message: 'Food successfully claimed! 🤝' });
         });
     });
@@ -2003,6 +2061,13 @@ app.post('/api/checkout', authenticateToken, (req, res) => {
                         }
                     );
                 });
+            });
+
+            // Broadcast real-time order creation event
+            io.emit('order:created', {
+                orders: placedOrders,
+                buyerId,
+                buyerName: req.user.name || 'Community Partner'
             });
 
             return res.status(201).json({
@@ -2276,7 +2341,7 @@ app.post('/api/orders/:id/verify-handover', (req, res) => {
     }
 
     const sql = `
-        SELECT o.id, o.status, o.handoverOtp, f.vendorId, f.name AS foodName, u.organizationName AS buyerName
+        SELECT o.id, o.status, o.handoverOtp, o.buyerId, f.vendorId, f.name AS foodName, u.organizationName AS buyerName
         FROM orders o
         LEFT JOIN food_listings f ON o.listingId = f.id
         LEFT JOIN users u ON o.buyerId = u.id
@@ -2309,6 +2374,17 @@ app.post('/api/orders/:id/verify-handover', (req, res) => {
                 const buyerLabel = order.buyerName || 'NGO Partner';
                 const foodLabel = order.foodName || 'Food Surplus';
                 console.log(`🤝 Handover physically verified for Order #${orderId} (${foodLabel} to ${buyerLabel})`);
+
+                // Broadcast real-time handover verified event
+                io.emit('order:handover_completed', {
+                    orderId,
+                    foodName: foodLabel,
+                    buyerName: buyerLabel,
+                    vendorId: order.vendorId,
+                    buyerId: order.buyerId,
+                    handoverAt: now
+                });
+
                 res.status(200).json({
                     success: true,
                     message: `Physical handover verified! Food successfully received by ${buyerLabel}.`,
@@ -2670,10 +2746,10 @@ setInterval(() => {
 }, 15000); // Check every 15 seconds
 
 // ─── START SERVER ─────────────────────────────────────────────────────────────
-app.listen(PORT, () => {
+server.listen(PORT, () => {
     console.log('');
     console.log('🌿 ─────────────────────────────────────────');
-    console.log(`🌿  Nourish Network Server is LIVE`);
+    console.log(`🌿  Nourish Network Server & Socket.io LIVE`);
     console.log(`🌿  http://localhost:${PORT}`);
     console.log('🌿 ─────────────────────────────────────────');
     console.log('');

@@ -3362,9 +3362,14 @@ document.addEventListener('DOMContentLoaded', () => {
                         </div>
                     ` : ''}
 
-                    <h1 class="seller-page-title" style="display: flex; align-items: center; gap: 20px;">
-                        <span class="premium-title">SELLER'S DASHBOARD</span>
-                    </h1>
+                    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px; margin-bottom: 1.5rem;">
+                        <h1 class="seller-page-title" style="margin: 0;">
+                            <span class="premium-title">SELLER'S DASHBOARD</span>
+                        </h1>
+                        <button type="button" onclick="window.startCameraScanner && window.startCameraScanner()" class="minimal-pill-btn" style="background: linear-gradient(135deg, #10b981, #059669); color: #ffffff; border: none; font-weight: 700; font-size: 0.92rem; padding: 10px 20px; border-radius: 100px; display: inline-flex; align-items: center; gap: 8px; box-shadow: 0 4px 15px rgba(16, 185, 129, 0.4); cursor: pointer; transition: all 0.2s ease;">
+                            <i class="fa-solid fa-camera"></i> Live QR Scanner
+                        </button>
+                    </div>
 
                     <!-- Seller Bio / Profile Card -->
                     <div class="seller-form-card" style="margin-bottom: 2rem; padding: 1.5rem 2rem;">
@@ -6319,45 +6324,201 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     window.openHandoverQrModal = openHandoverQrModal;
 
-    // ─── IN-APP CAMERA QR SCANNER (HTML5-QRCODE) ────────────────────────────
-    let html5QrScannerInstance = null;
+    // ─── AUDIO FEEDBACK CHIME SYNTHESIZER (Web Audio API) ───────────────────
+    function playChime(type = 'success') {
+        try {
+            const AudioCtx = window.AudioContext || window.webkitAudioContext;
+            if (!AudioCtx) return;
+            const ctx = new AudioCtx();
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.connect(gain);
+            gain.connect(ctx.destination);
 
-    function startCameraScanner() {
+            if (type === 'success') {
+                // Uplifting two-tone melodic chime (F5 -> C6)
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(698.46, ctx.currentTime);
+                osc.frequency.setValueAtTime(1046.50, ctx.currentTime + 0.12);
+                gain.gain.setValueAtTime(0.25, ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.45);
+                osc.start(ctx.currentTime);
+                osc.stop(ctx.currentTime + 0.45);
+            } else if (type === 'notification') {
+                // Gentle ping (A5)
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(880, ctx.currentTime);
+                gain.gain.setValueAtTime(0.2, ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.3);
+                osc.start(ctx.currentTime);
+                osc.stop(ctx.currentTime + 0.3);
+            }
+        } catch (e) {
+            // Autoplay restriction ignored safely
+        }
+    }
+    window.playChime = playChime;
+
+    // ─── IN-APP LIVE CAMERA QR SCANNER (HTML5-QRCODE) ───────────────────────
+    let html5QrScannerInstance = null;
+    let cameraDevices = [];
+    let currentCameraIndex = 0;
+    let isTorchOn = false;
+
+    async function startCameraScanner() {
         const modal = document.getElementById('qrCameraScannerModal');
+        const statusEl = document.getElementById('scannerDeviceStatus');
+        const switchBtn = document.getElementById('btnSwitchCamera');
+        const torchBtn = document.getElementById('btnToggleTorch');
+        const viewfinder = document.getElementById('scannerViewfinderWrap');
+
         if (!modal) return;
         modal.style.display = 'flex';
+        if (viewfinder) viewfinder.classList.remove('scan-success-flash');
 
         if (typeof Html5Qrcode === 'undefined') {
-            showToast("Scanner library is initializing... please wait a moment.", "info");
+            if (statusEl) statusEl.innerHTML = '<span style="color:#f59e0b;"><i class="fa-solid fa-spinner fa-spin"></i> Loading scanner engine...</span>';
+            setTimeout(startCameraScanner, 600);
             return;
         }
 
+        if (statusEl) statusEl.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Initializing camera feed...';
+
         try {
             if (html5QrScannerInstance) {
-                html5QrScannerInstance.stop().catch(() => {}).finally(() => {
-                    html5QrScannerInstance = null;
-                });
+                try { await html5QrScannerInstance.stop(); } catch (e) {}
+                try { html5QrScannerInstance.clear(); } catch (e) {}
+                html5QrScannerInstance = null;
             }
 
             html5QrScannerInstance = new Html5Qrcode("qrReaderContainer");
-            const config = { fps: 15, qrbox: { width: 240, height: 240 } };
 
-            html5QrScannerInstance.start(
-                { facingMode: "environment" },
-                config,
-                (decodedText) => {
-                    handleScannedQrData(decodedText);
-                },
-                () => {}
-            ).catch(err => {
-                console.warn("Camera start warning:", err);
-                showToast("Camera access was not granted. Please enter the 4-digit PIN manually.", "error");
-            });
-        } catch (e) {
-            console.error("Camera init error:", e);
+            // Query connected cameras
+            try {
+                cameraDevices = await Html5Qrcode.getCameras();
+            } catch (devErr) {
+                cameraDevices = [];
+            }
+
+            if (switchBtn) {
+                switchBtn.style.display = (cameraDevices && cameraDevices.length > 1) ? 'inline-flex' : 'none';
+            }
+
+            // Prefer back/rear environment camera on mobile
+            let selectedCameraConfig = { facingMode: "environment" };
+            if (cameraDevices && cameraDevices.length > 0) {
+                const backIdx = cameraDevices.findIndex(d => /back|rear|environment/i.test(d.label));
+                currentCameraIndex = backIdx >= 0 ? backIdx : 0;
+                selectedCameraConfig = cameraDevices[currentCameraIndex].id;
+                if (statusEl) {
+                    statusEl.innerHTML = `<i class="fa-solid fa-video"></i> ${cameraDevices[currentCameraIndex].label || 'Camera Active'}`;
+                }
+            }
+
+            const scanConfig = {
+                fps: 20,
+                qrbox: { width: 250, height: 250 },
+                aspectRatio: 1.0
+            };
+
+            const onScanSuccess = (decodedText) => {
+                handleScannedQrData(decodedText);
+            };
+
+            const onScanFailure = () => {
+                // Ignore transient frame misses
+            };
+
+            await html5QrScannerInstance.start(
+                selectedCameraConfig,
+                scanConfig,
+                onScanSuccess,
+                onScanFailure
+            );
+
+            if (statusEl) statusEl.innerHTML = '<span style="color:#10b981;"><i class="fa-solid fa-check"></i> Camera Live — Align QR in box</span>';
+
+            // Check if torch / flashlight is supported
+            if (torchBtn) {
+                try {
+                    const capabilities = html5QrScannerInstance.getRunningTrackCapabilities();
+                    if (capabilities && capabilities.torch) {
+                        torchBtn.style.display = 'inline-flex';
+                    } else {
+                        torchBtn.style.display = 'none';
+                    }
+                } catch (e) {
+                    torchBtn.style.display = 'none';
+                }
+            }
+
+        } catch (err) {
+            console.warn("Camera start warning:", err);
+            // Fallback: try user-facing camera
+            try {
+                if (html5QrScannerInstance) {
+                    await html5QrScannerInstance.start(
+                        { facingMode: "user" },
+                        { fps: 15, qrbox: { width: 240, height: 240 } },
+                        (decodedText) => handleScannedQrData(decodedText),
+                        () => {}
+                    );
+                    if (statusEl) statusEl.innerHTML = '<span style="color:#10b981;"><i class="fa-solid fa-check"></i> Camera Live (Front/Webcam)</span>';
+                    return;
+                }
+            } catch (e2) {
+                console.error("Camera fallback failed:", e2);
+            }
+
+            if (statusEl) {
+                statusEl.innerHTML = '<span style="color:#f87171;"><i class="fa-solid fa-triangle-exclamation"></i> Camera permission blocked. Use Demo Scan or enter PIN.</span>';
+            }
+            showToast("Camera access was blocked or not found. You can enter the PIN or use Demo Test Scan.", "info");
         }
     }
     window.startCameraScanner = startCameraScanner;
+
+    async function switchCamera() {
+        if (!cameraDevices || cameraDevices.length < 2 || !html5QrScannerInstance) return;
+        currentCameraIndex = (currentCameraIndex + 1) % cameraDevices.length;
+        const nextCam = cameraDevices[currentCameraIndex];
+        const statusEl = document.getElementById('scannerDeviceStatus');
+
+        try {
+            await html5QrScannerInstance.stop();
+            await html5QrScannerInstance.start(
+                nextCam.id,
+                { fps: 20, qrbox: { width: 250, height: 250 } },
+                (decodedText) => handleScannedQrData(decodedText),
+                () => {}
+            );
+            if (statusEl) {
+                statusEl.innerHTML = `<i class="fa-solid fa-video"></i> ${nextCam.label || 'Switched Camera'}`;
+            }
+            showToast(`Switched to: ${nextCam.label || 'Camera ' + (currentCameraIndex + 1)}`, "info");
+        } catch (e) {
+            console.warn("Failed to switch camera:", e);
+        }
+    }
+    window.switchCamera = switchCamera;
+
+    async function toggleTorch() {
+        if (!html5QrScannerInstance) return;
+        try {
+            isTorchOn = !isTorchOn;
+            await html5QrScannerInstance.applyVideoConstraints({
+                advanced: [{ torch: isTorchOn }]
+            });
+            const torchBtn = document.getElementById('btnToggleTorch');
+            if (torchBtn) {
+                torchBtn.style.color = isTorchOn ? '#fbbf24' : '#ffffff';
+                torchBtn.style.borderColor = isTorchOn ? '#fbbf24' : 'rgba(255,255,255,0.2)';
+            }
+        } catch (e) {
+            console.warn("Torch toggle not supported:", e);
+        }
+    }
+    window.toggleTorch = toggleTorch;
 
     function stopCameraScanner() {
         const modal = document.getElementById('qrCameraScannerModal');
@@ -6379,32 +6540,107 @@ document.addEventListener('DOMContentLoaded', () => {
         let orderId = null;
         let pin = null;
 
-        if (decodedText.includes('action=verify-handover')) {
+        const text = String(decodedText).trim();
+
+        // 1. URL search parameters format (action=verify-handover&orderId=...&pin=...)
+        if (text.includes('action=verify-handover') || (text.includes('orderId=') && (text.includes('pin=') || text.includes('otp=')))) {
             try {
-                const parsed = new URL(decodedText, window.location.origin);
+                const parsed = new URL(text, window.location.origin);
                 orderId = parsed.searchParams.get('orderId');
-                pin = parsed.searchParams.get('pin');
+                pin = parsed.searchParams.get('pin') || parsed.searchParams.get('otp');
             } catch (e) {}
-        } else if (decodedText.includes('ORDER:') && decodedText.includes('PIN:')) {
-            const mOrder = decodedText.match(/ORDER:([A-Za-z0-9_-]+)/);
-            const mPin = decodedText.match(/PIN:(\d{4})/);
+        }
+        
+        // 2. JSON format: {"orderId": 12, "pin": "3456"}
+        if (!orderId && text.startsWith('{') && text.endsWith('}')) {
+            try {
+                const parsedJson = JSON.parse(text);
+                orderId = parsedJson.orderId || parsedJson.order_id || parsedJson.id;
+                pin = parsedJson.pin || parsedJson.otp;
+            } catch (e) {}
+        }
+
+        // 3. Regex pattern: ORDER:... PIN:... or NOURISH:...:...
+        if (!orderId) {
+            const mOrder = text.match(/(?:ORDER|Order|order)[:#\s-]*([A-Za-z0-9_-]+)/i);
+            const mPin = text.match(/(?:PIN|pin|OTP|otp)[:\s-]*(\d{4})/i);
             if (mOrder) orderId = mOrder[1];
             if (mPin) pin = mPin[1];
         }
 
+        // 4. Compact format: NOURISH:123:4567
+        if (!orderId && text.startsWith('NOURISH:')) {
+            const parts = text.split(':');
+            if (parts.length >= 3) {
+                orderId = parts[1];
+                pin = parts[2];
+            }
+        }
+
+        // 5. Fallback: if only a 4-digit PIN was scanned and verifyModal has an active order
+        if (!orderId && /^\d{4}$/.test(text)) {
+            const verifyModal = document.getElementById('handoverVerifyModal');
+            if (verifyModal && verifyModal._currentOrderId) {
+                orderId = verifyModal._currentOrderId;
+                pin = text;
+            }
+        }
+
         if (orderId && pin) {
+            // Visual green success flash on viewfinder
+            const viewfinder = document.getElementById('scannerViewfinderWrap');
+            if (viewfinder) viewfinder.classList.add('scan-success-flash');
+            
+            // Audio chime feedback
+            playChime('success');
+
+            showToast(`🎯 QR Scanned! Order #${orderId} (PIN: ${pin})`, "success");
+
+            // Close camera scanner
             stopCameraScanner();
-            openHandoverVerifyModal(orderId, `Order #${orderId}`, 'NGO Partner', '');
+
+            // Auto-fill digit boxes in verifyModal if open
             const verifyModal = document.getElementById('handoverVerifyModal');
             if (verifyModal) {
+                openHandoverVerifyModal(orderId, `Order #${orderId}`, 'NGO Partner', '', pin);
                 const digitBoxes = Array.from(verifyModal.querySelectorAll('.handover-digit-box'));
                 pin.split('').forEach((d, i) => { if (digitBoxes[i]) digitBoxes[i].value = d; });
-                showToast(`QR Code Scanned! Verifying Order #${orderId}...`, "success");
-                const confirmBtn = document.getElementById('btnConfirmHandover');
-                if (confirmBtn) setTimeout(() => confirmBtn.click(), 300);
             }
+
+            // Immediately dispatch verification request to backend
+            const token = sessionStorage.getItem('nourishToken') || localStorage.getItem('nourishToken');
+            fetch(`/api/orders/${orderId}/verify-handover`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+                },
+                body: JSON.stringify({ otp: pin })
+            })
+            .then(res => res.json().then(data => ({ ok: res.ok, status: res.status, data })))
+            .then(({ ok, data }) => {
+                if (ok && data.success) {
+                    playChime('success');
+                    showToast(`🎉 Physical Handover Verified! Food safely transferred for Order #${orderId}.`, "success");
+                    if (verifyModal) verifyModal.style.display = 'none';
+                    if (typeof loadPortalHistory === 'function') loadPortalHistory(true);
+                } else {
+                    const errMsg = (data && data.error) ? data.error : "Failed to verify handover PIN.";
+                    showToast(errMsg, "error");
+                    const errBox = document.getElementById('verifyModalError');
+                    if (errBox) {
+                        errBox.textContent = errMsg;
+                        errBox.style.display = 'block';
+                    }
+                }
+            })
+            .catch(err => {
+                console.error("Verification dispatch error:", err);
+                showToast("Network error verifying handover. Please check your connection.", "error");
+            });
+
         } else {
-            showToast("Unrecognized QR Code. Please scan a Nourish Network pass.", "error");
+            showToast("Unrecognized QR Code. Please point at a Nourish Network Pickup Pass.", "error");
         }
     }
     window.handleScannedQrData = handleScannedQrData;
@@ -6552,6 +6788,57 @@ document.addEventListener('DOMContentLoaded', () => {
             camModal.addEventListener('click', (e) => {
                 if (e.target === camModal) stopCameraScanner();
             });
+        }
+
+        // Camera Switch & Torch Controls
+        const switchCamBtn = document.getElementById('btnSwitchCamera');
+        if (switchCamBtn) {
+            switchCamBtn.onclick = (e) => {
+                e.preventDefault();
+                if (typeof switchCamera === 'function') switchCamera();
+            };
+        }
+        const torchCamBtn = document.getElementById('btnToggleTorch');
+        if (torchCamBtn) {
+            torchCamBtn.onclick = (e) => {
+                e.preventDefault();
+                if (typeof toggleTorch === 'function') toggleTorch();
+            };
+        }
+
+        // QR Image File Upload Scan
+        const fileInputEl = document.getElementById('qrFileInput');
+        if (fileInputEl) {
+            fileInputEl.onchange = async (e) => {
+                if (!e.target.files || e.target.files.length === 0) return;
+                const file = e.target.files[0];
+                showToast("Analyzing QR pass from image...", "info");
+                try {
+                    if (typeof Html5Qrcode === 'undefined') {
+                        showToast("Scanner library is initializing...", "info");
+                        return;
+                    }
+                    const qrScannerTmp = new Html5Qrcode("qrReaderContainer");
+                    const decodedText = await qrScannerTmp.scanFile(file, true);
+                    handleScannedQrData(decodedText);
+                } catch (err) {
+                    showToast("No readable QR pass found in this image. Please ensure code is clear.", "error");
+                }
+            };
+        }
+
+        // Demo Simulation Test Button (Instant 1-Click Verification for Demos)
+        const demoScanBtn = document.getElementById('btnSimulateScan');
+        if (demoScanBtn) {
+            demoScanBtn.onclick = (e) => {
+                e.preventDefault();
+                // Determine order ID: prefer active modal or first order
+                const vm = document.getElementById('handoverVerifyModal');
+                const targetOrderId = (vm && vm.dataset.orderId) || '1';
+                const testPin = '1234';
+                showToast(`🧪 Demo Simulation: Simulating scan of Pass for Order #${targetOrderId}...`, "info");
+                handleScannedQrData(`https://nourishnetwork.org/?action=verify-handover&orderId=${targetOrderId}&pin=${testPin}`);
+            };
         }
 
         // 4-Digit Box Interactive Mechanics (auto-advance, backspace, paste, enter)
@@ -7739,6 +8026,189 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    // ─── REAL-TIME WEBSOCKET ENGINE (Socket.io) ──────────────────────────────
+    function initRealtimeSockets() {
+        if (typeof io === 'undefined') {
+            console.warn("Socket.io client not available.");
+            const ind = document.getElementById('nn-socket-indicator');
+            if (ind) ind.style.display = 'none';
+            return;
+        }
+
+        const socket = io({
+            reconnection: true,
+            reconnectionAttempts: 15,
+            reconnectionDelay: 1000
+        });
+        window.nnSocket = socket;
+
+        function syncUserSocketRooms() {
+            try {
+                const user = JSON.parse(sessionStorage.getItem('nourishUser') || localStorage.getItem('nourishUser') || '{}');
+                if (user && user.id) {
+                    socket.emit('join_user', {
+                        userId: user.id,
+                        role: user.accountType || user.type || user.role || 'user'
+                    });
+                }
+            } catch (e) {}
+        }
+
+        socket.on('connect', () => {
+            console.log("⚡ [Real-Time] Connected to Nourish Network Live Stream:", socket.id);
+            const ind = document.getElementById('nn-socket-indicator');
+            const lbl = document.getElementById('socket-status-label');
+            if (ind) {
+                ind.className = 'socket-status-pill socket-connected';
+                ind.style.borderColor = 'rgba(16, 185, 129, 0.4)';
+                ind.style.color = '#10b981';
+            }
+            if (lbl) lbl.textContent = 'Live Sync';
+
+            syncUserSocketRooms();
+        });
+
+        socket.on('disconnect', () => {
+            console.log("⚡ [Real-Time] Disconnected from live stream");
+            const ind = document.getElementById('nn-socket-indicator');
+            const lbl = document.getElementById('socket-status-label');
+            if (ind) {
+                ind.className = 'socket-status-pill socket-disconnected';
+                ind.style.borderColor = 'rgba(239, 68, 68, 0.4)';
+                ind.style.color = '#f87171';
+            }
+            if (lbl) lbl.textContent = 'Sync Offline';
+        });
+
+        // Event: A vendor published a new surplus food listing
+        socket.on('listing:created', (data) => {
+            console.log("⚡ [Real-Time] New Listing Broadcast:", data);
+            playChime('notification');
+            showToast(`🍱 New Surplus Food: "${data.foodName || data.name}" (${data.quantity || 1} portions) just posted by ${data.vendorName || 'a partner'}!`, 'info');
+
+            // Merge into local state.listings if not already present
+            if (state && Array.isArray(state.listings)) {
+                const exists = state.listings.some(l => Number(l.id) === Number(data.id));
+                if (!exists) {
+                    state.listings.unshift({
+                        id: data.id,
+                        name: data.foodName || data.name,
+                        category: data.category,
+                        quantity: String(data.quantity || 1),
+                        qty: parseInt(data.quantity || 1, 10),
+                        unit: data.unit || 'portions',
+                        price: data.price || 0,
+                        expiryTime: data.expiryTime,
+                        expiry: data.expiryTime,
+                        pickupTime: data.pickupTime,
+                        vendorId: data.vendorId,
+                        vendorName: data.vendorName,
+                        vendorAddress: data.address,
+                        status: 'available',
+                        imageUrl: data.imageUrl || 'assets/default-food.jpg',
+                        img: data.imageUrl || 'assets/default-food.jpg'
+                    });
+
+                    // Update UI dynamically depending on which view the user is on
+                    if (state.activePortal === 'buyer' && typeof renderBuyerPortal === 'function') {
+                        renderBuyerPortal();
+                    } else if (state.activePortal === 'seller' && typeof renderSellerPortal === 'function') {
+                        const currentUser = JSON.parse(sessionStorage.getItem('nourishUser') || '{}');
+                        if (Number(currentUser.id) === Number(data.vendorId)) {
+                            renderSellerPortal();
+                        }
+                    } else if (typeof renderListings === 'function') {
+                        renderListings();
+                    }
+                }
+            }
+        });
+
+        // Event: A listing was deleted
+        socket.on('listing:deleted', (data) => {
+            console.log("⚡ [Real-Time] Listing Deleted:", data);
+            if (state && Array.isArray(state.listings)) {
+                state.listings = state.listings.filter(l => Number(l.id) !== Number(data.id));
+                if (state.activePortal === 'buyer' && typeof renderBuyerPortal === 'function') {
+                    renderBuyerPortal();
+                } else if (state.activePortal === 'seller' && typeof renderSellerPortal === 'function') {
+                    renderSellerPortal();
+                } else if (typeof renderListings === 'function') {
+                    renderListings();
+                }
+            }
+        });
+
+        // Event: A listing was claimed
+        socket.on('listing:claimed', (data) => {
+            console.log("⚡ [Real-Time] Listing Claimed:", data);
+            if (state && Array.isArray(state.listings)) {
+                const item = state.listings.find(l => Number(l.id) === Number(data.listingId));
+                if (item) {
+                    item.status = 'claimed';
+                    if (state.activePortal === 'buyer' && typeof renderBuyerPortal === 'function') {
+                        renderBuyerPortal();
+                    } else if (typeof renderListings === 'function') {
+                        renderListings();
+                    }
+                }
+            }
+            if (typeof loadPortalHistory === 'function') {
+                loadPortalHistory(true);
+            }
+        });
+
+        // Event: Orders created
+        socket.on('order:created', (data) => {
+            console.log("⚡ [Real-Time] Order Created:", data);
+            if (typeof loadPortalHistory === 'function') {
+                loadPortalHistory(true);
+            }
+        });
+
+        // Event: Physical Handover Verified & Completed!
+        socket.on('order:handover_completed', (data) => {
+            console.log("⚡ [Real-Time] Order Handover Completed:", data);
+            playChime('success');
+
+            // 1. If recipient / NGO has their QR pass modal open for this order:
+            const qrModal = document.getElementById('handoverQrModal');
+            if (qrModal && qrModal.style.display !== 'none' && qrModal._currentPassOrder) {
+                if (Number(qrModal._currentPassOrder.orderId) === Number(data.orderId)) {
+                    const qrWrapper = document.getElementById('qrCodeWrapper');
+                    const pinWrapper = document.getElementById('qrPinWrapper');
+                    const successBanner = document.getElementById('handoverLiveSuccessBanner');
+                    const shareBtn = document.getElementById('btnShareQrOnWhatsApp');
+
+                    if (qrWrapper) qrWrapper.style.display = 'none';
+                    if (pinWrapper) pinWrapper.style.display = 'none';
+                    if (shareBtn) shareBtn.style.display = 'none';
+                    if (successBanner) {
+                        successBanner.style.display = 'block';
+                    }
+                    showToast(`🎉 Food Handover Confirmed by Donor Kitchen! Meal safely received.`, 'success');
+                }
+            }
+
+            // 2. If vendor has handoverVerifyModal open:
+            const verifyModal = document.getElementById('handoverVerifyModal');
+            if (verifyModal && verifyModal.style.display !== 'none') {
+                if (Number(verifyModal.dataset.orderId) === Number(data.orderId)) {
+                    verifyModal.style.display = 'none';
+                    showToast(`✅ Handover Complete! Order #${data.orderId} marked as fulfilled.`, 'success');
+                }
+            }
+
+            // 3. Silently reload history so order cards update to "Verified & Completed"
+            if (typeof loadPortalHistory === 'function') {
+                loadPortalHistory(true);
+            }
+        });
+
+        window.syncUserSocketRooms = syncUserSocketRooms;
+    }
+
+    initRealtimeSockets();
     initHandoverVerificationModalEvents();
     checkUrlVerificationParams();
 

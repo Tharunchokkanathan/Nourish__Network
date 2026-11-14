@@ -6489,6 +6489,65 @@ button:active,
     z-index: 10;
 }
 
+.scanner-corner-guide {
+    position: absolute;
+    width: 26px;
+    height: 26px;
+    border: 3.5px solid #10b981;
+    pointer-events: none;
+    z-index: 12;
+}
+.scanner-corner-tl { top: 16px; left: 16px; border-right: none; border-bottom: none; border-radius: 10px 0 0 0; }
+.scanner-corner-tr { top: 16px; right: 16px; border-left: none; border-bottom: none; border-radius: 0 10px 0 0; }
+.scanner-corner-bl { bottom: 16px; left: 16px; border-right: none; border-top: none; border-radius: 0 0 0 10px; }
+.scanner-corner-br { bottom: 16px; right: 16px; border-left: none; border-top: none; border-radius: 0 0 10px 0; }
+
+.scanner-ctrl-btn:hover {
+    background: rgba(255, 255, 255, 0.16) !important;
+    transform: translateY(-1px);
+}
+.scanner-demo-btn:hover {
+    background: rgba(16, 185, 129, 0.28) !important;
+    box-shadow: 0 0 16px rgba(16, 185, 129, 0.4);
+    transform: translateY(-1px);
+}
+
+@keyframes scanSuccessFlash {
+    0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.9); }
+    50% { box-shadow: 0 0 50px 15px rgba(16, 185, 129, 0.85); }
+    100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+}
+.scan-success-flash {
+    animation: scanSuccessFlash 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* ─────────────────────────────────────────────────────────────
+   REAL-TIME SOCKET STATUS INDICATOR & PULSE ANIMATION
+   ───────────────────────────────────────────────────────────── */
+.socket-status-pill {
+    user-select: none;
+}
+.socket-status-pill.socket-connected {
+    background: rgba(16, 185, 129, 0.12) !important;
+    border-color: rgba(16, 185, 129, 0.35) !important;
+    color: #10b981 !important;
+}
+.socket-status-pill.socket-disconnected {
+    background: rgba(239, 68, 68, 0.12) !important;
+    border-color: rgba(239, 68, 68, 0.35) !important;
+    color: #f87171 !important;
+}
+.socket-status-pill.socket-disconnected .socket-pulse-dot {
+    background: #ef4444 !important;
+    box-shadow: 0 0 8px #ef4444 !important;
+    animation: none !important;
+}
+@keyframes socketPulse {
+    0% { transform: scale(0.92); opacity: 0.8; }
+    50% { transform: scale(1.25); opacity: 1; }
+    100% { transform: scale(0.92); opacity: 0.8; }
+}
+
 @keyframes scannerScanAnim {
     0% {
         top: 8%;

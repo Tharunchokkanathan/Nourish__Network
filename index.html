@@ -27,8 +27,16 @@
     <!-- Chart.js for Impact Analytics Dashboard -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
-    <!-- HTML5 QR Code Scanner Library -->
-    <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+    <!-- Socket.io Real-Time Client -->
+    <script src="/socket.io/socket.io.js"></script>
+
+    <!-- HTML5 QR Code Scanner Library (Local with CDN fallback) -->
+    <script src="/vendor/html5-qrcode/html5-qrcode.min.js"></script>
+    <script>
+        if (typeof Html5Qrcode === 'undefined') {
+            document.write('<script src="https://unpkg.com/html5-qrcode" type="text/javascript"><\/script>');
+        }
+    </script>
 
     <!-- Anti-flash script for persistent sessions -->
     <script>
@@ -69,6 +77,12 @@
 
 
             <div class="nav-buttons" style="display: flex; align-items: center; gap: 10px;">
+                <!-- Real-Time WebSocket Status Indicator -->
+                <div id="nn-socket-indicator" class="socket-status-pill socket-connected" title="Real-Time WebSocket Sync Active" style="display: flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 20px; font-size: 0.72rem; font-weight: 700; background: rgba(16, 185, 129, 0.12); border: 1px solid rgba(16, 185, 129, 0.3); color: #10b981; transition: all 0.3s ease;">
+                    <span class="socket-pulse-dot" style="width: 7px; height: 7px; border-radius: 50%; background: #10b981; box-shadow: 0 0 8px #10b981;"></span>
+                    <span id="socket-status-label">Live Sync</span>
+                </div>
+
                 <!-- Profile Avatar (shown when logged in) -->
                 <button id="nav-profile-btn" onclick="window.openSettings && window.openSettings()"
                     title="Profile Settings"
@@ -1178,23 +1192,51 @@
             
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem;">
                 <div style="display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 1.1rem;">
-                    <i class="fa-solid fa-camera" style="color: #10b981;"></i> Scan Driver QR Pass
+                    <i class="fa-solid fa-camera" style="color: #10b981;"></i> Live Handover Scanner
                 </div>
-                <button type="button" id="closeQrCameraScannerModal" onclick="window.stopCameraScanner ? window.stopCameraScanner() : (document.getElementById('qrCameraScannerModal').style.display='none')"
-                    style="width: 36px; height: 36px; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.2); border-radius: 50%; font-size: 1rem; cursor: pointer; color: #ffffff; display: flex; align-items: center; justify-content: center;">
-                    <i class="fa-solid fa-xmark"></i>
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <button type="button" id="btnSwitchCamera" title="Switch Camera" style="display: none; width: 36px; height: 36px; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.2); border-radius: 50%; font-size: 0.95rem; cursor: pointer; color: #ffffff; align-items: center; justify-content: center;">
+                        <i class="fa-solid fa-camera-rotate"></i>
+                    </button>
+                    <button type="button" id="btnToggleTorch" title="Toggle Light" style="display: none; width: 36px; height: 36px; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.2); border-radius: 50%; font-size: 0.95rem; cursor: pointer; color: #ffffff; align-items: center; justify-content: center;">
+                        <i class="fa-solid fa-bolt"></i>
+                    </button>
+                    <button type="button" id="closeQrCameraScannerModal" onclick="window.stopCameraScanner ? window.stopCameraScanner() : (document.getElementById('qrCameraScannerModal').style.display='none')"
+                        style="width: 36px; height: 36px; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.2); border-radius: 50%; font-size: 1rem; cursor: pointer; color: #ffffff; display: flex; align-items: center; justify-content: center;">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Viewfinder with animated laser line & corner guides -->
+            <div id="scannerViewfinderWrap" style="position: relative; width: 100%; max-width: 320px; height: 320px; margin: 0 auto 1.25rem; border-radius: 22px; overflow: hidden; background: #000000; border: 2px solid rgba(16, 185, 129, 0.4); box-shadow: 0 0 30px rgba(16, 185, 129, 0.2);">
+                <div id="qrReaderContainer" style="width: 100%; height: 100%;"></div>
+                <div class="scanner-laser-line"></div>
+                <div class="scanner-corner-guide scanner-corner-tl"></div>
+                <div class="scanner-corner-guide scanner-corner-tr"></div>
+                <div class="scanner-corner-guide scanner-corner-bl"></div>
+                <div class="scanner-corner-guide scanner-corner-br"></div>
+            </div>
+
+            <p style="margin: 0 0 1rem; font-size: 0.84rem; color: rgba(255,255,255,0.7); line-height: 1.5;">
+                Point your camera at the <strong>Pickup Handover Pass</strong> on the NGO driver's phone.
+            </p>
+
+            <!-- Scanner Helper Controls (Photo Scan & Demo Test) -->
+            <div style="display: flex; gap: 10px; justify-content: center; align-items: center; flex-wrap: wrap;">
+                <label for="qrFileInput" class="scanner-ctrl-btn" style="cursor: pointer; font-size: 0.8rem; padding: 7px 14px; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.18); border-radius: 100px; color: #e2e8f0; display: inline-flex; align-items: center; gap: 6px; transition: all 0.2s ease;">
+                    <i class="fa-solid fa-image" style="color: #38bdf8;"></i> Scan Image
+                </label>
+                <input type="file" id="qrFileInput" accept="image/*" style="display: none;">
+
+                <button type="button" id="btnSimulateScan" class="scanner-ctrl-btn" style="cursor: pointer; font-size: 0.8rem; padding: 7px 14px; background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.35); border-radius: 100px; color: #34d399; display: inline-flex; align-items: center; gap: 6px; transition: all 0.2s ease;">
+                    <i class="fa-solid fa-wand-magic-sparkles"></i> Demo Test Scan
                 </button>
             </div>
 
-            <!-- Viewfinder with animated laser line -->
-            <div style="position: relative; width: 100%; max-width: 320px; height: 320px; margin: 0 auto 1.25rem; border-radius: 22px; overflow: hidden; background: #000000; border: 2px solid rgba(16, 185, 129, 0.4); box-shadow: 0 0 30px rgba(16, 185, 129, 0.2);">
-                <div id="qrReaderContainer" style="width: 100%; height: 100%;"></div>
-                <div class="scanner-laser-line"></div>
+            <div id="scannerDeviceStatus" style="font-size: 0.74rem; color: rgba(255,255,255,0.45); margin-top: 10px;">
+                <i class="fa-solid fa-video"></i> Auto-detecting best camera...
             </div>
-
-            <p style="margin: 0; font-size: 0.84rem; color: rgba(255,255,255,0.65); line-height: 1.5;">
-                Point your camera at the <strong>Pickup Handover Pass</strong> on the NGO driver's phone.
-            </p>
         </div>
     </div>
 
@@ -1221,13 +1263,27 @@
                 Show this QR or security code to the donor kitchen staff
             </p>
 
+            <!-- Dynamic Real-Time Handover Verified Banner (Auto-shown via WebSockets when verified) -->
+            <div id="handoverLiveSuccessBanner" style="display: none; padding: 1.75rem 1.25rem; background: rgba(16, 185, 129, 0.12); border: 1.5px solid #10b981; border-radius: 22px; margin-bottom: 1.25rem; text-align: center; box-shadow: 0 10px 30px rgba(16, 185, 129, 0.25);">
+                <div style="width: 64px; height: 64px; border-radius: 50%; background: #10b981; color: #ffffff; display: inline-flex; align-items: center; justify-content: center; font-size: 2rem; margin-bottom: 12px; box-shadow: 0 0 25px rgba(16,185,129,0.6);">
+                    <i class="fa-solid fa-check"></i>
+                </div>
+                <h3 style="margin: 0 0 6px; color: #10b981; font-size: 1.35rem; font-weight: 800;">Handover Verified!</h3>
+                <p style="margin: 0; color: rgba(255,255,255,0.85); font-size: 0.88rem; line-height: 1.4;">
+                    Meal has been physically collected and confirmed in real time by the donor kitchen.
+                </p>
+                <div style="margin-top: 14px; font-size: 0.78rem; font-weight: 700; color: #34d399; letter-spacing: 0.5px;">
+                    <i class="fa-solid fa-bolt"></i> Synced via Nourish Real-Time Network
+                </div>
+            </div>
+
             <!-- QR Code Graphic Container -->
-            <div style="background: #ffffff; padding: 16px; border-radius: 20px; display: inline-block; margin-bottom: 1.25rem; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
+            <div id="qrCodeWrapper" style="background: #ffffff; padding: 16px; border-radius: 20px; display: inline-block; margin-bottom: 1.25rem; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
                 <img id="handoverQrImg" src="" alt="Handover QR" style="width: 200px; height: 200px; display: block; object-fit: contain;">
             </div>
 
             <!-- Big 4-Digit Display -->
-            <div style="background: #141414; border: 1.5px solid rgba(255, 255, 255, 0.12); border-radius: 18px; padding: 1rem; margin-bottom: 1.25rem;">
+            <div id="qrPinWrapper" style="background: #141414; border: 1.5px solid rgba(255, 255, 255, 0.12); border-radius: 18px; padding: 1rem; margin-bottom: 1.25rem;">
                 <div style="font-size: 0.75rem; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: rgba(255,255,255,0.55); margin-bottom: 6px;">
                     Handover Verification PIN
                 </div>
