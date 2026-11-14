@@ -56,6 +56,24 @@ function inkColor(w, alpha, dark, tint) {
   return `rgba(${ramp(tint.r)},${ramp(tint.g)},${ramp(tint.b)},${alpha})`;
 }
 function paint(ctx, dots, dark, rMin = 0.3, tint) {
+  // Pass 1: Luminous soft aura under front-facing energetic dots (gives intense 3D glow & halation)
+  if (dark) {
+    for (const d of dots) {
+      const alpha = d.a ?? 1;
+      if (d.z > 0.2 && alpha > 0.5 && d.r > 0.7) {
+        const glowR = d.r * 2.2;
+        const glowAlpha = alpha * 0.25;
+        ctx.fillStyle = tint 
+          ? `rgba(${tint.r},${tint.g},${tint.b},${glowAlpha})` 
+          : `rgba(52, 211, 153, ${glowAlpha})`;
+        ctx.beginPath();
+        ctx.arc(d.x, d.y, glowR, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+  }
+
+  // Pass 2: Core sharp dots
   for (const d of dots) {
     const alpha = d.a ?? 1;
     const w = Math.min(1, Math.max(0, d.white));
@@ -63,6 +81,14 @@ function paint(ctx, dots, dark, rMin = 0.3, tint) {
     ctx.beginPath();
     ctx.arc(d.x, d.y, d.r, 0, Math.PI * 2);
     ctx.fill();
+
+    // Pass 3: Specular bright diamond center on peak incandescent dots
+    if (dark && d.z > 0.35 && alpha > 0.75 && (1 - w) > 0.8) {
+      ctx.fillStyle = `rgba(255, 255, 255, ${Math.min(1, alpha * 0.95)})`;
+      ctx.beginPath();
+      ctx.arc(d.x, d.y, Math.max(0.4, d.r * 0.42), 0, Math.PI * 2);
+      ctx.fill();
+    }
   }
 }
 function paintLines(ctx, lines, dark, tint) {
@@ -353,13 +379,15 @@ function makeMoves(count) {
   return moves;
 }
 const frameGlobe = (size, t, o) => {
-  const spin = 0.5;
+  const spin = 0.65;
   const cx = size / 2;
   const cy = size / 2;
   const radius = size / 2 * 0.82;
-  const tilt = 0.4 + 0.06 * Math.sin(t * 0.35);
-  const pt = makeProj(t * spin, tilt, cx, cy, radius);
-  const scan = t * (spin + (1.7 - spin) * (o.scanMul ?? 1));
+  // Organic 3D gyroscopic tumbling tilt
+  const tilt = 0.42 + 0.14 * Math.sin(t * 0.45) + 0.05 * Math.cos(t * 0.78);
+  const yaw = t * spin + 0.06 * Math.sin(t * 0.3);
+  const pt = makeProj(yaw, tilt, cx, cy, radius);
+  const scan = t * (spin + (2.05 - spin) * (o.scanMul ?? 1.05));
   const rs = radiusScale(size, o.rsPow ?? 0.6);
   const dimBase = o.dimBase ?? 1;
   const dots = [];
@@ -374,16 +402,19 @@ const frameGlobe = (size, t, o) => {
       const lon = lj / lonCount * 2 * Math.PI;
       const [px, py, z] = pt(cosLat * Math.cos(lon), sinLat, cosLat * Math.sin(lon));
       const depth = (z + 1) / 2;
-      const d = angleDelta(lon + t * spin, scan);
-      const boost = Math.exp(-(d * d) / 0.18) * Math.max(0, z);
+      const d = angleDelta(lon + yaw, scan);
+      const boost = Math.exp(-(d * d) / 0.16) * Math.max(0, z);
+      // Trailing luminous energy wake
+      const wake = Math.exp(-Math.pow(angleDelta(lon + yaw, scan - 0.45), 2) / 0.28) * Math.max(0, z) * 0.4;
+      const totalEnergy = Math.min(1.2, boost + wake);
       dots.push({
         x: px,
         y: py,
         z,
-        r: ((o.rBase ?? 0.6) + (o.rDepth ?? 1.7) * depth + (o.rBoost ?? 1) * boost) * rs,
-        white: (o.inkFar ?? 0.62) - (o.inkSpan ?? 0.54) * depth,
+        r: ((o.rBase ?? 0.6) + (o.rDepth ?? 1.7) * depth + (o.rBoost ?? 1.35) * totalEnergy) * rs,
+        white: (o.inkFar ?? 0.62) - (o.inkSpan ?? 0.54) * depth - 0.14 * totalEnergy,
         // dimBase < 1 fades un-scanned dots so the meridian reads clearly
-        a: dimBase + (1 - dimBase) * Math.min(1, boost)
+        a: Math.min(1, dimBase + (1 - dimBase) * totalEnergy * 1.35)
       });
     }
   }

@@ -7426,17 +7426,47 @@ body.light-theme .ios-orb-card,
 }
 
 .ios-orb-canvas-wrap {
+    position: relative;
     display: flex;
     justify-content: center;
     align-items: center;
-    margin-bottom: 0.5rem;
-    filter: drop-shadow(0 0 18px rgba(16, 185, 129, 0.25));
+    margin: 0.25rem auto 0.75rem auto;
+    width: 80px;
+    height: 80px;
+}
+
+.ios-orb-canvas-wrap::before {
+    content: '';
+    position: absolute;
+    width: 74px;
+    height: 74px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(16, 185, 129, 0.35) 0%, rgba(56, 189, 248, 0.14) 48%, transparent 72%);
+    filter: blur(14px);
+    pointer-events: none;
+    animation: iosOrbAmbientBreath 3.2s ease-in-out infinite alternate;
+}
+
+@keyframes iosOrbAmbientBreath {
+    0% { transform: scale(0.85); opacity: 0.5; }
+    50% { transform: scale(1.15); opacity: 0.95; }
+    100% { transform: scale(0.85); opacity: 0.5; }
 }
 
 .ios-orb-canvas-wrap canvas {
+    position: relative;
+    z-index: 2;
     display: block;
     margin: 0 auto;
+    filter: drop-shadow(0 0 14px rgba(52, 211, 153, 0.45));
     pointer-events: none;
+    animation: iosOrbFloat 4s ease-in-out infinite alternate;
+}
+
+@keyframes iosOrbFloat {
+    0% { transform: translateY(0px); }
+    50% { transform: translateY(-3px); }
+    100% { transform: translateY(0px); }
 }
 
 .ios-orb-title {

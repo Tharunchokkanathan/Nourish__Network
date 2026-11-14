@@ -16,7 +16,7 @@
             this.size = options.size || 64;
             this.state = options.state || 'searching'; // 'searching' is the sharp dotted globe
             this.theme = options.theme || 'auto'; // 'dark', 'light', 'auto'
-            this.speed = options.speed || 1.0;
+            this.speed = options.speed || 1.18;
             this.tint = options.tint || null;
             this.animId = null;
 

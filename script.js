@@ -1000,7 +1000,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             if (window.ThinkingOrbUI) {
-                window.ThinkingOrbUI.showGlobal('Confirming Order…', 'Reserving surplus meal batch with donor kitchen', 'searching');
+                window.ThinkingOrbUI.showGlobal('Confirming Order…', 'Reserving surplus meal batch with donor kitchen', 'working');
             }
 
             // Step 1: Call backend checkout API with strict database validation
@@ -2118,7 +2118,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (btnDemoSeller) {
         btnDemoSeller.addEventListener('click', async () => {
             btnDemoSeller.disabled = true;
-            if (window.ThinkingOrbUI) window.ThinkingOrbUI.showGlobal('Authenticating Food Donor…', 'Loading kitchen inventory and FSSAI credentials', 'searching');
+            if (window.ThinkingOrbUI) window.ThinkingOrbUI.showGlobal('Authenticating Food Donor…', 'Loading kitchen inventory and FSSAI credentials', 'working');
             try {
                 const res = await fetch(`${API_BASE}/login`, {
                     method: 'POST',
@@ -2167,7 +2167,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (btnDemoBuyer) {
         btnDemoBuyer.addEventListener('click', async () => {
             btnDemoBuyer.disabled = true;
-            if (window.ThinkingOrbUI) window.ThinkingOrbUI.showGlobal('Authenticating Recipient NGO…', 'Loading community claims ledger and Darpan verification', 'searching');
+            if (window.ThinkingOrbUI) window.ThinkingOrbUI.showGlobal('Authenticating Recipient NGO…', 'Loading community claims ledger and Darpan verification', 'working');
             try {
                 const res = await fetch(`${API_BASE}/login`, {
                     method: 'POST',
@@ -2345,7 +2345,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         setLoading(submitBtn, true, originalText);
         if (window.ThinkingOrbUI) {
-            window.ThinkingOrbUI.showGlobal('Authenticating Account…', 'Verifying credentials with secure database', 'searching');
+            window.ThinkingOrbUI.showGlobal('Authenticating Account…', 'Verifying credentials with secure database', 'working');
         }
 
         try {
@@ -2712,7 +2712,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         setLoading(submitBtn, true, originalText);
         if (window.ThinkingOrbUI) {
-            window.ThinkingOrbUI.showGlobal('Creating Account…', 'Validating government compliance & encryption', 'searching');
+            window.ThinkingOrbUI.showGlobal('Creating Account…', 'Validating government compliance & encryption', 'connecting');
         }
 
         try {
@@ -3293,7 +3293,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function logout() {
         console.log("logout: Clearing session and switching to homepage");
         if (window.ThinkingOrbUI) {
-            window.ThinkingOrbUI.showGlobal('Signing Out…', 'Clearing credentials & securing session', 'searching');
+            window.ThinkingOrbUI.showGlobal('Signing Out…', 'Clearing credentials & securing session', 'weaving');
         }
         if (typeof stopAdminLivePolling === 'function') stopAdminLivePolling();
         sessionStorage.removeItem('nourishUser');
@@ -5453,7 +5453,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 };
 
                 if (window.ThinkingOrbUI) {
-                    window.ThinkingOrbUI.showGlobal(pId ? 'Updating Food Listing…' : 'Publishing Surplus Meal…', 'Broadcasting real-time availability across network', 'searching');
+                    window.ThinkingOrbUI.showGlobal(pId ? 'Updating Food Listing…' : 'Publishing Surplus Meal…', 'Broadcasting real-time availability across network', 'working');
                 }
 
                 // ---- DEMO MODE: bypass API for demo tokens ----
@@ -7011,7 +7011,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         isVerifyingHandover = true;
         if (window.ThinkingOrbUI) {
-            window.ThinkingOrbUI.showGlobal('Verifying Handover PIN…', 'Validating digital release with secure ledger', 'searching');
+            window.ThinkingOrbUI.showGlobal('Verifying Handover PIN…', 'Validating digital release with secure ledger', 'connecting');
         }
         if (confirmBtn) {
             confirmBtn.disabled = true;
@@ -7744,7 +7744,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 saveBtn.disabled = true;
 
                 if (window.ThinkingOrbUI) {
-                    window.ThinkingOrbUI.showGlobal('Saving Profile Settings…', 'Updating cryptographic credentials & directory listing', 'searching');
+                    window.ThinkingOrbUI.showGlobal('Saving Profile Settings…', 'Updating cryptographic credentials & directory listing', 'working');
                 }
 
                 const orgName = orgNameInput ? orgNameInput.value.trim() : '';
