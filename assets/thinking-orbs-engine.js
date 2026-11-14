@@ -49,29 +49,19 @@ function makeProj(yaw, tilt, cx, cy, scale) {
 }
 function inkColor(w, alpha, dark, tint) {
   if (!tint) {
-    const g = Math.round((dark ? 1 - w : w) * 255);
+    if (dark) {
+      // High-contrast pure white: back dots stay crisp at 32%+, front dots reach 100%
+      const a = Math.max(0.32, Math.min(1, (1 - w * 0.35) * alpha));
+      return `rgba(255, 255, 255, ${a.toFixed(3)})`;
+    }
+    const g = Math.round(w * 255);
     return `rgba(${g},${g},${g},${alpha})`;
   }
   const ramp = (c) => Math.round(dark ? c * (1 - w) : c + (255 - c) * w);
   return `rgba(${ramp(tint.r)},${ramp(tint.g)},${ramp(tint.b)},${alpha})`;
 }
-function paint(ctx, dots, dark, rMin = 0.3, tint) {
-  // Pass 1: Luminous soft white aura under front-facing energetic dots (pure white glow)
-  if (dark) {
-    for (const d of dots) {
-      const alpha = d.a ?? 1;
-      if (d.z > 0.15 && alpha > 0.45 && d.r > 0.65) {
-        const glowR = d.r * 2.6;
-        const glowAlpha = Math.min(0.55, alpha * 0.38);
-        ctx.fillStyle = `rgba(255, 255, 255, ${glowAlpha})`;
-        ctx.beginPath();
-        ctx.arc(d.x, d.y, glowR, 0, Math.PI * 2);
-        ctx.fill();
-      }
-    }
-  }
-
-  // Pass 2: Core sharp dots
+function paint(ctx, dots, dark, rMin = 0.85, tint) {
+  // Core crisp dots (plain 2D arcs only, perfectly sharp anti-aliased geometry)
   for (const d of dots) {
     const alpha = d.a ?? 1;
     const w = Math.min(1, Math.max(0, d.white));
@@ -80,11 +70,11 @@ function paint(ctx, dots, dark, rMin = 0.3, tint) {
     ctx.arc(d.x, d.y, d.r, 0, Math.PI * 2);
     ctx.fill();
 
-    // Pass 3: Specular bright diamond center on peak incandescent dots
-    if (dark && d.z > 0.25 && alpha > 0.7 && (1 - w) > 0.75) {
-      ctx.fillStyle = `rgba(255, 255, 255, ${Math.min(1, alpha * 0.98)})`;
+    // High-luminance specular core on front-facing incandescent crest dots
+    if (dark && d.z > 0.18 && alpha > 0.62) {
+      ctx.fillStyle = `rgba(255, 255, 255, ${Math.min(1, alpha * 1.08)})`;
       ctx.beginPath();
-      ctx.arc(d.x, d.y, Math.max(0.4, d.r * 0.48), 0, Math.PI * 2);
+      ctx.arc(d.x, d.y, Math.max(0.48, d.r * 0.52), 0, Math.PI * 2);
       ctx.fill();
     }
   }
@@ -94,18 +84,19 @@ function paintLines(ctx, lines, dark, tint) {
     const alpha = l.a ?? 1;
     const w = Math.min(1, Math.max(0, l.white));
     ctx.strokeStyle = inkColor(w, alpha, dark, tint);
-    ctx.lineWidth = l.w;
+    ctx.lineWidth = Math.max(0.9, l.w);
     ctx.beginPath();
     ctx.moveTo(l.x1, l.y1);
     ctx.lineTo(l.x2, l.y2);
     ctx.stroke();
   }
 }
-function finalizeFrame(dots, lines, rMin = 0.3) {
+function finalizeFrame(dots, lines, rMin = 0.85) {
   const visible = [];
+  const minR = typeof rMin === 'number' ? Math.max(0.85, rMin) : 0.85;
   for (const d of dots) {
     if ((d.a ?? 1) < 0.02) continue;
-    d.r = Math.max(rMin, d.r);
+    d.r = Math.max(minR, d.r);
     visible.push(d);
   }
   visible.sort((a, b) => a.z - b.z);
@@ -113,7 +104,7 @@ function finalizeFrame(dots, lines, rMin = 0.3) {
 }
 function paintFrame(ctx, frame, dark, tint) {
   if (frame.lines.length) paintLines(ctx, frame.lines, dark, tint);
-  paint(ctx, frame.dots, dark, 0.3, tint);
+  paint(ctx, frame.dots, dark, 0.85, tint);
 }
 function radiusScale(size, pow) {
   return (size / 300) ** pow;
@@ -878,7 +869,9 @@ function resolvePreset(state, size) {
   const preset = (presetDict && presetDict[normSize]) || (presetDict && presetDict[64]) || { speed: 2.0, count: 1, size: 1 };
   let opts = { ...(BASE_PROFILES[mode] || BASE_PROFILES.globe) };
   if (preset.count && preset.count !== 1) opts = scaleCounts(opts, preset.count);
-  if (preset.size && preset.size !== 1) opts = scaleRadii(opts, preset.size);
+  const sizeMultiplier = (preset.size || 1) * 1.85;
+  opts = scaleRadii(opts, sizeMultiplier);
+  opts.rMin = 0.85;
   if (preset.extra) opts = { ...opts, ...preset.extra };
   const resolved = { mode, speed: preset.speed || 2.0, opts };
   cache.set(key, resolved);

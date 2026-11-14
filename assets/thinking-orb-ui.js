@@ -30,6 +30,10 @@
             this.canvas.height = Math.round(this.size * dpr);
             this.canvas.style.width = `${this.size}px`;
             this.canvas.style.height = `${this.size}px`;
+            this.canvas.style.imageRendering = '-webkit-optimize-contrast';
+            if (this.ctx) {
+                this.ctx.imageSmoothingEnabled = true;
+            }
 
             this.tick();
         }

@@ -7438,19 +7438,19 @@ body.light-theme .ios-orb-card,
 .ios-orb-canvas-wrap::before {
     content: '';
     position: absolute;
-    width: 76px;
-    height: 76px;
+    width: 82px;
+    height: 82px;
     border-radius: 50%;
-    background: radial-gradient(circle, rgba(255, 255, 255, 0.45) 0%, rgba(255, 255, 255, 0.18) 42%, transparent 70%);
-    filter: blur(14px);
+    background: radial-gradient(circle, rgba(255, 255, 255, 0.58) 0%, rgba(255, 255, 255, 0.22) 46%, transparent 72%);
+    filter: blur(18px);
     pointer-events: none;
     animation: iosOrbAmbientBreath 3.2s ease-in-out infinite alternate;
 }
 
 @keyframes iosOrbAmbientBreath {
-    0% { transform: scale(0.85); opacity: 0.6; }
+    0% { transform: scale(0.88); opacity: 0.65; }
     50% { transform: scale(1.18); opacity: 1; }
-    100% { transform: scale(0.85); opacity: 0.6; }
+    100% { transform: scale(0.88); opacity: 0.65; }
 }
 
 .ios-orb-canvas-wrap canvas {
@@ -7458,7 +7458,9 @@ body.light-theme .ios-orb-card,
     z-index: 2;
     display: block;
     margin: 0 auto;
-    filter: drop-shadow(0 0 16px rgba(255, 255, 255, 0.75)) drop-shadow(0 0 6px rgba(255, 255, 255, 0.95));
+    filter: none !important;
+    image-rendering: -webkit-optimize-contrast;
+    image-rendering: crisp-edges;
     pointer-events: none;
     animation: iosOrbFloat 4s ease-in-out infinite alternate;
 }
