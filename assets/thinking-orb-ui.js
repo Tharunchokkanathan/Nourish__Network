@@ -15,36 +15,21 @@
             this.ctx = canvas.getContext('2d');
             this.size = options.size || 64;
             this.state = options.state || 'searching'; // 'searching' is the sharp dotted globe
-            this.theme = options.theme || 'auto'; // 'dark', 'light', 'auto', or 'emerald'
+            this.theme = options.theme || 'auto'; // 'dark', 'light', 'auto'
             this.speed = options.speed || 1.0;
-            this.tint = options.tint || null; // e.g. { r: 16, g: 185, b: 129 } for emerald, or null for crisp monochrome
+            this.tint = options.tint || null;
             this.animId = null;
-            this.isVisible = true;
 
             this.init();
         }
 
         init() {
-            // High-DPI / Retina setup for razor-sharp dots
+            if (!this.canvas || !this.ctx) return;
             const dpr = Math.min(window.devicePixelRatio || 2, 2);
-            this.canvas.width = this.size * dpr;
-            this.canvas.height = this.size * dpr;
+            this.canvas.width = Math.round(this.size * dpr);
+            this.canvas.height = Math.round(this.size * dpr);
             this.canvas.style.width = `${this.size}px`;
             this.canvas.style.height = `${this.size}px`;
-            this.ctx.scale(dpr, dpr);
-
-            // IntersectionObserver to pause rendering when offscreen
-            if ('IntersectionObserver' in window) {
-                this.observer = new IntersectionObserver((entries) => {
-                    entries.forEach(entry => {
-                        this.isVisible = entry.isIntersecting;
-                        if (this.isVisible && !this.animId) {
-                            this.tick();
-                        }
-                    });
-                }, { threshold: 0.05 });
-                this.observer.observe(this.canvas);
-            }
 
             this.tick();
         }
@@ -52,28 +37,33 @@
         resolveTheme() {
             if (this.theme === 'dark') return true;
             if (this.theme === 'light') return false;
-            // auto theme detection
-            const hasDarkClass = document.documentElement.classList.contains('dark') || 
-                                document.body.classList.contains('dark') || 
-                                !document.body.classList.contains('light-theme');
-            return hasDarkClass;
+            // auto theme detection: dark by default unless light-theme is active
+            const isLight = document.body.classList.contains('light-theme') || 
+                            document.documentElement.classList.contains('light-theme') ||
+                            document.documentElement.getAttribute('data-theme') === 'light';
+            return !isLight;
         }
 
         tick() {
-            if (!this.isVisible || !this.canvas.isConnected) {
+            if (!this.canvas || !this.canvas.isConnected) {
                 this.animId = null;
                 return;
             }
 
             const engine = window.ThinkingOrbsEngine;
-            if (engine) {
+            if (engine && this.ctx) {
+                const dpr = Math.min(window.devicePixelRatio || 2, 2);
+                this.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+                this.ctx.clearRect(0, 0, this.size, this.size);
+
                 const elapsedSeconds = (performance.now() - startTime) / 1000;
                 const { mode, speed, opts } = engine.resolvePreset(this.state, this.size);
-                const frame = engine.MODE_FRAMES[mode](this.size, elapsedSeconds * speed * this.speed, opts);
-
-                const isDark = this.resolveTheme();
-                this.ctx.clearRect(0, 0, this.size, this.size);
-                engine.paintFrame(this.ctx, frame, isDark, this.tint);
+                const frameFn = engine.MODE_FRAMES && engine.MODE_FRAMES[mode];
+                if (frameFn) {
+                    const frame = frameFn(this.size, elapsedSeconds * speed * this.speed, opts);
+                    const isDark = this.resolveTheme();
+                    engine.paintFrame(this.ctx, frame, isDark, this.tint);
+                }
             }
 
             this.animId = requestAnimationFrame(() => this.tick());
@@ -83,9 +73,6 @@
             if (this.animId) {
                 cancelAnimationFrame(this.animId);
                 this.animId = null;
-            }
-            if (this.observer) {
-                this.observer.disconnect();
             }
         }
     }
@@ -177,7 +164,7 @@
         overlay.innerHTML = `
             <div class="ios-orb-card ios-orb-card-modal">
                 <div class="ios-orb-canvas-wrap">
-                    <canvas id="${orbId}" data-size="72" data-state="${state}"></canvas>
+                    <canvas id="${orbId}" data-size="64" data-state="${state}"></canvas>
                 </div>
                 <div class="ios-orb-title" id="nn-global-orb-title">${title}</div>
                 <div class="ios-orb-subtitle" id="nn-global-orb-subtitle">${subtitle}</div>
@@ -193,7 +180,7 @@
             if (window._currentGlobalOrbInstance) {
                 window._currentGlobalOrbInstance.destroy();
             }
-            window._currentGlobalOrbInstance = mount(canvas, { size: 72, state });
+            window._currentGlobalOrbInstance = mount(canvas, { size: 64, state });
         }
     }
 

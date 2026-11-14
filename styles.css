@@ -7433,6 +7433,12 @@ body.light-theme .ios-orb-card,
     filter: drop-shadow(0 0 18px rgba(16, 185, 129, 0.25));
 }
 
+.ios-orb-canvas-wrap canvas {
+    display: block;
+    margin: 0 auto;
+    pointer-events: none;
+}
+
 .ios-orb-title {
     font-size: 1.05rem !important;
     font-weight: 700 !important;

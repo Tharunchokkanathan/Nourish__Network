@@ -840,16 +840,18 @@ const PRESETS = {
 };
 const cache = /* @__PURE__ */ new Map();
 function resolvePreset(state, size) {
-  const key = `${state}-${size}`;
+  const normSize = (size >= 48) ? 64 : ((size >= 26) ? 32 : 20);
+  const key = `${state}-${normSize}`;
   const hit = cache.get(key);
   if (hit) return hit;
-  const mode = STATE_TO_MODE[state];
-  const preset = PRESETS[mode][size];
-  let opts = { ...BASE_PROFILES[mode] };
-  if (preset.count !== 1) opts = scaleCounts(opts, preset.count);
-  if (preset.size !== 1) opts = scaleRadii(opts, preset.size);
+  const mode = STATE_TO_MODE[state] || 'globe';
+  const presetDict = PRESETS[mode] || PRESETS.globe;
+  const preset = (presetDict && presetDict[normSize]) || (presetDict && presetDict[64]) || { speed: 2.0, count: 1, size: 1 };
+  let opts = { ...(BASE_PROFILES[mode] || BASE_PROFILES.globe) };
+  if (preset.count && preset.count !== 1) opts = scaleCounts(opts, preset.count);
+  if (preset.size && preset.size !== 1) opts = scaleRadii(opts, preset.size);
   if (preset.extra) opts = { ...opts, ...preset.extra };
-  const resolved = { mode, speed: preset.speed, opts };
+  const resolved = { mode, speed: preset.speed || 2.0, opts };
   cache.set(key, resolved);
   return resolved;
 }
@@ -873,6 +875,7 @@ exports.scaleCounts = scaleCounts;
 exports.scaleRadii = scaleRadii;
 exports.vnoise = vnoise;
 
+  if (typeof module !== 'undefined' && module.exports) module.exports = exports;
   if (typeof window !== 'undefined') window.ThinkingOrbsEngine = exports;
   if (typeof global !== 'undefined') global.ThinkingOrbsEngine = exports;
   if (typeof root !== 'undefined') root.ThinkingOrbsEngine = exports;
