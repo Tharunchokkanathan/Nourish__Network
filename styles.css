@@ -6521,32 +6521,6 @@ button:active,
     animation: scanSuccessFlash 0.7s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-/* ─────────────────────────────────────────────────────────────
-   REAL-TIME SOCKET STATUS INDICATOR & PULSE ANIMATION
-   ───────────────────────────────────────────────────────────── */
-.socket-status-pill {
-    user-select: none;
-}
-.socket-status-pill.socket-connected {
-    background: rgba(16, 185, 129, 0.12) !important;
-    border-color: rgba(16, 185, 129, 0.35) !important;
-    color: #10b981 !important;
-}
-.socket-status-pill.socket-disconnected {
-    background: rgba(239, 68, 68, 0.12) !important;
-    border-color: rgba(239, 68, 68, 0.35) !important;
-    color: #f87171 !important;
-}
-.socket-status-pill.socket-disconnected .socket-pulse-dot {
-    background: #ef4444 !important;
-    box-shadow: 0 0 8px #ef4444 !important;
-    animation: none !important;
-}
-@keyframes socketPulse {
-    0% { transform: scale(0.92); opacity: 0.8; }
-    50% { transform: scale(1.25); opacity: 1; }
-    100% { transform: scale(0.92); opacity: 0.8; }
-}
 
 @keyframes scannerScanAnim {
     0% {
@@ -7420,4 +7394,106 @@ button:active,
 
 [data-theme='light'] .admin-picker-sub-row {
     color: #64748b !important;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   THINKING ORB LOADER (iOS & macOS AESTHETIC)
+   ───────────────────────────────────────────────────────────── */
+.ios-orb-card {
+    background: rgba(18, 18, 22, 0.76) !important;
+    backdrop-filter: blur(28px) saturate(190%) !important;
+    -webkit-backdrop-filter: blur(28px) saturate(190%) !important;
+    border: 1px solid rgba(255, 255, 255, 0.14) !important;
+    border-radius: 28px !important;
+    box-shadow: 0 25px 65px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.18) !important;
+    padding: 2.25rem 2rem !important;
+    text-align: center !important;
+    max-width: 400px !important;
+    width: 100% !important;
+    margin: 1.5rem auto !important;
+    color: #ffffff !important;
+    transition: all 0.3s ease;
+    animation: iosOrbFadeIn 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+body.light-theme .ios-orb-card,
+.light-mode .ios-orb-card,
+[data-theme='light'] .ios-orb-card {
+    background: rgba(255, 255, 255, 0.82) !important;
+    border-color: rgba(0, 0, 0, 0.08) !important;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.9) !important;
+    color: #1e293b !important;
+}
+
+.ios-orb-canvas-wrap {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-bottom: 0.5rem;
+    filter: drop-shadow(0 0 18px rgba(16, 185, 129, 0.25));
+}
+
+.ios-orb-title {
+    font-size: 1.05rem !important;
+    font-weight: 700 !important;
+    letter-spacing: -0.015em !important;
+    color: #ffffff !important;
+    margin: 0.75rem 0 0.35rem 0 !important;
+}
+
+body.light-theme .ios-orb-title,
+.light-mode .ios-orb-title,
+[data-theme='light'] .ios-orb-title {
+    color: #0f172a !important;
+}
+
+.ios-orb-subtitle {
+    font-size: 0.84rem !important;
+    font-weight: 500 !important;
+    color: rgba(255, 255, 255, 0.65) !important;
+    line-height: 1.45 !important;
+    animation: iosOrbTextPulse 2.4s ease-in-out infinite alternate;
+}
+
+body.light-theme .ios-orb-subtitle,
+.light-mode .ios-orb-subtitle,
+[data-theme='light'] .ios-orb-subtitle {
+    color: rgba(15, 23, 42, 0.65) !important;
+}
+
+@keyframes iosOrbTextPulse {
+    0% { opacity: 0.6; }
+    100% { opacity: 0.95; }
+}
+
+@keyframes iosOrbFadeIn {
+    0% { opacity: 0; transform: scale(0.96) translateY(6px); }
+    100% { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+.ios-orb-global-overlay {
+    position: fixed;
+    inset: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.75);
+    backdrop-filter: blur(18px) saturate(180%);
+    -webkit-backdrop-filter: blur(18px) saturate(180%);
+    z-index: 999999999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    transition: opacity 0.3s ease;
+}
+
+.ios-orb-card-modal {
+    margin: 0 !important;
+    transform: translateY(0);
+    animation: iosModalPop 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes iosModalPop {
+    0% { opacity: 0; transform: scale(0.92) translateY(12px); }
+    100% { opacity: 1; transform: scale(1) translateY(0); }
 }

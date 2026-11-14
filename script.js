@@ -999,6 +999,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 }).catch(() => {});
             }
 
+            if (window.ThinkingOrbUI) {
+                window.ThinkingOrbUI.showGlobal('Securing Meal Rescue…', 'Reserving surplus meal batch with donor kitchen', 'searching');
+            }
+
             // Step 1: Call backend checkout API with strict database validation
             const res = await fetch(`${API_BASE}/checkout`, {
                 method: 'POST',
@@ -1192,6 +1196,9 @@ document.addEventListener('DOMContentLoaded', () => {
             console.error("Order processing error:", e);
             showToast("Network error placing order. Please check your connection.", "error");
         } finally {
+            if (window.ThinkingOrbUI) {
+                window.ThinkingOrbUI.hideGlobal();
+            }
             if (btn) {
                 btn.innerHTML = originalHtml;
                 btn.disabled = false;
@@ -2104,7 +2111,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (btnDemoSeller) {
         btnDemoSeller.addEventListener('click', async () => {
             btnDemoSeller.disabled = true;
-            btnDemoSeller.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Logging in...';
+            if (window.ThinkingOrbUI) window.ThinkingOrbUI.showGlobal('Authenticating Food Donor…', 'Loading kitchen inventory and FSSAI credentials', 'searching');
             try {
                 const res = await fetch(`${API_BASE}/login`, {
                     method: 'POST',
@@ -2143,6 +2150,7 @@ document.addEventListener('DOMContentLoaded', () => {
             } catch (e) {
                 showToast("Network error. Please try again.", "error");
             } finally {
+                if (window.ThinkingOrbUI) window.ThinkingOrbUI.hideGlobal();
                 btnDemoSeller.disabled = false;
                 btnDemoSeller.innerHTML = '🍽️ Demo: Food Vendor';
             }
@@ -2152,7 +2160,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (btnDemoBuyer) {
         btnDemoBuyer.addEventListener('click', async () => {
             btnDemoBuyer.disabled = true;
-            btnDemoBuyer.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Logging in...';
+            if (window.ThinkingOrbUI) window.ThinkingOrbUI.showGlobal('Authenticating Recipient NGO…', 'Loading community claims ledger and Darpan verification', 'searching');
             try {
                 const res = await fetch(`${API_BASE}/login`, {
                     method: 'POST',
@@ -2190,6 +2198,7 @@ document.addEventListener('DOMContentLoaded', () => {
             } catch (e) {
                 showToast("Network error. Please try again.", "error");
             } finally {
+                if (window.ThinkingOrbUI) window.ThinkingOrbUI.hideGlobal();
                 btnDemoBuyer.disabled = false;
                 btnDemoBuyer.innerHTML = '🤝 Demo: NGO / Shelter';
             }
@@ -2199,7 +2208,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (btnDemoAdmin) {
         btnDemoAdmin.addEventListener('click', async () => {
             btnDemoAdmin.disabled = true;
-            btnDemoAdmin.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Logging in...';
+            if (window.ThinkingOrbUI) window.ThinkingOrbUI.showGlobal('Authenticating Admin Command…', 'Loading regulatory audit systems and platform metrics', 'solving');
             try {
                 const res = await fetch(`${API_BASE}/login`, {
                     method: 'POST',
@@ -2231,6 +2240,7 @@ document.addEventListener('DOMContentLoaded', () => {
             } catch (e) {
                 showToast("Network error. Please try again.", "error");
             } finally {
+                if (window.ThinkingOrbUI) window.ThinkingOrbUI.hideGlobal();
                 btnDemoAdmin.disabled = false;
                 btnDemoAdmin.innerHTML = '🛡️ Admin Command Center';
             }
@@ -3964,7 +3974,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const container = document.getElementById('adminPickerListContainer');
         if ((!adminCache.users || adminCache.users.length === 0) && container) {
-            container.innerHTML = `<div style="text-align:center; padding: 2.5rem; color: rgba(255,255,255,0.4);"><i class="fa-solid fa-circle-notch fa-spin"></i> Loading registered accounts...</div>`;
+            if (window.ThinkingOrbUI) {
+                window.ThinkingOrbUI.renderIn(container, 'Loading Accounts…', 'Auditing accredited partner directories', 'searching', 52);
+            } else {
+                container.innerHTML = `<div style="text-align:center; padding: 2.5rem; color: rgba(255,255,255,0.4);"><i class="fa-solid fa-circle-notch fa-spin"></i> Loading registered accounts...</div>`;
+            }
             try {
                 const token = sessionStorage.getItem('nourishToken') || '';
                 const res = await fetch(`${API_BASE}/admin/users?_t=${Date.now()}`, { headers: { 'Authorization': `Bearer ${token}` } });
@@ -4890,20 +4904,38 @@ document.addEventListener('DOMContentLoaded', () => {
 
                     <!-- Views Container -->
                     <div id="admin-view-compliance" class="admin-tab-view" style="display: block;">
-                        <div style="text-align:center; padding: 2.5rem; color: rgba(255,255,255,0.4);"><i class="fa-solid fa-circle-notch fa-spin"></i> Loading compliance data...</div>
+                        <div class="ios-orb-card" style="margin: 2.5rem auto !important;">
+                            <div class="ios-orb-canvas-wrap"><canvas id="adm-orb-comp" data-size="64" data-state="searching"></canvas></div>
+                            <div class="ios-orb-title">Auditing Compliance Ledgers…</div>
+                            <div class="ios-orb-subtitle">Verifying FSSAI and DARPAN regulatory credentials</div>
+                        </div>
                     </div>
                     <div id="admin-view-listings" class="admin-tab-view" style="display: none;">
-                        <div style="text-align:center; padding: 2.5rem; color: rgba(255,255,255,0.4);"><i class="fa-solid fa-circle-notch fa-spin"></i> Loading listings...</div>
+                        <div class="ios-orb-card" style="margin: 2.5rem auto !important;">
+                            <div class="ios-orb-canvas-wrap"><canvas id="adm-orb-list" data-size="64" data-state="searching"></canvas></div>
+                            <div class="ios-orb-title">Syncing Active Listings…</div>
+                            <div class="ios-orb-subtitle">Fetching surplus meal batches across network</div>
+                        </div>
                     </div>
                     <div id="admin-view-handovers" class="admin-tab-view" style="display: none;">
-                        <div style="text-align:center; padding: 2.5rem; color: rgba(255,255,255,0.4);"><i class="fa-solid fa-circle-notch fa-spin"></i> Loading handovers...</div>
+                        <div class="ios-orb-card" style="margin: 2.5rem auto !important;">
+                            <div class="ios-orb-canvas-wrap"><canvas id="adm-orb-hand" data-size="64" data-state="searching"></canvas></div>
+                            <div class="ios-orb-title">Loading Handover Records…</div>
+                            <div class="ios-orb-subtitle">Validating digital passes and PIN verifications</div>
+                        </div>
                     </div>
                     <div id="admin-view-users" class="admin-tab-view" style="display: none;">
-                        <div style="text-align:center; padding: 2.5rem; color: rgba(255,255,255,0.4);"><i class="fa-solid fa-circle-notch fa-spin"></i> Loading user directory...</div>
+                        <div class="ios-orb-card" style="margin: 2.5rem auto !important;">
+                            <div class="ios-orb-canvas-wrap"><canvas id="adm-orb-usr" data-size="64" data-state="searching"></canvas></div>
+                            <div class="ios-orb-title">Accessing Directory…</div>
+                            <div class="ios-orb-subtitle">Indexing accredited food partners and community NGOs</div>
+                        </div>
                     </div>
                 </div>
             </div>
         `;
+
+        if (window.ThinkingOrbUI) window.ThinkingOrbUI.scanAndMount(root);
 
         await fetchAndRenderAdminData(true);
         startAdminLivePolling();
@@ -5872,12 +5904,16 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
         if (!silent && container) {
-            container.innerHTML = `
-                <div style="text-align: center; padding: 3rem; color: var(--text-muted);">
-                    <i class="fa-solid fa-circle-notch fa-spin" style="font-size: 2rem; color: var(--accent-primary); margin-bottom: 1rem;"></i>
-                    <p>Loading real-time order & claim records from database...</p>
-                </div>
-            `;
+            if (window.ThinkingOrbUI) {
+                window.ThinkingOrbUI.renderIn(container, 'Loading Live Orders & Claims…', 'Retrieving cryptographically verified handover records', 'searching', 64);
+            } else {
+                container.innerHTML = `
+                    <div style="text-align: center; padding: 3rem; color: var(--text-muted);">
+                        <i class="fa-solid fa-circle-notch fa-spin" style="font-size: 2rem; color: var(--accent-primary); margin-bottom: 1rem;"></i>
+                        <p>Loading real-time order & claim records from database...</p>
+                    </div>
+                `;
+            }
         }
 
         try {
@@ -8030,8 +8066,6 @@ document.addEventListener('DOMContentLoaded', () => {
     function initRealtimeSockets() {
         if (typeof io === 'undefined') {
             console.warn("Socket.io client not available.");
-            const ind = document.getElementById('nn-socket-indicator');
-            if (ind) ind.style.display = 'none';
             return;
         }
 
@@ -8056,28 +8090,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
         socket.on('connect', () => {
             console.log("⚡ [Real-Time] Connected to Nourish Network Live Stream:", socket.id);
-            const ind = document.getElementById('nn-socket-indicator');
-            const lbl = document.getElementById('socket-status-label');
-            if (ind) {
-                ind.className = 'socket-status-pill socket-connected';
-                ind.style.borderColor = 'rgba(16, 185, 129, 0.4)';
-                ind.style.color = '#10b981';
-            }
-            if (lbl) lbl.textContent = 'Live Sync';
-
             syncUserSocketRooms();
         });
 
         socket.on('disconnect', () => {
             console.log("⚡ [Real-Time] Disconnected from live stream");
-            const ind = document.getElementById('nn-socket-indicator');
-            const lbl = document.getElementById('socket-status-label');
-            if (ind) {
-                ind.className = 'socket-status-pill socket-disconnected';
-                ind.style.borderColor = 'rgba(239, 68, 68, 0.4)';
-                ind.style.color = '#f87171';
-            }
-            if (lbl) lbl.textContent = 'Sync Offline';
         });
 
         // Event: A vendor published a new surplus food listing
