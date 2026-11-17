@@ -3235,9 +3235,11 @@ document.addEventListener('DOMContentLoaded', () => {
         const settingsDockItem = document.getElementById('settings-toggle-dock');
         const settingsNavItem = document.getElementById('settings-toggle-nav');
         const landingItems = document.querySelectorAll('.landing-only');
+        const adminDockItems = document.querySelectorAll('.admin-only');
 
         if (state.activePortal === 'buyer') {
             landingItems.forEach(el => el.style.setProperty('display', 'none', 'important'));
+            adminDockItems.forEach(el => el.style.setProperty('display', 'none', 'important'));
             if (cartDockItem) cartDockItem.style.setProperty('display', 'flex', 'important');
             if (addDockItem) addDockItem.style.setProperty('display', 'none', 'important');
             if (commentsDockItem) commentsDockItem.style.setProperty('display', 'flex', 'important');
@@ -3246,6 +3248,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (loginDockItem) loginDockItem.style.setProperty('display', 'flex', 'important');
         } else if (state.activePortal === 'seller') {
             landingItems.forEach(el => el.style.setProperty('display', 'none', 'important'));
+            adminDockItems.forEach(el => el.style.setProperty('display', 'none', 'important'));
             if (cartDockItem) cartDockItem.style.setProperty('display', 'none', 'important');
             if (addDockItem) addDockItem.style.setProperty('display', 'flex', 'important');
             if (commentsDockItem) commentsDockItem.style.setProperty('display', 'flex', 'important');
@@ -3260,8 +3263,25 @@ document.addEventListener('DOMContentLoaded', () => {
             if (historyDockItem) historyDockItem.style.setProperty('display', 'none', 'important');
             if (settingsDockItem) settingsDockItem.style.setProperty('display', 'none', 'important');
             if (loginDockItem) loginDockItem.style.setProperty('display', 'flex', 'important');
+            adminDockItems.forEach(el => el.style.setProperty('display', 'flex', 'important'));
+            if (typeof updateAdminBadgeCounts === 'function') updateAdminBadgeCounts();
+
+            // Match active admin dock tab
+            const views = ['compliance', 'listings', 'handovers', 'users'];
+            let currentTab = 'compliance';
+            for (const v of views) {
+                const el = document.getElementById(`admin-view-${v}`);
+                if (el && el.style.display !== 'none') {
+                    currentTab = v;
+                    break;
+                }
+            }
+            adminDockItems.forEach(btn => btn.classList.remove('active'));
+            const activeDock = document.getElementById(`adm-dock-btn-${currentTab}`);
+            if (activeDock) activeDock.classList.add('active');
         } else {
             landingItems.forEach(el => el.style.setProperty('display', 'flex', 'important'));
+            adminDockItems.forEach(el => el.style.setProperty('display', 'none', 'important'));
             if (cartDockItem) cartDockItem.style.setProperty('display', 'none', 'important');
             if (addDockItem) addDockItem.style.setProperty('display', 'none', 'important');
             if (commentsDockItem) commentsDockItem.style.setProperty('display', 'none', 'important');
@@ -4165,15 +4185,29 @@ document.addEventListener('DOMContentLoaded', () => {
         }, 350);
     };
 
-    window.adminSwitchTab = function(tabName) {
+    window.adminSwitchTab = function(tabName, fromDock = false) {
         document.querySelectorAll('.admin-tab-btn').forEach(btn => btn.classList.remove('active'));
         document.querySelectorAll('.admin-tab-view').forEach(view => view.style.display = 'none');
+        document.querySelectorAll('.admin-dock-item').forEach(btn => btn.classList.remove('active'));
 
         const activeBtn = document.getElementById(`adm-tab-btn-${tabName}`);
         if (activeBtn) activeBtn.classList.add('active');
 
+        const activeDockBtn = document.getElementById(`adm-dock-btn-${tabName}`);
+        if (activeDockBtn) activeDockBtn.classList.add('active');
+
         const activeView = document.getElementById(`admin-view-${tabName}`);
         if (activeView) activeView.style.display = 'block';
+
+        if (fromDock) {
+            const tabsNav = document.querySelector('.admin-tabs-nav');
+            if (tabsNav) {
+                const rect = tabsNav.getBoundingClientRect();
+                if (rect.top < 60 || rect.bottom < 100) {
+                    tabsNav.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+            }
+        }
     };
 
     window.adminRefreshData = async function() {
@@ -4340,18 +4374,29 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     function updateAdminBadgeCounts() {
-        const pendingCount = adminCache.users.filter(u => !u.isVerified && u.role !== 'admin').length;
+        const pendingCount = (adminCache && adminCache.users && adminCache.users.filter(u => !u.isVerified && u.role !== 'admin').length) || 0;
         const compBadge = document.getElementById('adm-badge-compliance');
         if (compBadge) compBadge.textContent = pendingCount;
+        const compDockBadge = document.getElementById('adm-dock-badge-compliance');
+        if (compDockBadge) compDockBadge.textContent = pendingCount;
 
+        const listingsCount = (adminCache && adminCache.listings && adminCache.listings.length) || 0;
         const listBadge = document.getElementById('adm-badge-listings');
-        if (listBadge) listBadge.textContent = adminCache.listings.length;
+        if (listBadge) listBadge.textContent = listingsCount;
+        const listDockBadge = document.getElementById('adm-dock-badge-listings');
+        if (listDockBadge) listDockBadge.textContent = listingsCount;
 
+        const handoversCount = (adminCache && adminCache.handovers && adminCache.handovers.length) || 0;
         const handBadge = document.getElementById('adm-badge-handovers');
-        if (handBadge) handBadge.textContent = adminCache.handovers.length;
+        if (handBadge) handBadge.textContent = handoversCount;
+        const handDockBadge = document.getElementById('adm-dock-badge-handovers');
+        if (handDockBadge) handDockBadge.textContent = handoversCount;
 
+        const usersCount = (adminCache && adminCache.users && adminCache.users.length) || 0;
         const userBadge = document.getElementById('adm-badge-users');
-        if (userBadge) userBadge.textContent = adminCache.users.length;
+        if (userBadge) userBadge.textContent = usersCount;
+        const userDockBadge = document.getElementById('adm-dock-badge-users');
+        if (userDockBadge) userDockBadge.textContent = usersCount;
     }
 
     function renderAdminComplianceTable() {
