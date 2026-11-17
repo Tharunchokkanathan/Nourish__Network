@@ -2043,7 +2043,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // =========================================
 
 
-    // Helper to toggle button loading state & Thinking Orb capsule pill
+    // Helper to toggle button loading state & Thinking Orb HUD
     function setLoading(btn, isLoading, originalText, orbText, orbState) {
         if (isLoading) {
             if (btn) {
@@ -2051,7 +2051,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 btn.disabled = true;
             }
             if (window.ThinkingOrbUI) {
-                window.ThinkingOrbUI.show(orbText || 'Thinking....', orbState || 'breathing');
+                window.ThinkingOrbUI.show(orbText || 'Processing....', orbState || 'working');
             }
         } else {
             if (btn) {
@@ -2349,7 +2349,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const submitBtn = loginForm.querySelector('button[type="submit"]');
         const originalText = submitBtn.innerHTML;
 
-        setLoading(submitBtn, true, originalText, 'Thinking....', 'solving');
+        setLoading(submitBtn, true, originalText, 'Signing in....', 'solving');
 
 
 
@@ -2760,7 +2760,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const submitBtn = forgotPasswordForm.querySelector('button[type="submit"]');
             const originalText = submitBtn.innerHTML;
-            setLoading(submitBtn, true, originalText, 'Creating account....', 'weaving');
+            setLoading(submitBtn, true, originalText, 'Sending reset link....', 'weaving');
 
             try {
                 const res = await fetch(`${API_BASE}/forgot-password`, {
@@ -2804,7 +2804,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const submitBtn = resetPasswordForm.querySelector('button[type="submit"]');
             const originalText = submitBtn.innerHTML;
-            setLoading(submitBtn, true, originalText, 'Creating account....', 'weaving');
+            setLoading(submitBtn, true, originalText, 'Updating password....', 'solving');
 
             try {
                 const res = await fetch(`${API_BASE}/reset-password`, {
@@ -2853,7 +2853,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const submitBtn = contactForm.querySelector('button[type="submit"]');
             const originalText = submitBtn.innerHTML;
 
-            setLoading(submitBtn, true, originalText, 'Creating account....', 'weaving');
+            setLoading(submitBtn, true, originalText, 'Sending message....', 'weaving');
 
             try {
                 const response = await fetch(`${API_BASE}/contact`, {
@@ -3874,7 +3874,7 @@ document.addEventListener('DOMContentLoaded', () => {
             submitBtn.disabled = true;
             submitBtn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Authenticating...';
         }
-        if (window.ThinkingOrbUI) window.ThinkingOrbUI.show('Thinking....', 'solving');
+        if (window.ThinkingOrbUI) window.ThinkingOrbUI.show('Verifying Admin....', 'solving');
 
         try {
             const res = await fetch(`${API_BASE}/auth/admin-login`, {
@@ -7237,7 +7237,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Show iOS HUD loader when user refreshes the page (F5 / browser reload)
     window.addEventListener('beforeunload', () => {
         if (window.ThinkingOrbUI && typeof window.ThinkingOrbUI.show === 'function') {
-            window.ThinkingOrbUI.show('Refreshing....', 'breathing');
+            window.ThinkingOrbUI.show('Refreshing....', 'searching');
         }
     });
 

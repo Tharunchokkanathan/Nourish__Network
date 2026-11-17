@@ -1,17 +1,17 @@
 /**
  * ThinkingOrbUI - iOS Style Loading HUD for Jakub Antalik's official thinking-orbs
- * Visual style: Medium-sized square black box HUD with centered thinking orb & status text
+ * Visual style: Medium-sized square black box HUD with centered thinking orb & operation-specific text
  * Reference: https://github.com/Jakubantalik/thinking-orbs
  *
  * Supported official states (at size 64 scale):
- * "breathing"  -> Thinking.... (default general loading)
+ * "breathing"  -> Loading.... (general page boot & transitions)
  * "searching"  -> Refreshing.... / Searching.... (listings search, history refresh, GPS)
- * "working"    -> Confirming order.... (order checkout, atomic reservation)
- * "solving"    -> Authenticating.... / Returning to HQ.... (login, admin verification)
+ * "working"    -> Confirming order.... / Processing.... (order checkout, atomic reservation)
+ * "solving"    -> Signing in.... / Verifying.... / Returning to HQ.... (login, admin verification)
  * "weaving"    -> Validating PIN.... / Creating account.... (handover verification, signup)
  * "composing"  -> Publishing listing.... (adding food item)
  * "connecting" -> Switching account.... / Connecting.... (user switching, socket sync)
- * "listening"  -> Listening.... (audio/realtime notifications)
+ * "listening"  -> Listening.... (realtime notifications)
  * "shaping"    -> Initializing.... (camera/sensor init)
  */
 (function (root, factory) {
@@ -30,15 +30,15 @@
   'use strict';
 
   const DEFAULT_LABELS = {
-    breathing: 'Thinking....',
+    breathing: 'Loading....',
     searching: 'Searching....',
-    working: 'Working....',
-    solving: 'Solving....',
+    working: 'Processing....',
+    solving: 'Verifying....',
     listening: 'Listening....',
     connecting: 'Connecting....',
-    weaving: 'Weaving....',
-    composing: 'Composing....',
-    shaping: 'Shaping....'
+    weaving: 'Validating....',
+    composing: 'Publishing....',
+    shaping: 'Initializing....'
   };
 
   /**
@@ -159,7 +159,7 @@
 
     const span = document.createElement('span');
     span.className = 'thinking-orb-text';
-    span.textContent = text || DEFAULT_LABELS[state] || 'Thinking....';
+    span.textContent = text || DEFAULT_LABELS[state] || 'Loading....';
 
     hud.appendChild(canvas);
     hud.appendChild(span);
@@ -175,7 +175,7 @@
       setState(newState) {
         orb.setState(newState);
         if (!text) {
-          span.textContent = DEFAULT_LABELS[newState] || 'Thinking....';
+          span.textContent = DEFAULT_LABELS[newState] || 'Loading....';
         }
       },
       destroy() {
@@ -210,7 +210,7 @@
    * @param {string|Object} textOrOptions
    * @param {string} [optionalState]
    */
-  function show(textOrOptions = 'Thinking....', optionalState = 'breathing') {
+  function show(textOrOptions = 'Loading....', optionalState = 'breathing') {
     if (typeof document === 'undefined' || !document.body) return;
 
     if (hideTimeout) {
@@ -218,11 +218,11 @@
       hideTimeout = null;
     }
 
-    let text = 'Thinking....';
+    let text = 'Loading....';
     let state = 'breathing';
 
     if (typeof textOrOptions === 'object' && textOrOptions !== null) {
-      text = textOrOptions.text || DEFAULT_LABELS[textOrOptions.state || 'breathing'] || 'Thinking....';
+      text = textOrOptions.text || DEFAULT_LABELS[textOrOptions.state || 'breathing'] || 'Loading....';
       state = textOrOptions.state || 'breathing';
     } else if (typeof textOrOptions === 'string') {
       text = textOrOptions;
@@ -277,7 +277,7 @@
    * @param {string} state
    * @param {number} size
    */
-  function renderHUD(containerOrSelector, text = 'Thinking....', state = 'breathing', size = 64) {
+  function renderHUD(containerOrSelector, text = 'Loading....', state = 'breathing', size = 64) {
     if (typeof document === 'undefined') return null;
 
     const container = typeof containerOrSelector === 'string'
@@ -302,7 +302,7 @@
     if (!root || !root.querySelectorAll) return;
     const slots = root.querySelectorAll('.thinking-orb-slot');
     slots.forEach(slot => {
-      const text = slot.getAttribute('data-text') || 'Thinking....';
+      const text = slot.getAttribute('data-text') || 'Loading....';
       const state = slot.getAttribute('data-state') || 'breathing';
       renderHUD(slot, text, state, 64);
     });

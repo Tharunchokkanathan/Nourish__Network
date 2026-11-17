@@ -70,15 +70,28 @@
     <div id="page-boot-overlay" class="thinking-orb-overlay visible" style="z-index: 10000000; opacity: 1; pointer-events: auto;">
         <div class="thinking-orb-hud">
             <canvas id="page-boot-canvas" class="thinking-orb-canvas" width="128" height="128" style="width: 64px; height: 64px;"></canvas>
-            <span class="thinking-orb-text">Thinking....</span>
+            <span id="page-boot-text" class="thinking-orb-text">Refreshing....</span>
         </div>
     </div>
     <script>
         (function () {
             try {
+                var textEl = document.getElementById('page-boot-text');
+                var isReload = false;
+                if (window.performance) {
+                    var entries = window.performance.getEntriesByType && window.performance.getEntriesByType('navigation');
+                    if (entries && entries.length > 0) {
+                        isReload = entries[0].type === 'reload';
+                    } else if (window.performance.navigation) {
+                        isReload = window.performance.navigation.type === 1;
+                    }
+                }
+                if (textEl) {
+                    textEl.textContent = isReload ? 'Refreshing....' : 'Loading Nourish....';
+                }
                 var canvas = document.getElementById('page-boot-canvas');
                 if (canvas && window.ThinkingOrbUI && typeof window.ThinkingOrbUI.createOrb === 'function') {
-                    window.__bootOrb = window.ThinkingOrbUI.createOrb(canvas, { state: 'breathing', size: 64 });
+                    window.__bootOrb = window.ThinkingOrbUI.createOrb(canvas, { state: isReload ? 'searching' : 'breathing', size: 64 });
                 }
             } catch (e) { }
         })();
