@@ -1313,99 +1313,207 @@ img {
 /* =========================================
    FOOTER
    ========================================= */
+/* ==========================================================================
+   MODERN FOOTER (OLED Dark Black & Neat Thin Typography)
+   ========================================================================== */
 .footer {
-    background-color: #1a252f;
-    color: #ecf0f1;
-    padding: 5rem 0 2rem;
+    background-color: #070709;
+    background-image: radial-gradient(circle at 50% 0%, rgba(16, 185, 129, 0.04) 0%, transparent 60%);
+    color: #94a3b8;
+    padding: 4.5rem 0 6.5rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.07);
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Inter", "Outfit", sans-serif;
+    position: relative;
+    z-index: 10;
 }
 
 .footer-grid {
     display: grid;
     grid-template-columns: 2fr 1fr 1fr 1.5fr;
-    gap: 3rem;
-    margin-bottom: 3rem;
+    gap: 3.5rem;
+    margin-bottom: 3.5rem;
+}
+
+.footer-brand .logo {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Inter", sans-serif;
+    font-weight: 600;
+    font-size: 1.25rem;
+    letter-spacing: -0.02em;
+    color: #ffffff !important;
+    text-decoration: none;
+    margin-bottom: 0.25rem;
+}
+
+.footer-brand .logo i {
+    color: #10b981;
+    font-size: 1.2rem;
 }
 
 .footer-brand p {
-    color: #bdc3c7;
-    margin: 1.5rem 0;
+    color: #8e9bb0;
+    font-weight: 300;
+    font-size: 0.92rem;
+    line-height: 1.7;
+    margin: 1.25rem 0 1.5rem;
+    max-width: 320px;
+    letter-spacing: 0.01em;
 }
 
 .social-links {
     display: flex;
-    gap: 1rem;
+    gap: 0.75rem;
 }
 
 .social-icon {
-    width: 36px;
-    height: 36px;
-    border-radius: 100px;
-    background: rgba(255, 255, 255, 0.1);
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
     display: flex;
     align-items: center;
     justify-content: center;
-    color: var(--white);
+    color: #94a3b8;
+    font-size: 0.88rem;
+    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    text-decoration: none;
 }
 
 .social-icon:hover {
-    background: var(--primary-green);
-    transform: translateY(-3px);
+    background: rgba(16, 185, 129, 0.12);
+    border-color: rgba(16, 185, 129, 0.35);
+    color: #34d399;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.15);
 }
 
 .footer h4 {
-    color: var(--white);
-    margin-bottom: 1.5rem;
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Inter", sans-serif;
+    font-weight: 500;
+    font-size: 0.88rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: #f1f5f9;
+    margin-bottom: 1.25rem;
     position: relative;
-    padding-bottom: 0.5rem;
+    padding-bottom: 0;
 }
 
 .footer h4::after {
-    content: '';
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    width: 40px;
-    height: 2px;
-    background: var(--primary-green);
+    display: none;
+}
+
+.footer-links ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
 }
 
 .footer-links ul li {
-    margin-bottom: 0.8rem;
+    margin-bottom: 0.75rem;
 }
 
 .footer-links ul li a {
-    color: #bdc3c7;
+    color: #8e9bb0;
+    font-weight: 300;
+    font-size: 0.9rem;
+    letter-spacing: 0.01em;
+    text-decoration: none;
+    transition: color 0.2s ease, transform 0.2s ease;
+    display: inline-block;
 }
 
 .footer-links ul li a:hover {
-    color: var(--primary-green);
-    padding-left: 5px;
+    color: #34d399;
+    transform: translateX(3px);
+    padding-left: 0;
+}
+
+.footer-newsletter p {
+    color: #8e9bb0;
+    font-weight: 300;
+    font-size: 0.9rem;
+    line-height: 1.6;
+    margin-bottom: 1.25rem;
+    letter-spacing: 0.01em;
 }
 
 .newsletter-form {
     display: flex;
-    margin-top: 1rem;
+    align-items: center;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 9999px;
+    padding: 4px 5px 4px 16px;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    max-width: 340px;
+}
+
+.newsletter-form:focus-within {
+    border-color: rgba(16, 185, 129, 0.5);
+    box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.12);
 }
 
 .newsletter-form input {
     flex: 1;
-    padding: 0.8rem 1rem;
+    background: transparent;
     border: none;
-    border-radius: 4px 0 0 4px;
+    outline: none;
+    color: #f1f5f9;
     font-family: inherit;
+    font-weight: 300;
+    font-size: 0.88rem;
+    letter-spacing: 0.01em;
+    padding: 8px 6px;
+    min-width: 0;
 }
 
-.newsletter-form button {
-    border-radius: 0 4px 4px 0;
-    padding: 0 1.2rem;
+.newsletter-form input::placeholder {
+    color: #64748b;
+    font-weight: 300;
+}
+
+.newsletter-form button,
+.newsletter-form button.btn,
+.newsletter-form button.btn-primary {
+    width: 36px !important;
+    height: 36px !important;
+    min-width: 36px !important;
+    padding: 0 !important;
+    border-radius: 50% !important;
+    background: #10b981 !important;
+    color: #ffffff !important;
+    border: none !important;
+    outline: none !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    cursor: pointer !important;
+    font-size: 0.85rem !important;
+    transition: all 0.2s ease !important;
+    flex-shrink: 0 !important;
+    box-shadow: none !important;
+}
+
+.newsletter-form button:hover,
+.newsletter-form button.btn:hover,
+.newsletter-form button.btn-primary:hover {
+    background: #059669 !important;
+    transform: scale(1.05) !important;
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.35) !important;
 }
 
 .footer-bottom {
     text-align: center;
     padding-top: 2rem;
-    border-top: 1px solid rgba(255, 255, 255, 0.1);
-    color: #95a5a6;
-    font-size: 0.9rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
+    color: #64748b;
+    font-weight: 300;
+    font-size: 0.82rem;
+    letter-spacing: 0.02em;
 }
 
 /* =========================================
@@ -5287,6 +5395,10 @@ button:active,
 
     .social-links {
         justify-content: center !important;
+    }
+
+    .newsletter-form {
+        margin: 0 auto !important;
     }
 
     /* Review Slider Mobile Styling */
