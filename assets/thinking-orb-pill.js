@@ -1,9 +1,18 @@
 /**
- * ThinkingOrbUI - UI Component for Jakub Antalik's official thinking-orbs
- * Visual style: Sleek dark capsule pill matching reference specification
- * Supports all 9 official states:
- * "working" | "searching" | "solving" | "listening" | "connecting" |
- * "weaving" | "composing" | "breathing" | "shaping"
+ * ThinkingOrbUI - iOS Style Loading HUD for Jakub Antalik's official thinking-orbs
+ * Visual style: Medium-sized square black box HUD with centered thinking orb & status text
+ * Reference: https://github.com/Jakubantalik/thinking-orbs
+ *
+ * Supported official states (at size 64 scale):
+ * "breathing"  -> Thinking.... (default general loading)
+ * "searching"  -> Refreshing.... / Searching.... (listings search, history refresh, GPS)
+ * "working"    -> Confirming order.... (order checkout, atomic reservation)
+ * "solving"    -> Authenticating.... / Returning to HQ.... (login, admin verification)
+ * "weaving"    -> Validating PIN.... / Creating account.... (handover verification, signup)
+ * "composing"  -> Publishing listing.... (adding food item)
+ * "connecting" -> Switching account.... / Connecting.... (user switching, socket sync)
+ * "listening"  -> Listening.... (audio/realtime notifications)
+ * "shaping"    -> Initializing.... (camera/sensor init)
  */
 (function (root, factory) {
   if (typeof define === 'function' && define.amd) {
@@ -50,7 +59,7 @@
 
     const {
       state = 'breathing',
-      size = 32,
+      size = 64, // Medium scale: 64px
       speed = 1,
       dark = true,
       paused = false,
@@ -80,7 +89,7 @@
     let opts = dots !== 1 ? engine.scaleCounts(preset.opts, Math.max(0.1, dots)) : preset.opts;
     if (dotSize !== 1) opts = engine.scaleRadii(opts, Math.max(0.1, dotSize));
 
-    // Pure dots without color tinting ("dont change any colour, let it be")
+    // Pure uncolored dots ("dont change any colour, let it be")
     const tint = undefined;
 
     function render(tSec) {
@@ -137,13 +146,13 @@
   }
 
   /**
-   * Create a DOM capsule pill containing an animated thinking orb and label
+   * Create an iOS style medium square black box HUD
    */
-  function createPill(text, state = 'breathing', size = 32) {
-    const pill = document.createElement('div');
-    pill.className = 'thinking-orb-pill';
-    pill.setAttribute('role', 'status');
-    pill.setAttribute('aria-live', 'polite');
+  function createHUD(text, state = 'breathing', size = 64) {
+    const hud = document.createElement('div');
+    hud.className = 'thinking-orb-hud';
+    hud.setAttribute('role', 'status');
+    hud.setAttribute('aria-live', 'polite');
 
     const canvas = document.createElement('canvas');
     canvas.className = 'thinking-orb-canvas';
@@ -152,13 +161,13 @@
     span.className = 'thinking-orb-text';
     span.textContent = text || DEFAULT_LABELS[state] || 'Thinking....';
 
-    pill.appendChild(canvas);
-    pill.appendChild(span);
+    hud.appendChild(canvas);
+    hud.appendChild(span);
 
     const orb = createOrb(canvas, { state, size, dark: true });
 
     return {
-      element: pill,
+      element: hud,
       orb,
       setText(newText) {
         span.textContent = newText;
@@ -171,16 +180,19 @@
       },
       destroy() {
         orb.destroy();
-        if (pill.parentNode) {
-          pill.parentNode.removeChild(pill);
+        if (hud.parentNode) {
+          hud.parentNode.removeChild(hud);
         }
       }
     };
   }
 
+  // Alias createPill for backwards compatibility
+  const createPill = createHUD;
+
   // Global Overlay Singleton
   let overlayEl = null;
-  let activePill = null;
+  let activeHUD = null;
   let hideTimeout = null;
 
   function ensureOverlay() {
@@ -194,7 +206,7 @@
   }
 
   /**
-   * Show global floating capsule pill overlay
+   * Show global iOS style square black box HUD overlay
    * @param {string|Object} textOrOptions
    * @param {string} [optionalState]
    */
@@ -219,13 +231,13 @@
 
     const overlay = ensureOverlay();
 
-    if (activePill) {
-      activePill.setText(text);
-      activePill.setState(state);
+    if (activeHUD) {
+      activeHUD.setText(text);
+      activeHUD.setState(state);
     } else {
       overlay.innerHTML = '';
-      activePill = createPill(text, state, 32);
-      overlay.appendChild(activePill.element);
+      activeHUD = createHUD(text, state, 64);
+      overlay.appendChild(activeHUD.element);
     }
 
     // Force reflow for CSS transition
@@ -234,7 +246,7 @@
   }
 
   /**
-   * Hide global floating capsule pill overlay
+   * Hide global HUD overlay
    */
   function hide(delayMs = 120) {
     if (!overlayEl) return;
@@ -246,9 +258,9 @@
         overlayEl.classList.remove('visible');
       }
       setTimeout(() => {
-        if (activePill) {
-          activePill.destroy();
-          activePill = null;
+        if (activeHUD) {
+          activeHUD.destroy();
+          activeHUD = null;
         }
         if (overlayEl) {
           overlayEl.innerHTML = '';
@@ -259,13 +271,13 @@
   }
 
   /**
-   * Mount an inline capsule pill into any container
+   * Mount an inline HUD into any container
    * @param {HTMLElement|string} containerOrSelector
    * @param {string} text
    * @param {string} state
    * @param {number} size
    */
-  function renderPill(containerOrSelector, text = 'Thinking....', state = 'breathing', size = 32) {
+  function renderHUD(containerOrSelector, text = 'Thinking....', state = 'breathing', size = 64) {
     if (typeof document === 'undefined') return null;
 
     const container = typeof containerOrSelector === 'string'
@@ -275,14 +287,16 @@
     if (!container) return null;
 
     container.innerHTML = '';
-    const pill = createPill(text, state, size);
-    pill.element.classList.add('inline');
-    container.appendChild(pill.element);
-    return pill;
+    const hud = createHUD(text, state, size);
+    hud.element.classList.add('inline');
+    container.appendChild(hud.element);
+    return hud;
   }
 
+  const renderPill = renderHUD;
+
   /**
-   * Automatically scans for elements with class .thinking-orb-slot and renders live pills
+   * Automatically scans for elements with class .thinking-orb-slot and renders live HUDs
    */
   function initSlots(root = document) {
     if (!root || !root.querySelectorAll) return;
@@ -290,13 +304,15 @@
     slots.forEach(slot => {
       const text = slot.getAttribute('data-text') || 'Thinking....';
       const state = slot.getAttribute('data-state') || 'breathing';
-      renderPill(slot, text, state, 32);
+      renderHUD(slot, text, state, 64);
     });
   }
 
   return {
     createOrb,
+    createHUD,
     createPill,
+    renderHUD,
     renderPill,
     initSlots,
     show,

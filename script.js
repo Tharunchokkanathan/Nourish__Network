@@ -979,7 +979,7 @@ document.addEventListener('DOMContentLoaded', () => {
             btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Processing...';
             btn.disabled = true;
         }
-        if (window.ThinkingOrbUI) window.ThinkingOrbUI.show('Reserving meal....', 'working');
+        if (window.ThinkingOrbUI) window.ThinkingOrbUI.show('Confirming order....', 'working');
 
         try {
             const notes = document.getElementById('claim-notes')?.value || '';
@@ -1323,6 +1323,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- BACKEND SYNC ENGINE ---
     async function refreshState(silent = false) {
+        if (!silent && window.ThinkingOrbUI) {
+            window.ThinkingOrbUI.show('Refreshing listings....', 'searching');
+        }
         try {
             const user = JSON.parse(sessionStorage.getItem('nourishUser') || '{}');
             let url = `${API_BASE}/listings?_t=${Date.now()}`;
@@ -1457,6 +1460,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 renderSellerListings();
             } else if (state.activePortal === 'buyer' && typeof renderExchangeGrid === 'function') {
                 renderExchangeGrid();
+            }
+        } finally {
+            if (!silent && window.ThinkingOrbUI) {
+                setTimeout(() => window.ThinkingOrbUI.hide(80), 300);
             }
         }
     }
@@ -3282,11 +3289,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function logout() {
         console.log("logout: Clearing session and switching to homepage");
+        if (window.ThinkingOrbUI) window.ThinkingOrbUI.show('Logging out....', 'breathing');
         if (typeof stopAdminLivePolling === 'function') stopAdminLivePolling();
         sessionStorage.removeItem('nourishUser');
         sessionStorage.removeItem('nourishToken');
         localStorage.removeItem('nourishUser');
         localStorage.removeItem('nourishToken');
+
+        setTimeout(() => {
+            if (window.ThinkingOrbUI) window.ThinkingOrbUI.hide(80);
+        }, 550);
 
         document.documentElement.classList.remove('user-logged-in', 'portal-pre-active');
         document.documentElement.classList.add('user-at-home');
@@ -4106,6 +4118,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     window.adminInspectUserPortal = async function(userId) {
         window.closeAdminPickerModal();
+        if (window.ThinkingOrbUI) window.ThinkingOrbUI.show('Switching account....', 'connecting');
 
         let target = (adminCache.users || []).find(u => Number(u.id) === Number(userId));
         if (!target) {
@@ -4121,6 +4134,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         if (!target) {
+            if (window.ThinkingOrbUI) window.ThinkingOrbUI.hide(80);
             showToast("User account not found.", "error");
             return;
         }
@@ -4134,14 +4148,21 @@ document.addEventListener('DOMContentLoaded', () => {
 
         showToast(`Viewing ${target.organizationName || target.name || target.email} (${isSeller ? 'Vendor' : 'NGO'}) 🛡️`, "success");
 
-        renderPortal();
-        window.scrollTo({ top: 0, behavior: 'smooth' });
+        setTimeout(() => {
+            renderPortal();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            if (window.ThinkingOrbUI) window.ThinkingOrbUI.hide(80);
+        }, 400);
     };
 
     window.adminExitToAdminHQ = function() {
-        state.activePortal = 'admin';
-        renderPortal();
-        window.scrollTo({ top: 0, behavior: 'smooth' });
+        if (window.ThinkingOrbUI) window.ThinkingOrbUI.show('Switching to HQ....', 'solving');
+        setTimeout(() => {
+            state.activePortal = 'admin';
+            renderPortal();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            if (window.ThinkingOrbUI) window.ThinkingOrbUI.hide(80);
+        }, 350);
     };
 
     window.adminSwitchTab = function(tabName) {
@@ -5476,6 +5497,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 }
 
+                if (window.ThinkingOrbUI) window.ThinkingOrbUI.show(pId ? 'Updating listing....' : 'Publishing listing....', 'composing');
                 try {
                     let response;
                     if (pId) {
@@ -5528,6 +5550,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                 } catch (err) {
                     showToast("Network error while publishing.", "error");
+                } finally {
+                    if (window.ThinkingOrbUI) window.ThinkingOrbUI.hide(80);
                 }
             });
         }
@@ -5870,6 +5894,9 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     async function loadPortalHistory(silent = false) {
+        if (!silent && window.ThinkingOrbUI) {
+            window.ThinkingOrbUI.show('Refreshing history....', 'searching');
+        }
         const token = sessionStorage.getItem('nourishToken') || localStorage.getItem('nourishToken');
         const container = document.getElementById('modal-history-container') || document.getElementById('seller-history-container') || document.getElementById('buyer-history-container');
         const dockBadge = document.getElementById('history-dock-badge');
@@ -6264,6 +6291,10 @@ document.addEventListener('DOMContentLoaded', () => {
                         </button>
                     </div>
                 `;
+            }
+        } finally {
+            if (!silent && window.ThinkingOrbUI) {
+                setTimeout(() => window.ThinkingOrbUI.hide(80), 300);
             }
         }
     }
