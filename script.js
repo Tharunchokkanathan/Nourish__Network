@@ -4200,7 +4200,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (activeView) activeView.style.display = 'block';
 
         if (fromDock) {
-            const tabsNav = document.querySelector('.admin-tabs-nav');
+            const tabsNav = document.getElementById('admin-kpi-container') || document.querySelector('.admin-portal-wrapper');
             if (tabsNav) {
                 const rect = tabsNav.getBoundingClientRect();
                 if (rect.top < 60 || rect.bottom < 100) {
@@ -4882,10 +4882,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     <!-- Top Header -->
                     <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 1.25rem; margin-bottom: 2rem;">
                         <div>
-                            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 6px;">
-                                <span class="admin-badge-pill"><i class="fa-solid fa-shield-halved"></i> Nourish HQ Operations</span>
-                                <span style="font-size: 0.72rem; color: #10b981; background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.25); padding: 3px 8px; border-radius: 100px; font-weight: 700;">● Active Command Cluster</span>
-                            </div>
                             <h1 class="admin-header-title" style="font-size: 2rem; font-weight: 800; letter-spacing: -0.02em; margin: 0;">
                                 Operations & Compliance Command Center
                             </h1>
@@ -4956,27 +4952,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         </div>
                     </div>
 
-                    <!-- Subtabs Navigation -->
-                    <div class="admin-tabs-nav">
-                        <button class="admin-tab-btn active" id="adm-tab-btn-compliance" onclick="window.adminSwitchTab && window.adminSwitchTab('compliance')">
-                            <i class="fa-solid fa-id-card"></i> User Approvals
-                            <span class="admin-count-pill" id="adm-badge-compliance">0</span>
-                        </button>
-                        <button class="admin-tab-btn" id="adm-tab-btn-listings" onclick="window.adminSwitchTab && window.adminSwitchTab('listings')">
-                            <i class="fa-solid fa-utensils"></i> Food Listings
-                            <span class="admin-count-pill" id="adm-badge-listings">0</span>
-                        </button>
-                        <button class="admin-tab-btn" id="adm-tab-btn-handovers" onclick="window.adminSwitchTab && window.adminSwitchTab('handovers')">
-                            <i class="fa-solid fa-handshake-angle"></i> Order Handovers
-                            <span class="admin-count-pill" id="adm-badge-handovers">0</span>
-                        </button>
-                        <button class="admin-tab-btn" id="adm-tab-btn-users" onclick="window.adminSwitchTab && window.adminSwitchTab('users')">
-                            <i class="fa-solid fa-users-gear"></i> User Directory
-                            <span class="admin-count-pill" id="adm-badge-users">0</span>
-                        </button>
-                    </div>
-
-                    <!-- Views Container -->
+                    <!-- Views Container (Controlled via Floating Bottom Nav) -->
                     <div id="admin-view-compliance" class="admin-tab-view" style="display: block;">
                         <div style="text-align:center; padding: 2rem;"><div class="thinking-orb-slot" data-text="Loading compliance data...." data-state="solving"></div></div>
                     </div>
