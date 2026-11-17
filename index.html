@@ -20,7 +20,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
     <!-- Custom Styles -->
-    <link rel="stylesheet" href="styles.css?v=3.4">
+    <link rel="stylesheet" href="styles.css?v=3.5">
 
 
 
@@ -37,10 +37,6 @@
             document.write('<script src="https://unpkg.com/html5-qrcode" type="text/javascript"><\/script>');
         }
     </script>
-
-    <!-- Thinking Orbs iOS/Mac Style Engine & UI Renderer -->
-    <script src="assets/thinking-orbs-engine.js?v=3.4"></script>
-    <script src="assets/thinking-orb-ui.js?v=3.4"></script>
 
     <!-- Anti-flash script for persistent sessions -->
     <script>
@@ -66,22 +62,6 @@
 </head>
 
 <body>
-    <!-- Initial Page Preloader with iOS Sharp Dotted Thinking Orb -->
-    <div id="nn-app-preloader" class="ios-orb-global-overlay" style="display: flex; opacity: 1; z-index: 99999; backdrop-filter: blur(28px) saturate(180%); -webkit-backdrop-filter: blur(28px) saturate(180%);">
-        <div class="ios-orb-card ios-orb-card-modal">
-            <div class="ios-orb-canvas-wrap">
-                <canvas id="app-preloader-orb" data-size="64" data-state="searching"></canvas>
-            </div>
-            <div class="ios-orb-title">Nourish Network</div>
-            <div class="ios-orb-subtitle">Connecting surplus kitchens with local communities…</div>
-        </div>
-    </div>
-    <script>
-        if (window.ThinkingOrbUI) {
-            window.ThinkingOrbUI.scanAndMount(document.getElementById('nn-app-preloader'));
-        }
-    </script>
-
     <!-- Background Visual Layers (Inspiration: Blueberry & The Coordinate) -->
     <div class="bg-glow-layer"></div>
     <div class="halftone-overlay"></div>

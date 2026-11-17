@@ -999,10 +999,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 }).catch(() => {});
             }
 
-            if (window.ThinkingOrbUI) {
-                window.ThinkingOrbUI.showGlobal('Confirming Order…', 'Reserving surplus meal batch with donor kitchen', 'working');
-            }
-
             // Step 1: Call backend checkout API with strict database validation
             const res = await fetch(`${API_BASE}/checkout`, {
                 method: 'POST',
@@ -1196,9 +1192,6 @@ document.addEventListener('DOMContentLoaded', () => {
             console.error("Order processing error:", e);
             showToast("Network error placing order. Please check your connection.", "error");
         } finally {
-            if (window.ThinkingOrbUI) {
-                window.ThinkingOrbUI.hideGlobal();
-            }
             if (btn) {
                 btn.innerHTML = originalHtml;
                 btn.disabled = false;
@@ -1324,9 +1317,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- BACKEND SYNC ENGINE ---
     async function refreshState(silent = false) {
-        if (!silent && window.ThinkingOrbUI) {
-            window.ThinkingOrbUI.showGlobal('Refreshing Exchange…', 'Syncing live inventory and community updates', 'searching');
-        }
         try {
             const user = JSON.parse(sessionStorage.getItem('nourishUser') || '{}');
             let url = `${API_BASE}/listings?_t=${Date.now()}`;
@@ -1461,10 +1451,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 renderSellerListings();
             } else if (state.activePortal === 'buyer' && typeof renderExchangeGrid === 'function') {
                 renderExchangeGrid();
-            }
-        } finally {
-            if (!silent && window.ThinkingOrbUI) {
-                setTimeout(() => window.ThinkingOrbUI.hideGlobal(), 350);
             }
         }
     }
@@ -2118,7 +2104,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (btnDemoSeller) {
         btnDemoSeller.addEventListener('click', async () => {
             btnDemoSeller.disabled = true;
-            if (window.ThinkingOrbUI) window.ThinkingOrbUI.showGlobal('Authenticating Food Donor…', 'Loading kitchen inventory and FSSAI credentials', 'working');
+            btnDemoSeller.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Logging in...';
             try {
                 const res = await fetch(`${API_BASE}/login`, {
                     method: 'POST',
@@ -2157,7 +2143,6 @@ document.addEventListener('DOMContentLoaded', () => {
             } catch (e) {
                 showToast("Network error. Please try again.", "error");
             } finally {
-                if (window.ThinkingOrbUI) window.ThinkingOrbUI.hideGlobal();
                 btnDemoSeller.disabled = false;
                 btnDemoSeller.innerHTML = '🍽️ Demo: Food Vendor';
             }
@@ -2167,7 +2152,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (btnDemoBuyer) {
         btnDemoBuyer.addEventListener('click', async () => {
             btnDemoBuyer.disabled = true;
-            if (window.ThinkingOrbUI) window.ThinkingOrbUI.showGlobal('Authenticating Recipient NGO…', 'Loading community claims ledger and Darpan verification', 'working');
+            btnDemoBuyer.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Logging in...';
             try {
                 const res = await fetch(`${API_BASE}/login`, {
                     method: 'POST',
@@ -2205,7 +2190,6 @@ document.addEventListener('DOMContentLoaded', () => {
             } catch (e) {
                 showToast("Network error. Please try again.", "error");
             } finally {
-                if (window.ThinkingOrbUI) window.ThinkingOrbUI.hideGlobal();
                 btnDemoBuyer.disabled = false;
                 btnDemoBuyer.innerHTML = '🤝 Demo: NGO / Shelter';
             }
@@ -2215,7 +2199,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (btnDemoAdmin) {
         btnDemoAdmin.addEventListener('click', async () => {
             btnDemoAdmin.disabled = true;
-            if (window.ThinkingOrbUI) window.ThinkingOrbUI.showGlobal('Authenticating Admin Command…', 'Loading regulatory audit systems and platform metrics', 'solving');
+            btnDemoAdmin.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Logging in...';
             try {
                 const res = await fetch(`${API_BASE}/login`, {
                     method: 'POST',
@@ -2247,7 +2231,6 @@ document.addEventListener('DOMContentLoaded', () => {
             } catch (e) {
                 showToast("Network error. Please try again.", "error");
             } finally {
-                if (window.ThinkingOrbUI) window.ThinkingOrbUI.hideGlobal();
                 btnDemoAdmin.disabled = false;
                 btnDemoAdmin.innerHTML = '🛡️ Admin Command Center';
             }
@@ -2344,9 +2327,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const originalText = submitBtn.innerHTML;
 
         setLoading(submitBtn, true, originalText);
-        if (window.ThinkingOrbUI) {
-            window.ThinkingOrbUI.showGlobal('Authenticating Account…', 'Verifying credentials with secure database', 'working');
-        }
+
+
 
         try {
             const response = await fetch(`${API_BASE}/login`, {
@@ -2375,10 +2357,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     renderPortal();
                     syncDock();
                     refreshState();
-                    if (window.ThinkingOrbUI) window.ThinkingOrbUI.hideGlobal();
-                }, 800);
+                }, 1000);
             } else if (response.status === 403 && data.unverified) {
-                if (window.ThinkingOrbUI) window.ThinkingOrbUI.hideGlobal();
                 showToast(data.error || "Please verify your email address first.", "warning");
                 authModal.classList.remove('active');
                 const sentEmailEl = document.getElementById('verifySentEmail');
@@ -2387,11 +2367,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (emailModal) emailModal.classList.add('active');
                 startVerificationPolling(data.email || email);
             } else {
-                if (window.ThinkingOrbUI) window.ThinkingOrbUI.hideGlobal();
                 showToast(data.error || "Login failed", "error");
             }
         } catch (error) {
-            if (window.ThinkingOrbUI) window.ThinkingOrbUI.hideGlobal();
             showToast("Network error. Is the server running?", "error");
         } finally {
             setLoading(submitBtn, false, originalText);
@@ -2711,9 +2689,6 @@ document.addEventListener('DOMContentLoaded', () => {
         const originalText = submitBtn.innerHTML;
 
         setLoading(submitBtn, true, originalText);
-        if (window.ThinkingOrbUI) {
-            window.ThinkingOrbUI.showGlobal('Creating Account…', 'Validating government compliance & encryption', 'connecting');
-        }
 
         try {
             const response = await fetch(`${API_BASE}/register`, {
@@ -2745,7 +2720,6 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch (error) {
             showToast("Network error. Please try again later.", "error");
         } finally {
-            if (window.ThinkingOrbUI) window.ThinkingOrbUI.hideGlobal();
             setLoading(submitBtn, false, originalText);
         }
     });
@@ -3292,9 +3266,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function logout() {
         console.log("logout: Clearing session and switching to homepage");
-        if (window.ThinkingOrbUI) {
-            window.ThinkingOrbUI.showGlobal('Signing Out…', 'Clearing credentials & securing session', 'weaving');
-        }
         if (typeof stopAdminLivePolling === 'function') stopAdminLivePolling();
         sessionStorage.removeItem('nourishUser');
         sessionStorage.removeItem('nourishToken');
@@ -3333,10 +3304,6 @@ document.addEventListener('DOMContentLoaded', () => {
         syncDock();
         window.scrollTo({ top: 0, behavior: 'smooth' });
         showToast("Logged out successfully.", "info");
-
-        setTimeout(() => {
-            if (window.ThinkingOrbUI) window.ThinkingOrbUI.hideGlobal();
-        }, 400);
     }
     window.logout = logout;
 
@@ -3687,10 +3654,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 const token = sessionStorage.getItem('nourishToken');
 
-                if (window.ThinkingOrbUI) {
-                    window.ThinkingOrbUI.showGlobal('Removing Listing…', 'Updating inventory ledger', 'searching');
-                }
-
                 // Helper to remove locally
                 const removeLocally = () => {
                     let demoListings = JSON.parse(localStorage.getItem('nn_demo_listings') || '[]');
@@ -3705,9 +3668,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                     updateLiveStats();
                     if (typeof broadcastInventoryChange === 'function') broadcastInventoryChange();
-                    setTimeout(() => {
-                        if (window.ThinkingOrbUI) window.ThinkingOrbUI.hideGlobal();
-                    }, 350);
                 };
 
                 const isDemoToken = !token || token.startsWith('demo-token') || String(id).startsWith('demo-');
@@ -3725,7 +3685,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (response.ok || response.status === 404 || response.status === 403) {
                         removeLocally();
                     } else {
-                        if (window.ThinkingOrbUI) window.ThinkingOrbUI.hideGlobal();
                         const data = await response.json();
                         showToast(data.error || "Delete failed", "error");
                     }
@@ -4005,11 +3964,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const container = document.getElementById('adminPickerListContainer');
         if ((!adminCache.users || adminCache.users.length === 0) && container) {
-            if (window.ThinkingOrbUI) {
-                window.ThinkingOrbUI.renderIn(container, 'Loading Accounts…', 'Auditing accredited partner directories', 'searching', 52);
-            } else {
-                container.innerHTML = `<div style="text-align:center; padding: 2.5rem; color: rgba(255,255,255,0.4);"><i class="fa-solid fa-circle-notch fa-spin"></i> Loading registered accounts...</div>`;
-            }
+            container.innerHTML = `<div style="text-align:center; padding: 2.5rem; color: rgba(255,255,255,0.4);"><i class="fa-solid fa-circle-notch fa-spin"></i> Loading registered accounts...</div>`;
             try {
                 const token = sessionStorage.getItem('nourishToken') || '';
                 const res = await fetch(`${API_BASE}/admin/users?_t=${Date.now()}`, { headers: { 'Authorization': `Bearer ${token}` } });
@@ -4935,38 +4890,20 @@ document.addEventListener('DOMContentLoaded', () => {
 
                     <!-- Views Container -->
                     <div id="admin-view-compliance" class="admin-tab-view" style="display: block;">
-                        <div class="ios-orb-card" style="margin: 2.5rem auto !important;">
-                            <div class="ios-orb-canvas-wrap"><canvas id="adm-orb-comp" data-size="64" data-state="searching"></canvas></div>
-                            <div class="ios-orb-title">Auditing Compliance Ledgers…</div>
-                            <div class="ios-orb-subtitle">Verifying FSSAI and DARPAN regulatory credentials</div>
-                        </div>
+                        <div style="text-align:center; padding: 2.5rem; color: rgba(255,255,255,0.4);"><i class="fa-solid fa-circle-notch fa-spin"></i> Loading compliance data...</div>
                     </div>
                     <div id="admin-view-listings" class="admin-tab-view" style="display: none;">
-                        <div class="ios-orb-card" style="margin: 2.5rem auto !important;">
-                            <div class="ios-orb-canvas-wrap"><canvas id="adm-orb-list" data-size="64" data-state="searching"></canvas></div>
-                            <div class="ios-orb-title">Syncing Active Listings…</div>
-                            <div class="ios-orb-subtitle">Fetching surplus meal batches across network</div>
-                        </div>
+                        <div style="text-align:center; padding: 2.5rem; color: rgba(255,255,255,0.4);"><i class="fa-solid fa-circle-notch fa-spin"></i> Loading listings...</div>
                     </div>
                     <div id="admin-view-handovers" class="admin-tab-view" style="display: none;">
-                        <div class="ios-orb-card" style="margin: 2.5rem auto !important;">
-                            <div class="ios-orb-canvas-wrap"><canvas id="adm-orb-hand" data-size="64" data-state="searching"></canvas></div>
-                            <div class="ios-orb-title">Loading Handover Records…</div>
-                            <div class="ios-orb-subtitle">Validating digital passes and PIN verifications</div>
-                        </div>
+                        <div style="text-align:center; padding: 2.5rem; color: rgba(255,255,255,0.4);"><i class="fa-solid fa-circle-notch fa-spin"></i> Loading handovers...</div>
                     </div>
                     <div id="admin-view-users" class="admin-tab-view" style="display: none;">
-                        <div class="ios-orb-card" style="margin: 2.5rem auto !important;">
-                            <div class="ios-orb-canvas-wrap"><canvas id="adm-orb-usr" data-size="64" data-state="searching"></canvas></div>
-                            <div class="ios-orb-title">Accessing Directory…</div>
-                            <div class="ios-orb-subtitle">Indexing accredited food partners and community NGOs</div>
-                        </div>
+                        <div style="text-align:center; padding: 2.5rem; color: rgba(255,255,255,0.4);"><i class="fa-solid fa-circle-notch fa-spin"></i> Loading user directory...</div>
                     </div>
                 </div>
             </div>
         `;
-
-        if (window.ThinkingOrbUI) window.ThinkingOrbUI.scanAndMount(root);
 
         await fetchAndRenderAdminData(true);
         startAdminLivePolling();
@@ -5452,10 +5389,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     vendorAddress: addressVal
                 };
 
-                if (window.ThinkingOrbUI) {
-                    window.ThinkingOrbUI.showGlobal(pId ? 'Updating Food Listing…' : 'Publishing Surplus Meal…', 'Broadcasting real-time availability across network', 'working');
-                }
-
                 // ---- DEMO MODE: bypass API for demo tokens ----
                 const isDemoToken = token.startsWith('demo-token');
                 if (isDemoToken) {
@@ -5515,9 +5448,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (pPhoneInput) pPhoneInput.value = phoneVal || targetUser.publicPhone || targetUser.phone || '';
                     if (pAddressInput) pAddressInput.value = addressVal || targetUser.address || '';
                     renderSellerListings();
-                    setTimeout(() => {
-                        if (window.ThinkingOrbUI) window.ThinkingOrbUI.hideGlobal();
-                    }, 400);
                     return;
 
                 }
@@ -5574,8 +5504,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                 } catch (err) {
                     showToast("Network error while publishing.", "error");
-                } finally {
-                    if (window.ThinkingOrbUI) window.ThinkingOrbUI.hideGlobal();
                 }
             });
         }
@@ -5783,12 +5711,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 renderPortalCommentList();
 
                 input.value = '';
-                if (window.ThinkingOrbUI) {
-                    window.ThinkingOrbUI.showGlobal('Publishing Community Review…', 'Broadcasting verified voice to public impact wall', 'searching');
-                    setTimeout(() => {
-                        if (window.ThinkingOrbUI) window.ThinkingOrbUI.hideGlobal();
-                    }, 400);
-                }
                 showToast("Your voice is now live in 'Voices of Impact'! 🌱", "success");
             });
         }
@@ -5950,16 +5872,12 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
         if (!silent && container) {
-            if (window.ThinkingOrbUI) {
-                window.ThinkingOrbUI.renderIn(container, 'Loading Live Orders & Claims…', 'Retrieving cryptographically verified handover records', 'searching', 64);
-            } else {
-                container.innerHTML = `
-                    <div style="text-align: center; padding: 3rem; color: var(--text-muted);">
-                        <i class="fa-solid fa-circle-notch fa-spin" style="font-size: 2rem; color: var(--accent-primary); margin-bottom: 1rem;"></i>
-                        <p>Loading real-time order & claim records from database...</p>
-                    </div>
-                `;
-            }
+            container.innerHTML = `
+                <div style="text-align: center; padding: 3rem; color: var(--text-muted);">
+                    <i class="fa-solid fa-circle-notch fa-spin" style="font-size: 2rem; color: var(--accent-primary); margin-bottom: 1rem;"></i>
+                    <p>Loading real-time order & claim records from database...</p>
+                </div>
+            `;
         }
 
         try {
@@ -7010,9 +6928,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         isVerifyingHandover = true;
-        if (window.ThinkingOrbUI) {
-            window.ThinkingOrbUI.showGlobal('Verifying Handover PIN…', 'Validating digital release with secure ledger', 'connecting');
-        }
         if (confirmBtn) {
             confirmBtn.disabled = true;
             confirmBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Verifying PIN...';
@@ -7026,7 +6941,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 const expectedPin = (locOrder && locOrder.handoverOtp) || String(orderId).padStart(4, '0').slice(-4);
 
                 if (locOrder && otp !== expectedPin) {
-                    if (window.ThinkingOrbUI) window.ThinkingOrbUI.hideGlobal();
                     if (errorBox) {
                         errorBox.textContent = 'Invalid Handover PIN! Please ask the NGO driver to show their pass.';
                         errorBox.style.display = 'block';
@@ -7052,7 +6966,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 showToast("Physical handover verified successfully! 🤝", "success");
                 if (typeof loadPortalHistory === 'function') loadPortalHistory();
             } finally {
-                if (window.ThinkingOrbUI) window.ThinkingOrbUI.hideGlobal();
                 isVerifyingHandover = false;
             }
             return;
@@ -7101,7 +7014,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 confirmBtn.innerHTML = '<i class="fa-solid fa-check-double"></i>&nbsp; Verify & Complete Handover';
             }
         } finally {
-            if (window.ThinkingOrbUI) window.ThinkingOrbUI.hideGlobal();
             isVerifyingHandover = false;
         }
     }
@@ -7243,18 +7155,6 @@ document.addEventListener('DOMContentLoaded', () => {
     updateCartBadge();
     wireDockButtons();
     checkSession();
-
-    // Dismiss initial page preloader with smooth iOS fade
-    setTimeout(() => {
-        const preloader = document.getElementById('nn-app-preloader');
-        if (preloader) {
-            preloader.style.transition = 'opacity 0.4s ease, visibility 0.4s ease';
-            preloader.style.opacity = '0';
-            setTimeout(() => {
-                preloader.style.display = 'none';
-            }, 400);
-        }
-    }, 500);
 
 
     // Real-time silent polling every 5 seconds
@@ -7743,10 +7643,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 saveBtn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Saving...';
                 saveBtn.disabled = true;
 
-                if (window.ThinkingOrbUI) {
-                    window.ThinkingOrbUI.showGlobal('Saving Profile Settings…', 'Updating cryptographic credentials & directory listing', 'working');
-                }
-
                 const orgName = orgNameInput ? orgNameInput.value.trim() : '';
                 const bio = bioInput ? bioInput.value.trim() : '';
                 const address = locationInput ? locationInput.value.trim() : '';
@@ -7857,7 +7753,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     console.error("Save settings error:", err);
                     showToast("Network error. Please try again.", "error");
                 } finally {
-                    if (window.ThinkingOrbUI) window.ThinkingOrbUI.hideGlobal();
                     saveBtn.innerText = originalText;
                     saveBtn.disabled = false;
                 }
@@ -8135,6 +8030,8 @@ document.addEventListener('DOMContentLoaded', () => {
     function initRealtimeSockets() {
         if (typeof io === 'undefined') {
             console.warn("Socket.io client not available.");
+            const ind = document.getElementById('nn-socket-indicator');
+            if (ind) ind.style.display = 'none';
             return;
         }
 
@@ -8159,11 +8056,28 @@ document.addEventListener('DOMContentLoaded', () => {
 
         socket.on('connect', () => {
             console.log("⚡ [Real-Time] Connected to Nourish Network Live Stream:", socket.id);
+            const ind = document.getElementById('nn-socket-indicator');
+            const lbl = document.getElementById('socket-status-label');
+            if (ind) {
+                ind.className = 'socket-status-pill socket-connected';
+                ind.style.borderColor = 'rgba(16, 185, 129, 0.4)';
+                ind.style.color = '#10b981';
+            }
+            if (lbl) lbl.textContent = 'Live Sync';
+
             syncUserSocketRooms();
         });
 
         socket.on('disconnect', () => {
             console.log("⚡ [Real-Time] Disconnected from live stream");
+            const ind = document.getElementById('nn-socket-indicator');
+            const lbl = document.getElementById('socket-status-label');
+            if (ind) {
+                ind.className = 'socket-status-pill socket-disconnected';
+                ind.style.borderColor = 'rgba(239, 68, 68, 0.4)';
+                ind.style.color = '#f87171';
+            }
+            if (lbl) lbl.textContent = 'Sync Offline';
         });
 
         // Event: A vendor published a new surplus food listing
