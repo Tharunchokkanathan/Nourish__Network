@@ -7303,6 +7303,10 @@ button:active,
     color: #475569 !important;
 }
 
+[data-theme='light'] .admin-verified-count {
+    color: #0f172a !important;
+}
+
 /* Dynamic cell inline style safety overrides for light mode */
 [data-theme='light'] .admin-table td div[style*="color:#fff"],
 [data-theme='light'] .admin-table td div[style*="color: #fff"],

@@ -4410,11 +4410,8 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         let html = `
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem; flex-wrap:wrap; gap:10px;">
-                <p class="admin-table-desc" style="font-size:0.88rem; margin:0;">
-                    Review statutory accreditations (14-digit FSSAI licenses for Food Vendors, NITI Aayog DARPAN / Society Deeds for NGOs).
-                </p>
-                <div style="font-size:0.82rem; color: #10b981; font-weight:700;">
+            <div style="display:flex; justify-content:flex-end; align-items:center; margin-bottom:1rem; flex-wrap:wrap; gap:10px;">
+                <div class="admin-verified-count" style="font-size:0.82rem; color: #ffffff; font-weight:700;">
                     ${orgs.filter(o => o.isVerified).length} Verified / ${orgs.length} Total Partners
                 </div>
             </div>
