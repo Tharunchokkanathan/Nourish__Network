@@ -7217,9 +7217,29 @@ document.addEventListener('DOMContentLoaded', () => {
     wireDockButtons();
     checkSession();
 
+    // Dismiss initial page boot / refresh HUD loader
+    function dismissBootLoader() {
+        const bootOverlay = document.getElementById('page-boot-overlay');
+        if (bootOverlay) {
+            bootOverlay.style.transition = 'opacity 0.28s cubic-bezier(0.16, 1, 0.3, 1)';
+            bootOverlay.style.opacity = '0';
+            bootOverlay.style.pointerEvents = 'none';
+            setTimeout(() => {
+                if (window.__bootOrb && typeof window.__bootOrb.destroy === 'function') {
+                    window.__bootOrb.destroy();
+                }
+                bootOverlay.remove();
+            }, 300);
+        }
+    }
+    setTimeout(dismissBootLoader, 280);
 
-    // Real-time silent polling every 5 seconds
-    setInterval(() => refreshState(true), 5000);
+    // Show iOS HUD loader when user refreshes the page (F5 / browser reload)
+    window.addEventListener('beforeunload', () => {
+        if (window.ThinkingOrbUI && typeof window.ThinkingOrbUI.show === 'function') {
+            window.ThinkingOrbUI.show('Refreshing....', 'breathing');
+        }
+    });
 
     // --- IMPACT MAP ENGINE ---
     let impactMap = null;

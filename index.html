@@ -22,6 +22,10 @@
     <!-- Custom Styles -->
     <link rel="stylesheet" href="styles.css?v=3.5">
 
+    <!-- Thinking Orbs Official Engine & UI (Jakub Antalik / Libraries.dev) -->
+    <script src="assets/thinking-orbs.js"></script>
+    <script src="assets/thinking-orb-pill.js"></script>
+
 
 
     <!-- Chart.js for Impact Analytics Dashboard -->
@@ -62,6 +66,24 @@
 </head>
 
 <body>
+    <!-- Initial Page Refresh / Boot Loader (iOS Style Square HUD) -->
+    <div id="page-boot-overlay" class="thinking-orb-overlay visible" style="z-index: 10000000; opacity: 1; pointer-events: auto;">
+        <div class="thinking-orb-hud">
+            <canvas id="page-boot-canvas" class="thinking-orb-canvas" width="128" height="128" style="width: 64px; height: 64px;"></canvas>
+            <span class="thinking-orb-text">Thinking....</span>
+        </div>
+    </div>
+    <script>
+        (function () {
+            try {
+                var canvas = document.getElementById('page-boot-canvas');
+                if (canvas && window.ThinkingOrbUI && typeof window.ThinkingOrbUI.createOrb === 'function') {
+                    window.__bootOrb = window.ThinkingOrbUI.createOrb(canvas, { state: 'breathing', size: 64 });
+                }
+            } catch (e) { }
+        })();
+    </script>
+
     <!-- Background Visual Layers (Inspiration: Blueberry & The Coordinate) -->
     <div class="bg-glow-layer"></div>
     <div class="halftone-overlay"></div>
@@ -1389,10 +1411,6 @@
             </filter>
         </defs>
     </svg>
-
-    <!-- Thinking Orbs Official Engine & UI (Jakub Antalik / Libraries.dev) -->
-    <script src="assets/thinking-orbs.js"></script>
-    <script src="assets/thinking-orb-pill.js"></script>
 
     <!-- Custom Script -->
     <script src="script.js?v=3.3"></script>
