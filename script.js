@@ -659,6 +659,10 @@ document.addEventListener('click', (e) => {
 });
 
 document.addEventListener('DOMContentLoaded', () => {
+    // Initialize any static Thinking Orb slots
+    if (window.ThinkingOrbUI && typeof window.ThinkingOrbUI.initSlots === 'function') {
+        window.ThinkingOrbUI.initSlots();
+    }
 
     // 1. Configuration - Dynamic API Detection (works on localhost, Render, or any domain)
     const API_BASE = window.location.protocol === 'file:' ? 'http://localhost:3000/api' : '/api';
@@ -975,6 +979,7 @@ document.addEventListener('DOMContentLoaded', () => {
             btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Processing...';
             btn.disabled = true;
         }
+        if (window.ThinkingOrbUI) window.ThinkingOrbUI.show('Reserving meal....', 'working');
 
         try {
             const notes = document.getElementById('claim-notes')?.value || '';
@@ -1192,6 +1197,7 @@ document.addEventListener('DOMContentLoaded', () => {
             console.error("Order processing error:", e);
             showToast("Network error placing order. Please check your connection.", "error");
         } finally {
+            if (window.ThinkingOrbUI) window.ThinkingOrbUI.hide(80);
             if (btn) {
                 btn.innerHTML = originalHtml;
                 btn.disabled = false;
@@ -2030,14 +2036,24 @@ document.addEventListener('DOMContentLoaded', () => {
     // =========================================
 
 
-    // Helper to toggle button loading state
-    function setLoading(btn, isLoading, originalText) {
+    // Helper to toggle button loading state & Thinking Orb capsule pill
+    function setLoading(btn, isLoading, originalText, orbText, orbState) {
         if (isLoading) {
-            btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Processing...';
-            btn.disabled = true;
+            if (btn) {
+                btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Processing...';
+                btn.disabled = true;
+            }
+            if (window.ThinkingOrbUI) {
+                window.ThinkingOrbUI.show(orbText || 'Thinking....', orbState || 'breathing');
+            }
         } else {
-            btn.innerHTML = originalText;
-            btn.disabled = false;
+            if (btn) {
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+            }
+            if (window.ThinkingOrbUI) {
+                window.ThinkingOrbUI.hide(80);
+            }
         }
     }
 
@@ -2326,7 +2342,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const submitBtn = loginForm.querySelector('button[type="submit"]');
         const originalText = submitBtn.innerHTML;
 
-        setLoading(submitBtn, true, originalText);
+        setLoading(submitBtn, true, originalText, 'Thinking....', 'solving');
 
 
 
@@ -2688,7 +2704,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const submitBtn = registerForm.querySelector('button[type="submit"]');
         const originalText = submitBtn.innerHTML;
 
-        setLoading(submitBtn, true, originalText);
+        setLoading(submitBtn, true, originalText, 'Creating account....', 'weaving');
 
         try {
             const response = await fetch(`${API_BASE}/register`, {
@@ -2737,7 +2753,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const submitBtn = forgotPasswordForm.querySelector('button[type="submit"]');
             const originalText = submitBtn.innerHTML;
-            setLoading(submitBtn, true, originalText);
+            setLoading(submitBtn, true, originalText, 'Creating account....', 'weaving');
 
             try {
                 const res = await fetch(`${API_BASE}/forgot-password`, {
@@ -2781,7 +2797,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const submitBtn = resetPasswordForm.querySelector('button[type="submit"]');
             const originalText = submitBtn.innerHTML;
-            setLoading(submitBtn, true, originalText);
+            setLoading(submitBtn, true, originalText, 'Creating account....', 'weaving');
 
             try {
                 const res = await fetch(`${API_BASE}/reset-password`, {
@@ -2830,7 +2846,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const submitBtn = contactForm.querySelector('button[type="submit"]');
             const originalText = submitBtn.innerHTML;
 
-            setLoading(submitBtn, true, originalText);
+            setLoading(submitBtn, true, originalText, 'Creating account....', 'weaving');
 
             try {
                 const response = await fetch(`${API_BASE}/contact`, {
@@ -3846,6 +3862,7 @@ document.addEventListener('DOMContentLoaded', () => {
             submitBtn.disabled = true;
             submitBtn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Authenticating...';
         }
+        if (window.ThinkingOrbUI) window.ThinkingOrbUI.show('Thinking....', 'solving');
 
         try {
             const res = await fetch(`${API_BASE}/auth/admin-login`, {
@@ -3881,6 +3898,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 alert.style.display = 'block';
             }
         } finally {
+            if (window.ThinkingOrbUI) window.ThinkingOrbUI.hide(80);
             if (submitBtn) {
                 submitBtn.disabled = false;
                 submitBtn.innerHTML = originalBtnText;
@@ -3964,7 +3982,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const container = document.getElementById('adminPickerListContainer');
         if ((!adminCache.users || adminCache.users.length === 0) && container) {
-            container.innerHTML = `<div style="text-align:center; padding: 2.5rem; color: rgba(255,255,255,0.4);"><i class="fa-solid fa-circle-notch fa-spin"></i> Loading registered accounts...</div>`;
+            if (window.ThinkingOrbUI) {
+                window.ThinkingOrbUI.renderPill(container, 'Loading registered accounts....', 'connecting');
+            } else {
+                container.innerHTML = `<div style="text-align:center; padding: 2.5rem; color: rgba(255,255,255,0.4);"><i class="fa-solid fa-circle-notch fa-spin"></i> Loading registered accounts...</div>`;
+            }
             try {
                 const token = sessionStorage.getItem('nourishToken') || '';
                 const res = await fetch(`${API_BASE}/admin/users?_t=${Date.now()}`, { headers: { 'Authorization': `Bearer ${token}` } });
@@ -4890,20 +4912,22 @@ document.addEventListener('DOMContentLoaded', () => {
 
                     <!-- Views Container -->
                     <div id="admin-view-compliance" class="admin-tab-view" style="display: block;">
-                        <div style="text-align:center; padding: 2.5rem; color: rgba(255,255,255,0.4);"><i class="fa-solid fa-circle-notch fa-spin"></i> Loading compliance data...</div>
+                        <div style="text-align:center; padding: 2rem;"><div class="thinking-orb-slot" data-text="Loading compliance data...." data-state="solving"></div></div>
                     </div>
                     <div id="admin-view-listings" class="admin-tab-view" style="display: none;">
-                        <div style="text-align:center; padding: 2.5rem; color: rgba(255,255,255,0.4);"><i class="fa-solid fa-circle-notch fa-spin"></i> Loading listings...</div>
+                        <div style="text-align:center; padding: 2rem;"><div class="thinking-orb-slot" data-text="Loading listings...." data-state="searching"></div></div>
                     </div>
                     <div id="admin-view-handovers" class="admin-tab-view" style="display: none;">
-                        <div style="text-align:center; padding: 2.5rem; color: rgba(255,255,255,0.4);"><i class="fa-solid fa-circle-notch fa-spin"></i> Loading handovers...</div>
+                        <div style="text-align:center; padding: 2rem;"><div class="thinking-orb-slot" data-text="Loading handovers...." data-state="weaving"></div></div>
                     </div>
                     <div id="admin-view-users" class="admin-tab-view" style="display: none;">
-                        <div style="text-align:center; padding: 2.5rem; color: rgba(255,255,255,0.4);"><i class="fa-solid fa-circle-notch fa-spin"></i> Loading user directory...</div>
+                        <div style="text-align:center; padding: 2rem;"><div class="thinking-orb-slot" data-text="Loading user directory...." data-state="connecting"></div></div>
                     </div>
                 </div>
             </div>
         `;
+
+        if (window.ThinkingOrbUI) window.ThinkingOrbUI.initSlots(root);
 
         await fetchAndRenderAdminData(true);
         startAdminLivePolling();
@@ -5872,12 +5896,16 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
         if (!silent && container) {
-            container.innerHTML = `
-                <div style="text-align: center; padding: 3rem; color: var(--text-muted);">
-                    <i class="fa-solid fa-circle-notch fa-spin" style="font-size: 2rem; color: var(--accent-primary); margin-bottom: 1rem;"></i>
-                    <p>Loading real-time order & claim records from database...</p>
-                </div>
-            `;
+            if (window.ThinkingOrbUI) {
+                window.ThinkingOrbUI.renderPill(container, 'Loading claim records....', 'searching');
+            } else {
+                container.innerHTML = `
+                    <div style="text-align: center; padding: 3rem; color: var(--text-muted);">
+                        <i class="fa-solid fa-circle-notch fa-spin" style="font-size: 2rem; color: var(--accent-primary); margin-bottom: 1rem;"></i>
+                        <p>Loading real-time order & claim records from database...</p>
+                    </div>
+                `;
+            }
         }
 
         try {
@@ -6932,6 +6960,7 @@ document.addEventListener('DOMContentLoaded', () => {
             confirmBtn.disabled = true;
             confirmBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Verifying PIN...';
         }
+        if (window.ThinkingOrbUI) window.ThinkingOrbUI.show('Validating PIN....', 'weaving');
 
         // Fallback for local client orders (e.g. synthetic ORD-xxx)
         if (String(orderId).startsWith('ORD-')) {
@@ -7014,6 +7043,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 confirmBtn.innerHTML = '<i class="fa-solid fa-check-double"></i>&nbsp; Verify & Complete Handover';
             }
         } finally {
+            if (window.ThinkingOrbUI) window.ThinkingOrbUI.hide(80);
             isVerifyingHandover = false;
         }
     }
@@ -7790,6 +7820,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             if (badgeIcon) badgeIcon.className = 'fa-solid fa-spinner fa-spin';
             if (inputIcon) inputIcon.className = 'fa-solid fa-spinner fa-spin';
+            if (window.ThinkingOrbUI) window.ThinkingOrbUI.show('Locating GPS satellites....', 'searching');
 
             if (feedbackEl) {
                 feedbackEl.style.display = 'block';
@@ -7802,6 +7833,7 @@ document.addEventListener('DOMContentLoaded', () => {
             showToast("Acquiring GPS coordinates... 🛰️", "info");
 
             const resetUi = () => {
+                if (window.ThinkingOrbUI) window.ThinkingOrbUI.hide(80);
                 if (badgeBtn) badgeBtn.disabled = false;
                 if (inputBtn) {
                     inputBtn.disabled = false;

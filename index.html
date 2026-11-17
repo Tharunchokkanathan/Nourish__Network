@@ -1100,9 +1100,8 @@
 
             <!-- Dynamic Live History Container -->
             <div id="modal-history-container" style="display: flex; flex-direction: column; gap: 1.25rem;">
-                <div style="text-align: center; padding: 3rem; color: rgba(255,255,255,0.35);">
-                    <i class="fa-solid fa-circle-notch fa-spin" style="font-size: 2rem; margin-bottom: 1rem; display: block;"></i>
-                    <p>Loading claim records...</p>
+                <div style="text-align: center; padding: 2rem;">
+                    <div class="thinking-orb-slot" data-text="Loading claim records...." data-state="searching"></div>
                 </div>
             </div>
 
@@ -1390,6 +1389,10 @@
             </filter>
         </defs>
     </svg>
+
+    <!-- Thinking Orbs Official Engine & UI (Jakub Antalik / Libraries.dev) -->
+    <script src="assets/thinking-orbs.js"></script>
+    <script src="assets/thinking-orb-pill.js"></script>
 
     <!-- Custom Script -->
     <script src="script.js?v=3.3"></script>
