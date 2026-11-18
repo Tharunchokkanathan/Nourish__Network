@@ -4806,14 +4806,25 @@ document.addEventListener('DOMContentLoaded', () => {
             (adminCache.stats && adminCache.stats.totalListings) || 0
         );
 
-        // 3. Meals Rescued: sum portions from listings + handovers + accreditation verified impact factor
+        // 3. Meals Rescued: use actual database total portions (unified with Home Page stats)
         let portionsFromListings = 0;
         allListings.forEach(l => { portionsFromListings += (parseFloat(l.quantity != null ? l.quantity : l.qty) || 0); });
         let portionsFromOrders = 0;
-        handovers.forEach(h => { if (h.status === 'completed') portionsFromOrders += (parseFloat(h.quantity || h.qty) || 0); });
+        handovers.forEach(h => { portionsFromOrders += (parseFloat(h.quantity || h.qty) || 0); });
 
-        const totalMealsRescued = Math.max(120, Math.round(portionsFromListings + portionsFromOrders + (verifiedPartnersCount * 20)));
-        const co2SavedKg = Math.round(totalMealsRescued * 2.5);
+        const totalMealsRescued = (adminCache.stats && typeof adminCache.stats.totalPortions !== 'undefined' && Number(adminCache.stats.totalPortions) > 0)
+            ? Number(adminCache.stats.totalPortions)
+            : (state.stats && typeof state.stats.totalMealsSaved !== 'undefined' && Number(state.stats.totalMealsSaved) > 0)
+                ? Number(state.stats.totalMealsSaved)
+                : Math.round(portionsFromListings + portionsFromOrders);
+
+        const totalKgShared = (adminCache.stats && typeof adminCache.stats.totalKgShared !== 'undefined')
+            ? Number(adminCache.stats.totalKgShared)
+            : (state.stats && typeof state.stats.totalKgShared !== 'undefined' ? Number(state.stats.totalKgShared) : Math.round(totalMealsRescued * 0.4));
+
+        const co2SavedKg = (adminCache.stats && typeof adminCache.stats.co2SavedKg !== 'undefined')
+            ? Number(adminCache.stats.co2SavedKg)
+            : Math.round(totalMealsRescued * 2.5);
 
         // Box 1: Meals Rescued
         animateKpiValue('kpi-meals', totalMealsRescued.toLocaleString(), animate);
@@ -4833,6 +4844,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Box 4: CO2 Offset
         animateKpiValue('kpi-co2', `${co2SavedKg.toLocaleString()} kg`, animate);
+        const elCo2Sub = document.getElementById('kpi-co2-sub');
+        if (elCo2Sub) elCo2Sub.textContent = `${totalKgShared} kg food shared • Greenhouse emissions saved`;
     }
 
     let adminLivePollInterval = null;
@@ -4971,7 +4984,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             <div>
                                 <div class="admin-kpi-num" id="kpi-co2">--</div>
                                 <div class="admin-kpi-label">CO₂ Offset</div>
-                                <div style="font-size: 0.75rem; color: #c084fc; margin-top: 2px;">Greenhouse emissions saved</div>
+                                <div style="font-size: 0.75rem; color: #c084fc; margin-top: 2px;" id="kpi-co2-sub">Greenhouse emissions saved</div>
                             </div>
                         </div>
                     </div>

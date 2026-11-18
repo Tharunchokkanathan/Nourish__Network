@@ -2511,23 +2511,26 @@ app.get('/api/admin/stats', requireAdmin, (req, res) => {
                 db.all(`SELECT count(*) as totalUsers, sum(case when accountType IN ('restaurant','vendor') then 1 else 0 end) as totalRestaurants, sum(case when accountType IN ('ngo','shelter') then 1 else 0 end) as totalNgos, sum(case when isVerified=1 then 1 else 0 end) as verifiedUsers, sum(case when isVerified=0 then 1 else 0 end) as pendingVerifications FROM users`, [], (uErr, userStats) => {
                     const uStat = (userStats && userStats[0]) || {};
 
-                    const totalPortions = Math.max(Number(lStat.totalPortions || 0) + Number(oStat.portionsDelivered || 0), 120);
+                    const totalPortions = Math.round(Number(lStat.totalPortions ?? lStat.totalportions ?? 0) + Number(oStat.portionsDelivered ?? oStat.portionsdelivered ?? 0));
+                    const totalKgShared = Math.round(totalPortions * 0.4);
                     const co2SavedKg = Math.round(totalPortions * 2.5);
 
                     res.status(200).json({
                         success: true,
                         stats: {
-                            totalListings: Number(lStat.totalListings || 0),
-                            activeListings: Number(lStat.activeListings || 0),
+                            totalListings: Number(lStat.totalListings ?? lStat.totallistings ?? 0),
+                            activeListings: Number(lStat.activeListings ?? lStat.activelistings ?? 0),
                             totalPortions,
-                            totalOrders: Number(oStat.totalOrders || 0),
-                            completedHandovers: Number(oStat.completedHandovers || 0),
-                            pendingHandovers: Number(oStat.pendingHandovers || 0),
-                            totalUsers: Math.max(Number(uStat.totalUsers || 0), 3),
-                            totalRestaurants: Math.max(Number(uStat.totalRestaurants || 0), 1),
-                            totalNgos: Math.max(Number(uStat.totalNgos || 0), 1),
-                            verifiedUsers: Number(uStat.verifiedUsers || 0),
-                            pendingVerifications: Number(uStat.pendingVerifications || 0),
+                            totalMealsSaved: totalPortions,
+                            totalKgShared,
+                            totalOrders: Number(oStat.totalOrders ?? oStat.totalorders ?? 0),
+                            completedHandovers: Number(oStat.completedHandovers ?? oStat.completedhandovers ?? 0),
+                            pendingHandovers: Number(oStat.pendingHandovers ?? oStat.pendinghandovers ?? 0),
+                            totalUsers: Number(uStat.totalUsers ?? uStat.totalusers ?? 0),
+                            totalRestaurants: Number(uStat.totalRestaurants ?? uStat.totalrestaurants ?? 0),
+                            totalNgos: Number(uStat.totalNgos ?? uStat.totalngos ?? 0),
+                            verifiedUsers: Number(uStat.verifiedUsers ?? uStat.verifiedusers ?? 0),
+                            pendingVerifications: Number(uStat.pendingVerifications ?? uStat.pendingverifications ?? 0),
                             co2SavedKg
                         }
                     });

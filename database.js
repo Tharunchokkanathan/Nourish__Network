@@ -65,7 +65,23 @@ function normalizeRow(row) {
         selleravatar: 'sellerAvatar',
         handoverotp: 'handoverOtp',
         handoverat: 'handoverAt',
-        role: 'role'
+        role: 'role',
+        totallistings: 'totalListings',
+        activelistings: 'activeListings',
+        claimedlistings: 'claimedListings',
+        totalportions: 'totalPortions',
+        totalorders: 'totalOrders',
+        completedhandovers: 'completedHandovers',
+        pendinghandovers: 'pendingHandovers',
+        portionsdelivered: 'portionsDelivered',
+        totalusers: 'totalUsers',
+        totalrestaurants: 'totalRestaurants',
+        totalngos: 'totalNgos',
+        verifiedusers: 'verifiedUsers',
+        pendingverifications: 'pendingVerifications',
+        totalmealssaved: 'totalMealsSaved',
+        totalkgshared: 'totalKgShared',
+        totalvendors: 'totalVendors'
     };
     for (const [lower, camel] of Object.entries(keyMap)) {
         if (lower in normalized && !(camel in normalized)) {
