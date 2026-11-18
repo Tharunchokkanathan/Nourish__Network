@@ -1487,8 +1487,27 @@ app.get('/api/listings', (req, res) => {
 // GET /api/stats
 app.get('/api/stats', (req, res) => {
     const queries = {
-        totalMealsSaved: `SELECT SUM(CAST(quantity AS REAL)) as count FROM food_listings WHERE status IN ('claimed','sold')`,
-        totalKgShared: `SELECT SUM(CASE WHEN LOWER(unit) = 'kg' THEN CAST(quantity AS REAL) ELSE CAST(quantity AS REAL) * 0.4 END) as count FROM food_listings WHERE status IN ('claimed','sold')`,
+        totalMealsSaved: `
+            SELECT ROUND(
+                COALESCE((SELECT SUM(CAST(quantity AS REAL)) FROM food_listings WHERE status NOT IN ('expired')), 0) +
+                COALESCE((SELECT SUM(CAST(quantity AS REAL)) FROM orders WHERE status IN ('confirmed', 'completed')), 0)
+            ) as count
+        `,
+        totalKgShared: `
+            SELECT ROUND(
+                COALESCE((
+                    SELECT SUM(CASE WHEN LOWER(unit) = 'kg' THEN CAST(quantity AS REAL) ELSE CAST(quantity AS REAL) * 0.4 END) 
+                    FROM food_listings 
+                    WHERE status NOT IN ('expired')
+                ), 0) +
+                COALESCE((
+                    SELECT SUM(CASE WHEN LOWER(f.unit) = 'kg' THEN CAST(o.quantity AS REAL) ELSE CAST(o.quantity AS REAL) * 0.4 END) 
+                    FROM orders o 
+                    LEFT JOIN food_listings f ON o.listingId = f.id 
+                    WHERE o.status IN ('confirmed', 'completed')
+                ), 0)
+            ) as count
+        `,
         totalVendors: `SELECT COUNT(*) as count FROM users WHERE accountType IN ('restaurant','vendor')`,
         totalNGOs: `SELECT COUNT(*) as count FROM users WHERE accountType IN ('ngo','shelter')`
     };
@@ -1503,7 +1522,7 @@ app.get('/api/stats', (req, res) => {
                 console.error(`Stats Error (${key}):`, err);
                 results[key] = 0;
             } else {
-                results[key] = (row && row.count !== null) ? row.count : 0;
+                results[key] = (row && row.count !== null && !isNaN(Number(row.count))) ? Number(row.count) : 0;
             }
 
             if (++done === keys.length) {

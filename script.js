@@ -910,7 +910,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             ];
         })(),
-        stats: { totalMealsSaved: 0, totalKgShared: 0, totalVendors: 0, totalNGOs: 0 }
+        stats: (() => {
+            try {
+                const cached = JSON.parse(localStorage.getItem('nn_cached_stats'));
+                if (cached && typeof cached.totalMealsSaved !== 'undefined') return cached;
+            } catch (e) {}
+            return { totalMealsSaved: 0, totalKgShared: 0, totalVendors: 0, totalNGOs: 0 };
+        })()
     };
 
     // Ensure IDs exist and persist cleansed comments
@@ -1375,6 +1381,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const statsRes = await fetch(`${API_BASE}/stats`);
             if (statsRes.ok) {
                 state.stats = await statsRes.json();
+                try { localStorage.setItem('nn_cached_stats', JSON.stringify(state.stats)); } catch (e) {}
                 // If database is completely empty/erased, purge stale client-side demo orders & listings
                 if (Number(state.stats.totalMealsSaved || 0) === 0 && Number(state.stats.totalVendors || 0) === 0 && Number(state.stats.totalNGOs || 0) === 0) {
                     try {
@@ -1383,6 +1390,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         localStorage.removeItem('nn_local_orders');
                         localStorage.removeItem('nn_demo_listings');
                         localStorage.removeItem('nn_cached_listings');
+                        localStorage.removeItem('nn_cached_stats');
                     } catch (e) {}
                 }
                 updateLiveStats();
@@ -1563,12 +1571,16 @@ document.addEventListener('DOMContentLoaded', () => {
         const hasApiStats = state.stats && typeof state.stats.totalMealsSaved !== 'undefined';
         const localStats = computeLocalStats();
 
-        // When backend API stats are available, reflect the true database numbers (even if 0).
-        // Fallback to locally computed stats only if the API is offline/unreachable.
-        const meals = hasApiStats ? Number(state.stats.totalMealsSaved || 0) : localStats.totalMeals;
-        const kg = hasApiStats ? Math.round(Number(state.stats.totalKgShared || 0)) : localStats.totalKg;
-        const vendors = hasApiStats ? Number(state.stats.totalVendors || 0) : localStats.totalVendors;
-        const ngos = hasApiStats ? Number(state.stats.totalNGOs || 0) : localStats.totalNGOs;
+        // When backend API stats are available, prioritize them; fallback to local stats if API returned 0
+        const apiMeals = hasApiStats ? Number(state.stats.totalMealsSaved || 0) : 0;
+        const apiKg = hasApiStats ? Math.round(Number(state.stats.totalKgShared || 0)) : 0;
+        const apiVendors = hasApiStats ? Number(state.stats.totalVendors || 0) : 0;
+        const apiNgos = hasApiStats ? Number(state.stats.totalNGOs || 0) : 0;
+
+        const meals = (hasApiStats && apiMeals > 0) ? apiMeals : (localStats.totalMeals || apiMeals);
+        const kg = (hasApiStats && apiKg > 0) ? apiKg : (localStats.totalKg || apiKg);
+        const vendors = (hasApiStats && apiVendors > 0) ? apiVendors : (localStats.totalVendors || apiVendors);
+        const ngos = (hasApiStats && apiNgos > 0) ? apiNgos : (localStats.totalNGOs || apiNgos);
 
         const listedEl = document.querySelector('[data-target-stat="listed"]');
         const fulfilledEl = document.querySelector('[data-target-stat="fulfilled"]');
@@ -1626,7 +1638,6 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // 3. Animated Counters Setup
-    const counters = document.querySelectorAll('.stat-number');
     let hasCounted = false;
 
     const counterObserver = new IntersectionObserver((entries) => {
@@ -1634,7 +1645,7 @@ document.addEventListener('DOMContentLoaded', () => {
             hasCounted = true;
             startCounters();
         }
-    }, { threshold: 0.5 });
+    }, { threshold: 0.3 });
 
     const impactSection = document.getElementById('counter-section');
     if (impactSection) {
@@ -1642,34 +1653,40 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function startCounters() {
-        counters.forEach(counter => {
+        const allCounters = document.querySelectorAll('.stat-number');
+        allCounters.forEach(counter => {
             const target = +counter.getAttribute('data-target') || 0;
             if (target === 0) {
                 counter.innerText = '0';
                 return;
             }
-            const duration = 2000; // ms
-            const stepTime = Math.abs(Math.floor(duration / target));
-
-            // To prevent browser locking for large numbers, we do frame-based animation
+            const duration = 1800; // ms
             let startTime = null;
+            const startVal = parseInt(counter.innerText.replace(/,/g, ''), 10) || 0;
+
+            if (counter._animFrame) {
+                cancelAnimationFrame(counter._animFrame);
+            }
 
             function updateCounter(currentTime) {
                 if (!startTime) startTime = currentTime;
                 const progress = currentTime - startTime;
-
-                const current = Math.min(Math.floor((progress / duration) * target), target);
+                const factor = Math.min(progress / duration, 1);
+                // Smooth easeOutCubic curve
+                const ease = 1 - Math.pow(1 - factor, 3);
+                const current = Math.round(startVal + (target - startVal) * ease);
 
                 // Format with commas
                 counter.innerText = current.toLocaleString();
 
                 if (progress < duration) {
-                    requestAnimationFrame(updateCounter);
+                    counter._animFrame = requestAnimationFrame(updateCounter);
                 } else {
                     counter.innerText = target.toLocaleString() + (target > 1000 ? '+' : '');
+                    counter._animFrame = null;
                 }
             }
-            requestAnimationFrame(updateCounter);
+            counter._animFrame = requestAnimationFrame(updateCounter);
         });
     }
 
@@ -1847,12 +1864,22 @@ document.addEventListener('DOMContentLoaded', () => {
             if (targetId === '#join' && this.closest('.nav-buttons')) return;
 
             e.preventDefault();
-            if (targetId === '#') return;
+            if (targetId === '#' || !targetId) return;
+
+            // If user clicks a landing anchor while inside another portal, return to home portal first
+            if (state.activePortal && state.activePortal !== 'home' && ['#home', '#about', '#how-it-works', '#impact', '#reviews', '#community'].includes(targetId)) {
+                state.activePortal = 'home';
+                if (typeof renderPortal === 'function') renderPortal();
+                if (typeof syncDock === 'function') syncDock();
+            }
 
             const targetElement = document.querySelector(targetId);
             if (targetElement) {
+                const headerOffset = 70;
+                const elementPosition = targetElement.getBoundingClientRect().top;
+                const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
                 window.scrollTo({
-                    top: targetElement.offsetTop - 80, // adjust for navbar height
+                    top: Math.max(0, offsetPosition),
                     behavior: 'smooth'
                 });
             }
@@ -8186,6 +8213,7 @@ document.addEventListener('DOMContentLoaded', () => {
             console.log("⚡ [Real-Time] New Listing Broadcast:", data);
             playChime('notification');
             showToast(`🍱 New Surplus Food: "${data.foodName || data.name}" (${data.quantity || 1} portions) just posted by ${data.vendorName || 'a partner'}!`, 'info');
+            refreshLiveStatsFromApi();
 
             // Merge into local state.listings if not already present
             if (state && Array.isArray(state.listings)) {
@@ -8225,9 +8253,21 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
 
+        async function refreshLiveStatsFromApi() {
+            try {
+                const res = await fetch(`${API_BASE}/stats`);
+                if (res.ok) {
+                    state.stats = await res.json();
+                    try { localStorage.setItem('nn_cached_stats', JSON.stringify(state.stats)); } catch (e) {}
+                    if (typeof updateLiveStats === 'function') updateLiveStats();
+                }
+            } catch (e) {}
+        }
+
         // Event: A listing was deleted
         socket.on('listing:deleted', (data) => {
             console.log("⚡ [Real-Time] Listing Deleted:", data);
+            refreshLiveStatsFromApi();
             if (state && Array.isArray(state.listings)) {
                 state.listings = state.listings.filter(l => Number(l.id) !== Number(data.id));
                 if (state.activePortal === 'buyer' && typeof renderBuyerPortal === 'function') {
@@ -8243,6 +8283,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // Event: A listing was claimed
         socket.on('listing:claimed', (data) => {
             console.log("⚡ [Real-Time] Listing Claimed:", data);
+            refreshLiveStatsFromApi();
             if (state && Array.isArray(state.listings)) {
                 const item = state.listings.find(l => Number(l.id) === Number(data.listingId));
                 if (item) {
@@ -8262,6 +8303,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // Event: Orders created
         socket.on('order:created', (data) => {
             console.log("⚡ [Real-Time] Order Created:", data);
+            refreshLiveStatsFromApi();
             if (typeof loadPortalHistory === 'function') {
                 loadPortalHistory(true);
             }
@@ -8270,6 +8312,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // Event: Physical Handover Verified & Completed!
         socket.on('order:handover_completed', (data) => {
             console.log("⚡ [Real-Time] Order Handover Completed:", data);
+            refreshLiveStatsFromApi();
             playChime('success');
 
             // 1. If recipient / NGO has their QR pass modal open for this order:
