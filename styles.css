@@ -1919,6 +1919,12 @@ button.btn-primary {
    - Specular Meniscus Surface Tension Highlight
    - Clean Optical Hierarchy (Zero blue light / neon auras)
    ========================================= */
+/* =========================================
+   ULTRA-PREMIUM LIQUID GLASS TOAST NOTIFICATION SYSTEM
+   - Optical Refractive Water Glass Structure (Zero Heavy Black Obsidian)
+   - Apple iOS Fluid Dynamics & Buttery Smooth Surface Tension
+   - Crystal Translucent Caustics & Meniscus Highlights
+   ========================================= */
 .toast-container {
     position: fixed;
     bottom: 2.5rem;
@@ -1938,180 +1944,177 @@ button.btn-primary {
     width: 100%;
     min-width: 320px;
     max-width: 540px;
-    min-height: 66px;
-    border-radius: 108px;
+    min-height: 62px;
+    border-radius: 100px;
     /* Smooth liquid capsule curvature */
 
-    /* High-Gloss Liquid Obsidian Surface */
-    background: linear-gradient(180deg,
+    /* Pure Translucent Liquid Water Surface (Zero Opaque Black) */
+    background: linear-gradient(135deg,
             rgba(255, 255, 255, 0.16) 0%,
-            rgba(255, 255, 255, 0.03) 38%,
-            rgba(10, 12, 11, 0.88) 70%,
-            rgba(6, 8, 7, 0.96) 100%) !important;
+            rgba(255, 255, 255, 0.04) 42%,
+            rgba(16, 185, 129, 0.02) 70%,
+            rgba(255, 255, 255, 0.09) 100%) !important;
 
-    /* Crystal optical clarity - not cloudy/milky frosted haze */
-    backdrop-filter: blur(8px) saturate(180%) !important;
-    -webkit-backdrop-filter: blur(8px) saturate(180%) !important;
+    /* Crystal optical water lens refraction */
+    backdrop-filter: blur(28px) saturate(210%) brightness(1.08) !important;
+    -webkit-backdrop-filter: blur(28px) saturate(210%) brightness(1.08) !important;
 
     color: #ffffff !important;
     padding: 12px 20px 12px 14px;
 
-    /* Ultra-fine liquid boundary rim */
-    border: 1px solid rgba(255, 255, 255, 0.16) !important;
+    /* Delicate fluid meniscus rim */
+    border: 1px solid rgba(255, 255, 255, 0.26) !important;
+    border-top: 1px solid rgba(255, 255, 255, 0.58) !important;
 
-    /* Liquid specular meniscus highlight on top + deep obsidian elevation */
+    /* Soft liquid caustic refraction & buoyant elevation */
     box-shadow:
-        0 24px 50px rgba(0, 0, 0, 0.8),
-        0 8px 18px rgba(0, 0, 0, 0.55),
-        inset 0 1.5px 0.5px rgba(255, 255, 255, 0.38),
-        /* Liquid top surface meniscus */
-        inset 0 -1px 1px rgba(0, 0, 0, 0.5) !important;
+        0 20px 48px -10px rgba(0, 0, 0, 0.32),
+        0 6px 18px -4px rgba(0, 0, 0, 0.16),
+        inset 0 1.5px 1.5px 0 rgba(255, 255, 255, 0.58),
+        inset 0 -1px 1px 0 rgba(255, 255, 255, 0.14),
+        inset 0 0 24px rgba(255, 255, 255, 0.06) !important;
 
     display: flex;
     align-items: center;
     gap: 14px;
 
     opacity: 0;
-    transform: translateX(-40px) scale(0.7);
     overflow: hidden;
     pointer-events: auto;
 }
 
-/* Liquid Pop-Up Bouncy Entrance */
-@keyframes liquidPopIn {
+/* Buttery Smooth Liquid Water Float-In */
+@keyframes liquidWaterIn {
     0% {
-        transform: translateX(-45px) scale(0.7, 0.85);
         opacity: 0;
+        transform: translateY(22px) scale(0.95);
+        filter: blur(8px);
     }
 
-    45% {
-        transform: translateX(10px) scale(1.06, 0.96);
+    60% {
         opacity: 1;
-    }
-
-    75% {
-        transform: translateX(-3px) scale(0.98, 1.02);
+        transform: translateY(-2px) scale(1.008);
+        filter: blur(0px);
     }
 
     100% {
-        transform: translateX(0) scale(1, 1);
         opacity: 1;
+        transform: translateY(0) scale(1);
+        filter: blur(0px);
     }
 }
 
-/* Liquid Elastic Exit */
-@keyframes liquidPopOut {
+/* Buttery Smooth Liquid Water Dissolve-Out */
+@keyframes liquidWaterOut {
     0% {
-        transform: translateX(0) scale(1, 1);
         opacity: 1;
-    }
-
-    30% {
-        transform: translateX(6px) scale(1.03, 0.98);
-        opacity: 0.95;
+        transform: translateY(0) scale(1);
+        filter: blur(0px);
     }
 
     100% {
-        transform: translateX(-50px) scale(0.65, 0.8);
         opacity: 0;
+        transform: translateY(14px) scale(0.95);
+        filter: blur(6px);
     }
 }
 
 .toast.show {
-    animation: liquidPopIn 0.48s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    animation: liquidWaterIn 0.46s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 .toast.hide {
-    animation: liquidPopOut 0.32s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+    animation: liquidWaterOut 0.32s cubic-bezier(0.4, 0, 0.2, 1) forwards;
     pointer-events: none;
 }
 
-/* Liquid Droplet Icon Container - Zero Blue Light Glow */
+/* Liquid Droplet Icon Container */
 .toast-icon {
-    width: 40px;
-    height: 40px;
-    background: rgba(255, 255, 255, 0.08);
-    border: 1px solid rgba(255, 255, 255, 0.15);
+    width: 38px;
+    height: 38px;
+    background: rgba(255, 255, 255, 0.12);
+    border: 1px solid rgba(255, 255, 255, 0.32);
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 1.1rem;
+    font-size: 1.05rem;
     flex-shrink: 0;
     color: #ffffff;
-    box-shadow: inset 0 1px 1.5px rgba(255, 255, 255, 0.3), 0 2px 6px rgba(0, 0, 0, 0.4);
-    transition: transform 0.25s ease;
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    box-shadow: inset 0 1.5px 1.5px rgba(255, 255, 255, 0.55), 0 3px 10px rgba(0, 0, 0, 0.14);
+    transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .toast-message {
     flex: 1;
     font-family: 'Outfit', sans-serif;
-    font-size: 0.96rem;
-    font-weight: 600;
+    font-size: 0.95rem;
+    font-weight: 550;
     line-height: 1.45;
     letter-spacing: 0.15px;
     color: #ffffff;
-    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6);
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
     word-break: break-word;
 }
 
-/* Close / Dismiss Liquid Button */
+/* Close / Dismiss Liquid Water Button */
 .toast-close-btn {
     width: 32px;
     height: 32px;
     border-radius: 50%;
-    background: rgba(255, 255, 255, 0.08);
-    border: 1px solid rgba(255, 255, 255, 0.14);
-    color: rgba(255, 255, 255, 0.7);
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.26);
+    color: rgba(255, 255, 255, 0.85);
     display: flex;
     align-items: center;
     justify-content: center;
     font-size: 0.85rem;
     cursor: pointer;
-    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
     flex-shrink: 0;
     padding: 0;
     outline: none;
-    box-shadow: inset 0 0.5px 1px rgba(255, 255, 255, 0.25);
+    box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.35);
 }
 
 .toast-close-btn:hover {
-    background: rgba(255, 255, 255, 0.18);
+    background: rgba(255, 255, 255, 0.24);
     color: #ffffff;
-    transform: scale(1.1);
+    transform: scale(1.08);
+    box-shadow: inset 0 1.5px 1.5px rgba(255, 255, 255, 0.6), 0 4px 12px rgba(0, 0, 0, 0.2);
 }
 
-/* Clean Type Accents - NO external neon auras or blue light spills */
+/* Clean Type Accents */
 .toast-info .toast-icon {
     color: #ffffff;
-    /* Clean neutral white - no blue glow! */
 }
 
 .toast-success .toast-icon {
     color: #34d399;
-    /* Crisp clean emerald glyph */
 }
 
 .toast-error .toast-icon {
     color: #f87171;
-    /* Crisp clean rose glyph */
 }
 
 .toast-warning .toast-icon {
     color: #fbbf24;
-    /* Crisp clean amber glyph */
 }
 
-/* Subtle Liquid Meniscus Timer Line - Neutral & Clean */
+/* Subtle Liquid Meniscus Timer Line */
 .toast::after {
     content: '';
     position: absolute;
-    bottom: 5px;
-    left: 36px;
-    right: 36px;
+    bottom: 4px;
+    left: 28px;
+    right: 28px;
     height: 2px;
     border-radius: 999px;
-    background: rgba(255, 255, 255, 0.16);
+    background: linear-gradient(90deg, rgba(255, 255, 255, 0.45), rgba(255, 255, 255, 0.1));
     transform-origin: left;
     animation: toastPillProgress var(--toast-duration, 3.8s) linear forwards;
 }
@@ -2119,13 +2122,61 @@ button.btn-primary {
 @keyframes toastPillProgress {
     from {
         transform: scaleX(1);
-        opacity: 0.8;
+        opacity: 0.85;
     }
 
     to {
         transform: scaleX(0);
-        opacity: 0.1;
+        opacity: 0.15;
     }
+}
+
+/* Light Mode Fluid Water Styling */
+[data-theme='light'] .toast {
+    background: linear-gradient(135deg,
+            rgba(255, 255, 255, 0.6) 0%,
+            rgba(255, 255, 255, 0.3) 45%,
+            rgba(255, 255, 255, 0.48) 100%) !important;
+    border: 1px solid rgba(255, 255, 255, 0.8) !important;
+    border-top: 1px solid rgba(255, 255, 255, 0.98) !important;
+    box-shadow:
+        0 20px 45px -10px rgba(6, 78, 59, 0.15),
+        0 6px 16px -4px rgba(0, 0, 0, 0.05),
+        inset 0 1.5px 1.5px 0 rgba(255, 255, 255, 1),
+        inset 0 -1px 1px 0 rgba(255, 255, 255, 0.4),
+        inset 0 0 24px rgba(255, 255, 255, 0.25) !important;
+}
+
+[data-theme='light'] .toast-message {
+    color: #064e3b !important;
+    text-shadow: none !important;
+}
+
+[data-theme='light'] .toast-icon {
+    background: rgba(255, 255, 255, 0.55) !important;
+    border: 1px solid rgba(255, 255, 255, 0.85) !important;
+    color: #064e3b !important;
+    box-shadow: inset 0 1px 1.5px rgba(255, 255, 255, 0.9), 0 2px 8px rgba(6, 78, 59, 0.08) !important;
+}
+
+[data-theme='light'] .toast-info .toast-icon {
+    color: #059669 !important;
+}
+
+[data-theme='light'] .toast-close-btn {
+    background: rgba(255, 255, 255, 0.45) !important;
+    border: 1px solid rgba(255, 255, 255, 0.75) !important;
+    color: #064e3b !important;
+    box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.8) !important;
+}
+
+[data-theme='light'] .toast-close-btn:hover {
+    background: rgba(255, 255, 255, 0.8) !important;
+    color: #047857 !important;
+}
+
+[data-theme='light'] .toast::after {
+    background: rgba(6, 78, 59, 0.25) !important;
 }
 
 @media (max-width: 640px) {
@@ -2138,16 +2189,16 @@ button.btn-primary {
 
     .toast {
         min-width: 0;
-        min-height: 58px;
-        border-radius: 54px;
+        min-height: 56px;
+        border-radius: 100px;
         padding: 9px 14px 9px 10px;
         gap: 10px;
     }
 
     .toast-icon {
-        width: 36px;
-        height: 36px;
-        font-size: 1rem;
+        width: 34px;
+        height: 34px;
+        font-size: 0.95rem;
     }
 
     .toast-message {
@@ -4351,13 +4402,16 @@ select.form-control option {
     .toast {
         min-width: 100% !important;
         width: 100% !important;
-        padding: 1rem 1.25rem !important;
-        border-radius: 18px !important;
-        transform: translate3d(0, 25px, 0) scale(0.96);
+        padding: 0.8rem 1.15rem !important;
+        border-radius: 100px !important;
     }
 
     .toast.show {
-        transform: translate3d(0, 0, 0) scale(1);
+        animation: liquidWaterIn 0.46s cubic-bezier(0.16, 1, 0.3, 1) forwards !important;
+    }
+
+    .toast.hide {
+        animation: liquidWaterOut 0.32s cubic-bezier(0.4, 0, 0.2, 1) forwards !important;
     }
 }
 
