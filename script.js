@@ -37,6 +37,19 @@ window.deleteComment = function (commentId, btnEl) {
 window.closeHandoverVerifyModal = function () {
     const modal = document.getElementById('handoverVerifyModal');
     if (modal) modal.style.display = 'none';
+    if (window.ThinkingOrbUI && typeof window.ThinkingOrbUI.hide === 'function') {
+        window.ThinkingOrbUI.hide(0);
+    }
+    const confirmBtn = document.getElementById('btnConfirmHandover');
+    if (confirmBtn) {
+        confirmBtn.disabled = false;
+        confirmBtn.innerHTML = '<i class="fa-solid fa-check-double"></i>&nbsp; Verify & Complete Handover';
+    }
+    const errBox = document.getElementById('verifyModalError');
+    if (errBox) {
+        errBox.textContent = '';
+        errBox.style.display = 'none';
+    }
 };
 
 window.closeHandoverQrModal = function () {
@@ -6362,6 +6375,20 @@ document.addEventListener('DOMContentLoaded', () => {
     function closeHandoverVerifyModal() {
         const modal = document.getElementById('handoverVerifyModal');
         if (modal) modal.style.display = 'none';
+        if (window.ThinkingOrbUI && typeof window.ThinkingOrbUI.hide === 'function') {
+            window.ThinkingOrbUI.hide(0);
+        }
+        isVerifyingHandover = false;
+        const confirmBtn = document.getElementById('btnConfirmHandover');
+        if (confirmBtn) {
+            confirmBtn.disabled = false;
+            confirmBtn.innerHTML = '<i class="fa-solid fa-check-double"></i>&nbsp; Verify & Complete Handover';
+        }
+        const errorEl = document.getElementById('verifyModalError');
+        if (errorEl) {
+            errorEl.textContent = '';
+            errorEl.style.display = 'none';
+        }
     }
     window.closeHandoverVerifyModal = closeHandoverVerifyModal;
 
@@ -6375,6 +6402,12 @@ document.addEventListener('DOMContentLoaded', () => {
         const modal = document.getElementById('handoverVerifyModal');
         if (!modal) return;
         modal.dataset.orderId = orderId;
+
+        // Force dismiss any existing HUD or verification lock
+        if (window.ThinkingOrbUI && typeof window.ThinkingOrbUI.hide === 'function') {
+            window.ThinkingOrbUI.hide(0);
+        }
+        isVerifyingHandover = false;
 
         if (typeof initHandoverVerificationModalEvents === 'function') {
             initHandoverVerificationModalEvents();
@@ -6850,14 +6883,19 @@ document.addEventListener('DOMContentLoaded', () => {
             closeVerifyBtn.onclick = (e) => {
                 e.preventDefault();
                 e.stopPropagation();
-                verifyModal.style.display = 'none';
+                closeHandoverVerifyModal();
             };
         }
         if (verifyModal) {
             verifyModal.addEventListener('click', (e) => {
-                if (e.target === verifyModal) verifyModal.style.display = 'none';
+                if (e.target === verifyModal) closeHandoverVerifyModal();
             });
         }
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && verifyModal && verifyModal.style.display !== 'none') {
+                closeHandoverVerifyModal();
+            }
+        });
 
         const closeQrBtn = document.getElementById('closeHandoverQrModal');
         if (closeQrBtn && qrModal) {
@@ -7051,9 +7089,19 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         if (window.ThinkingOrbUI) window.ThinkingOrbUI.show('Validating PIN....', 'weaving');
 
-        // Fallback for local client orders (e.g. synthetic ORD-xxx)
-        if (String(orderId).startsWith('ORD-')) {
-            try {
+        // Safety fallback timer to prevent HUD from getting stuck
+        const handoverSafetyTimer = setTimeout(() => {
+            if (window.ThinkingOrbUI) window.ThinkingOrbUI.hide(0);
+            isVerifyingHandover = false;
+            if (confirmBtn) {
+                confirmBtn.disabled = false;
+                confirmBtn.innerHTML = '<i class="fa-solid fa-check-double"></i>&nbsp; Verify & Complete Handover';
+            }
+        }, 5000);
+
+        try {
+            // Fallback for local client orders (e.g. synthetic ORD-xxx)
+            if (String(orderId).startsWith('ORD-')) {
                 let localOrders = JSON.parse(localStorage.getItem('nn_local_orders') || '[]');
                 const locOrder = localOrders.find(o => String(o.orderId) === String(orderId));
                 const expectedPin = (locOrder && locOrder.handoverOtp) || String(orderId).padStart(4, '0').slice(-4);
@@ -7062,10 +7110,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (errorBox) {
                         errorBox.textContent = 'Invalid Handover PIN! Please ask the NGO driver to show their pass.';
                         errorBox.style.display = 'block';
-                    }
-                    if (confirmBtn) {
-                        confirmBtn.disabled = false;
-                        confirmBtn.innerHTML = '<i class="fa-solid fa-check-double"></i>&nbsp; Verify & Complete Handover';
                     }
                     digitBoxes.forEach(b => b.value = '');
                     digitBoxes[0]?.focus();
@@ -7077,19 +7121,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 localStorage.setItem('nn_local_orders', JSON.stringify(localOrders));
 
                 verifyModal.style.display = 'none';
-                if (confirmBtn) {
-                    confirmBtn.disabled = false;
-                    confirmBtn.innerHTML = '<i class="fa-solid fa-check-double"></i>&nbsp; Verify & Complete Handover';
-                }
                 showToast("Physical handover verified successfully! 🤝", "success");
                 if (typeof loadPortalHistory === 'function') loadPortalHistory();
-            } finally {
-                isVerifyingHandover = false;
+                return;
             }
-            return;
-        }
 
-        try {
             const token = sessionStorage.getItem('nourishToken') || localStorage.getItem('nourishToken');
             const headers = { 'Content-Type': 'application/json' };
             if (token) headers['Authorization'] = `Bearer ${token}`;
@@ -7103,20 +7139,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (res.ok && data.success) {
                 verifyModal.style.display = 'none';
-                if (confirmBtn) {
-                    confirmBtn.disabled = false;
-                    confirmBtn.innerHTML = '<i class="fa-solid fa-check-double"></i>&nbsp; Verify & Complete Handover';
-                }
                 showToast(data.message || "Physical handover verified successfully! 🤝", "success");
                 if (typeof loadPortalHistory === 'function') loadPortalHistory();
             } else {
                 if (errorBox) {
                     errorBox.textContent = data.error || 'Invalid PIN. Please ask the recipient for the 4 digits.';
                     errorBox.style.display = 'block';
-                }
-                if (confirmBtn) {
-                    confirmBtn.disabled = false;
-                    confirmBtn.innerHTML = '<i class="fa-solid fa-check-double"></i>&nbsp; Verify & Complete Handover';
                 }
                 digitBoxes.forEach(b => b.value = '');
                 digitBoxes[0]?.focus();
@@ -7127,13 +7155,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 errorBox.textContent = 'Network error during verification. Please try again.';
                 errorBox.style.display = 'block';
             }
+        } finally {
+            clearTimeout(handoverSafetyTimer);
+            if (window.ThinkingOrbUI) window.ThinkingOrbUI.hide(80);
+            isVerifyingHandover = false;
             if (confirmBtn) {
                 confirmBtn.disabled = false;
                 confirmBtn.innerHTML = '<i class="fa-solid fa-check-double"></i>&nbsp; Verify & Complete Handover';
             }
-        } finally {
-            if (window.ThinkingOrbUI) window.ThinkingOrbUI.hide(80);
-            isVerifyingHandover = false;
         }
     }
     window.submitHandoverVerification = submitHandoverVerification;
@@ -7284,18 +7313,27 @@ document.addEventListener('DOMContentLoaded', () => {
             bootOverlay.style.pointerEvents = 'none';
             setTimeout(() => {
                 if (window.__bootOrb && typeof window.__bootOrb.destroy === 'function') {
-                    window.__bootOrb.destroy();
+                    try { window.__bootOrb.destroy(); } catch (e) {}
                 }
-                bootOverlay.remove();
+                if (bootOverlay.parentNode) bootOverlay.remove();
             }, 300);
         }
+        if (window.ThinkingOrbUI && typeof window.ThinkingOrbUI.hide === 'function') {
+            window.ThinkingOrbUI.hide(0);
+        }
     }
-    setTimeout(dismissBootLoader, 280);
+    setTimeout(dismissBootLoader, 150);
+    window.addEventListener('load', dismissBootLoader);
+    window.addEventListener('pageshow', dismissBootLoader);
+    window.addEventListener('popstate', dismissBootLoader);
 
     // Show iOS HUD loader when user refreshes the page (F5 / browser reload)
     window.addEventListener('beforeunload', () => {
         if (window.ThinkingOrbUI && typeof window.ThinkingOrbUI.show === 'function') {
             window.ThinkingOrbUI.show('Refreshing....', 'searching');
+            setTimeout(() => {
+                if (window.ThinkingOrbUI) window.ThinkingOrbUI.hide(0);
+            }, 2500);
         }
     });
 

@@ -194,6 +194,7 @@
   let overlayEl = null;
   let activeHUD = null;
   let hideTimeout = null;
+  let safetyWatchdogTimeout = null;
 
   function ensureOverlay() {
     if (overlayEl && document.body.contains(overlayEl)) return overlayEl;
@@ -201,6 +202,14 @@
     overlayEl = document.createElement('div');
     overlayEl.className = 'thinking-orb-overlay';
     overlayEl.id = 'thinking-orb-global-overlay';
+
+    // Tap backdrop to dismiss if stuck
+    overlayEl.addEventListener('click', (e) => {
+      if (e.target === overlayEl) {
+        hide(0);
+      }
+    });
+
     document.body.appendChild(overlayEl);
     return overlayEl;
   }
@@ -217,6 +226,12 @@
       clearTimeout(hideTimeout);
       hideTimeout = null;
     }
+
+    // Auto-dismiss safety watchdog: guarantee HUD never hangs more than 5000ms
+    if (safetyWatchdogTimeout) clearTimeout(safetyWatchdogTimeout);
+    safetyWatchdogTimeout = setTimeout(() => {
+      hide(0);
+    }, 5000);
 
     let text = 'Loading....';
     let state = 'breathing';
@@ -249,9 +264,25 @@
    * Hide global HUD overlay
    */
   function hide(delayMs = 120) {
+    if (safetyWatchdogTimeout) {
+      clearTimeout(safetyWatchdogTimeout);
+      safetyWatchdogTimeout = null;
+    }
+
     if (!overlayEl) return;
 
     if (hideTimeout) clearTimeout(hideTimeout);
+
+    if (delayMs <= 0) {
+      overlayEl.classList.remove('visible');
+      if (activeHUD) {
+        activeHUD.destroy();
+        activeHUD = null;
+      }
+      overlayEl.innerHTML = '';
+      hideTimeout = null;
+      return;
+    }
 
     hideTimeout = setTimeout(() => {
       if (overlayEl) {
@@ -305,6 +336,16 @@
       const text = slot.getAttribute('data-text') || 'Loading....';
       const state = slot.getAttribute('data-state') || 'breathing';
       renderHUD(slot, text, state, 64);
+    });
+  }
+
+  if (typeof window !== 'undefined') {
+    window.addEventListener('pageshow', () => hide(0));
+    window.addEventListener('popstate', () => hide(0));
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && overlayEl && overlayEl.classList.contains('visible')) {
+        hide(0);
+      }
     });
   }
 

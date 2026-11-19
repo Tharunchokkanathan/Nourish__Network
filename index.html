@@ -67,8 +67,8 @@
 
 <body>
     <!-- Initial Page Refresh / Boot Loader (iOS Style Square HUD) -->
-    <div id="page-boot-overlay" class="thinking-orb-overlay visible" style="z-index: 10000000; opacity: 1; pointer-events: auto;">
-        <div class="thinking-orb-hud">
+    <div id="page-boot-overlay" class="thinking-orb-overlay visible" onclick="this.style.opacity='0'; this.style.pointerEvents='none'; setTimeout(function(){ var el = document.getElementById('page-boot-overlay'); if (el) el.remove(); }, 250);" style="z-index: 10000000; opacity: 1; pointer-events: auto; cursor: pointer;">
+        <div class="thinking-orb-hud" onclick="event.stopPropagation();">
             <canvas id="page-boot-canvas" class="thinking-orb-canvas" width="128" height="128" style="width: 64px; height: 64px;"></canvas>
             <span id="page-boot-text" class="thinking-orb-text">Refreshing....</span>
         </div>
@@ -93,7 +93,43 @@
                 if (canvas && window.ThinkingOrbUI && typeof window.ThinkingOrbUI.createOrb === 'function') {
                     window.__bootOrb = window.ThinkingOrbUI.createOrb(canvas, { state: isReload ? 'searching' : 'breathing', size: 64 });
                 }
-            } catch (e) { }
+
+                // Bulletproof Standalone Auto-Dismissal Watchdog:
+                function safeDismissBootLoader() {
+                    var overlay = document.getElementById('page-boot-overlay');
+                    if (overlay) {
+                        overlay.style.transition = 'opacity 0.25s cubic-bezier(0.16, 1, 0.3, 1)';
+                        overlay.style.opacity = '0';
+                        overlay.style.pointerEvents = 'none';
+                        setTimeout(function () {
+                            if (window.__bootOrb && typeof window.__bootOrb.destroy === 'function') {
+                                try { window.__bootOrb.destroy(); } catch (e) { }
+                            }
+                            if (overlay && overlay.parentNode) overlay.parentNode.removeChild(overlay);
+                        }, 280);
+                    }
+                    if (window.ThinkingOrbUI && typeof window.ThinkingOrbUI.hide === 'function') {
+                        window.ThinkingOrbUI.hide(0);
+                    }
+                }
+
+                if (document.readyState === 'complete') {
+                    setTimeout(safeDismissBootLoader, 200);
+                } else {
+                    window.addEventListener('load', function () {
+                        setTimeout(safeDismissBootLoader, 180);
+                    });
+                    document.addEventListener('DOMContentLoaded', function () {
+                        setTimeout(safeDismissBootLoader, 350);
+                    });
+                }
+                // Hard safety ceiling: Never block UI for more than 950ms under any network condition
+                setTimeout(safeDismissBootLoader, 950);
+                window.addEventListener('pageshow', safeDismissBootLoader);
+            } catch (e) {
+                var overlay = document.getElementById('page-boot-overlay');
+                if (overlay) overlay.style.display = 'none';
+            }
         })();
     </script>
 
